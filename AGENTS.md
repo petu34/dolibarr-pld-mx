@@ -1,5 +1,5 @@
 # AGENTS.md — Reglas del Proyecto PLD Dolibarr México
-> **Versión:** 1.1 | **Última actualización:** Febrero 2026
+> **Versión:** 1.0 | **Última actualización:** Febrero 2026
 > Este archivo es leído automáticamente por OhMyOpenCode (OMO) y Claude Code al iniciar sesión.
 > **TODOS los agentes deben leer este archivo completo antes de ejecutar cualquier tarea.**
 
@@ -63,9 +63,11 @@ OhMyOpenCode (OMO)           ← Orquestador central
     └── OpenCode (runtime)
           ├── Claude Sonnet 4.5   ← Generador (PHP/SQL/XML)
           ├── Gemini 2.5 Pro      ← Revisor + Documentador
-          └── Antigravity Python  ← QA + Testing automático
+          ├── PHPUnit             ← QA principal (PHP tests)
+          └── pytest + lxml       ← QA específico (XML validation)
 
 GitHub                       ← Control de versiones obligatorio
+Composer                     ← Gestor de dependencias PHP
 Dolibarr ERP v20-21         ← Sistema objetivo de implementación
 SAT SPPLD Portal            ← Destino final del XML generado
 ```
@@ -263,9 +265,12 @@ $monto_regex = '/^\d{1,12}(\.\d{1,2})?$/';
 
 ---
 
-## 6. Agente QA — Antigravity / Hook PostToolUse
+## 6. Agente QA — PHPUnit + pytest / Hook PostToolUse
 
-**Herramienta:** `pip install antigravity` (Python)
+**Herramientas:** 
+- **PHPUnit** (principal) — Tests PHP unitarios e integración
+- **pytest + lxml** (específico) — Validación XML contra XSD del SAT
+
 **Disparado por:** Hook `PostToolUse` de OMO — automático tras cada generación
 **Rama:** `qa/tests`
 
@@ -273,86 +278,244 @@ $monto_regex = '/^\d{1,12}(\.\d{1,2})?$/';
 
 Ejecutar pruebas automáticas cada vez que el Generador produce un archivo. El QA **no espera** — corre inmediatamente y reporta.
 
+**División del trabajo:**
+- Archivos `.php` → PHPUnit se ejecuta automáticamente
+- Archivos `.xml` → pytest se ejecuta automáticamente
+
 ### 6.2 Suite de pruebas requerida
 
-#### Tests de base de datos
-```python
-# tests/test_extrafields.py
-import antigravity
+#### Tests PHPUnit — Validaciones PHP (80% del QA)
 
-def test_extrafields_exist():
-    """Verificar que los extrafields PLD existen en la BD"""
-    db = antigravity.connect_dolibarr()
-    required_fields = [
-        'pld_curp', 'pld_rfc', 'pld_identificacion_tipo',
-        'pld_identificacion_numero', 'pld_nacionalidad',
-        'pld_pais_residencia', 'pld_actividad_economica'
-    ]
-    for field in required_fields:
-        assert db.extrafield_exists('socpeople', field), \
-            f"Extrafield faltante: {field}"
+```php
+<?php
+// tests/Unit/CURPValidationTest.php
+use PHPUnit\Framework\TestCase;
+require_once __DIR__ . '/../../htdocs/custom/modulecompliancepld/class/pldvalidator.class.php';
 
-def test_curp_validation():
-    """Validar regex CURP con casos conocidos"""
-    valid_curps = ['TESE010101MDFSTR00', 'GOGA850315HDFNZR07']
-    invalid_curps = ['1234567890ABCDEF', 'CORTO', '']
-    for curp in valid_curps:
-        assert validate_curp(curp), f"CURP válida rechazada: {curp}"
-    for curp in invalid_curps:
-        assert not validate_curp(curp), f"CURP inválida aceptada: {curp}"
+class CURPValidationTest extends TestCase
+{
+    private $validator;
+
+    protected function setUp(): void
+    {
+        $this->validator = new PLDValidator();
+    }
+
+    public function testCURPValida()
+    {
+        $valid_curps = ['TESE010101MDFSTR00', 'GOGA850315HDFNZR07'];
+        foreach ($valid_curps as $curp) {
+            $this->assertTrue(
+                $this->validator->validarCURP($curp),
+                "CURP válida rechazada: {$curp}"
+            );
+        }
+    }
+
+    public function testCURPInvalida()
+    {
+        $invalid_curps = ['1234567890ABCDEF', 'CORTO', '', 'TESE01010'];
+        foreach ($invalid_curps as $curp) {
+            $this->assertFalse(
+                $this->validator->validarCURP($curp),
+                "CURP inválida aceptada: {$curp}"
+            );
+        }
+    }
+}
 ```
 
-#### Tests de generación XML
-```python
-# tests/test_xml_sat.py
-def test_xml_schema_validation():
-    """Validar XML contra esquema XSD del SAT"""
-    xml_file = 'xml-samples/aviso_test.xml.sample'
-    xsd_file = 'schemas/sppld_schema.xsd'
-    assert validate_xml_against_xsd(xml_file, xsd_file), \
-        "XML no cumple esquema XSD del SAT"
+```php
+<?php
+// tests/Unit/UmbralesTest.php
+use PHPUnit\Framework\TestCase;
+require_once __DIR__ . '/../../htdocs/custom/modulecompliancepld/class/compliancepld.class.php';
 
-def test_xml_encoding():
+class UmbralesTest extends TestCase
+{
+    public function testUmbralVehiculoNuevo()
+    {
+        $pld = new CompliancePLD();
+        
+        // >= $250,000 debe generar alerta
+        $this->assertTrue($pld->debeGenerarAviso(250000, 'vehiculo_nuevo'));
+        
+        // < $250,000 NO debe generar alerta
+        $this->assertFalse($pld->debeGenerarAviso(249999, 'vehiculo_nuevo'));
+    }
+
+    public function testUmbralVehiculoUsado()
+    {
+        $pld = new CompliancePLD();
+        
+        // >= $100,000 debe generar alerta
+        $this->assertTrue($pld->debeGenerarAviso(100000, 'vehiculo_usado'));
+        
+        // < $100,000 NO debe generar alerta
+        $this->assertFalse($pld->debeGenerarAviso(99999, 'vehiculo_usado'));
+    }
+}
+```
+
+```php
+<?php
+// tests/Integration/ExtrafieldsTest.php
+use PHPUnit\Framework\TestCase;
+require_once __DIR__ . '/../../htdocs/master.inc.php';
+
+class ExtrafieldsTest extends TestCase
+{
+    private $db;
+
+    protected function setUp(): void
+    {
+        global $db;
+        $this->db = $db;
+    }
+
+    public function testExtrafieldsExisten()
+    {
+        $required_fields = [
+            'pld_curp', 'pld_rfc', 'pld_identificacion_tipo',
+            'pld_identificacion_numero', 'pld_nacionalidad',
+            'pld_pais_residencia', 'pld_actividad_economica'
+        ];
+
+        $sql = "SELECT attrname FROM llx_extrafields WHERE elementtype = 'socpeople'";
+        $result = $this->db->query($sql);
+        
+        $existing_fields = [];
+        while ($obj = $this->db->fetch_object($result)) {
+            $existing_fields[] = $obj->attrname;
+        }
+
+        foreach ($required_fields as $field) {
+            $this->assertContains(
+                $field,
+                $existing_fields,
+                "Extrafield faltante: {$field}"
+            );
+        }
+    }
+}
+```
+
+#### Tests pytest — Validación XML (20% del QA)
+
+```python
+# tests/XML/test_xml_schema.py
+import pytest
+from lxml import etree
+import os
+
+def test_xml_valido_contra_xsd():
+    """Validar XML generado contra esquema XSD del SAT"""
+    xml_path = 'xml-samples/aviso_test.xml.sample'
+    xsd_path = 'schemas/sppld_sat.xsd'
+    
+    assert os.path.exists(xml_path), f"XML no encontrado: {xml_path}"
+    assert os.path.exists(xsd_path), f"XSD no encontrado: {xsd_path}"
+    
+    xml_doc = etree.parse(xml_path)
+    xsd_doc = etree.XMLSchema(file=xsd_path)
+    
+    assert xsd_doc.validate(xml_doc), \
+        f"XML no cumple esquema XSD del SAT: {xsd_doc.error_log}"
+
+def test_xml_encoding_utf8():
     """Verificar que el XML está en UTF-8"""
-    xml_content = load_xml('xml-samples/aviso_test.xml.sample')
-    assert xml_content.startswith('<?xml version="1.0" encoding="UTF-8"')
+    xml_path = 'xml-samples/aviso_test.xml.sample'
+    
+    with open(xml_path, 'rb') as f:
+        content = f.read()
+        assert content.startswith(b'<?xml version="1.0" encoding="UTF-8"'), \
+            "XML no tiene encoding UTF-8 declarado"
+
+def test_xml_namespace_correcto():
+    """Verificar que el XML tiene el namespace del SAT"""
+    xml_path = 'xml-samples/aviso_test.xml.sample'
+    
+    xml_doc = etree.parse(xml_path)
+    root = xml_doc.getroot()
+    
+    # El namespace exacto dependerá del XSD del SAT
+    # Este es un ejemplo genérico
+    assert root.nsmap is not None, "XML sin namespace definido"
 ```
 
-#### Tests de umbrales
-```python
-# tests/test_umbrales_pld.py
-def test_umbral_vehiculo_nuevo():
-    """Operación >= $250,000 debe generar alerta"""
-    assert debe_generar_aviso(monto=250000, tipo='vehiculo_nuevo') == True
-    assert debe_generar_aviso(monto=249999, tipo='vehiculo_nuevo') == False
+### 6.3 Configuración de phpunit.xml
 
-def test_umbral_vehiculo_usado():
-    """Operación >= $100,000 en usado debe generar alerta"""
-    assert debe_generar_aviso(monto=100000, tipo='vehiculo_usado') == True
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="tests/bootstrap.php"
+         colors="true"
+         verbose="true"
+         stopOnFailure="false">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+    <coverage>
+        <include>
+            <directory suffix=".php">htdocs/custom/modulecompliancepld</directory>
+        </include>
+    </coverage>
+</phpunit>
 ```
 
-### 6.3 Reporte de QA
+### 6.4 Reporte de QA
 
 ```
 QA Report — [timestamp]
 ========================
-Tests ejecutados: XX
-✅ Pasaron: XX
-❌ Fallaron: XX
-⚠️  Warnings: XX
+PHPUnit Tests:
+  Tests ejecutados: XX
+  ✅ Pasaron: XX
+  ❌ Fallaron: XX
+  ⚠️  Warnings: XX
+  Cobertura: XX%
+
+pytest XML Tests:
+  Tests ejecutados: X
+  ✅ Pasaron: X
+  ❌ Fallaron: X
 
 Archivos analizados:
-- [archivo]: PASS / FAIL
-  [detalle del fallo si aplica]
+- [archivo.php]: PASS / FAIL
+- [archivo.xml]: PASS / FAIL (validación XSD)
 
-Cobertura estimada: XX%
+Estado general: PASS / FAIL
 ```
 
-### 6.4 Criterio de aceptación
+### 6.5 Criterio de aceptación
 
-- **0 tests fallidos** para proceder a revisión de compliance
-- **Cobertura mínima:** 80% en módulos de validación de datos
+- **0 tests fallidos** en PHPUnit para proceder a revisión de compliance
+- **0 tests fallidos** en pytest para XML generado
+- **Cobertura mínima:** 80% en módulos de validación de datos PHP
 - Los warnings no bloquean, pero se documentan
+
+### 6.6 Comandos para ejecutar tests
+
+```bash
+# Ejecutar todos los tests PHPUnit
+composer test
+
+# Ejecutar solo tests unitarios
+./vendor/bin/phpunit tests/Unit
+
+# Ejecutar tests de integración
+./vendor/bin/phpunit tests/Integration
+
+# Ejecutar tests XML con pytest
+pytest tests/XML/ -v
+
+# Generar reporte de cobertura
+./vendor/bin/phpunit --coverage-html coverage/
+```
 
 ---
 

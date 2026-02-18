@@ -1,0 +1,7 @@
+{
+    "name": "petu34/dolibarr-pld-mx",
+    "type": "project",
+    "require-dev": {
+        "phpunit/phpunit": "^13.0"
+    }
+}
