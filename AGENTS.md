@@ -1,5 +1,5 @@
 # AGENTS.md — Reglas del Proyecto PLD Dolibarr México
-> **Versión:** 1.0 | **Última actualización:** Febrero 2026
+> **Versión:** 1.2 | **Última actualización:** Febrero 2026
 > Este archivo es leído automáticamente por OhMyOpenCode (OMO) y Claude Code al iniciar sesión.
 > **TODOS los agentes deben leer este archivo completo antes de ejecutar cualquier tarea.**
 
@@ -848,6 +848,9 @@ Datos de la operación:
 Datos del beneficiario final (si aplica):
   - Mismos campos que cliente
 ```
+#### Documentos regulatorios de referencia
+
+- `/docs/regulatorio/RESOLUCION-Avisos.pdf` — Especificación oficial de campos requeridos por LFPIORPI
 
 ### 11.3 Catálogos SAT utilizados en el XML
 
