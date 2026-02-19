@@ -1,25 +1,28 @@
-# Schemas - Esquemas XSD del SAT
+# Schemas - Esquemas XSD del SAT (UIF/SHCP)
 
 ## Descripción
 
-Esquemas XSD oficiales publicados por el **SAT** para validación de archivos XML del portal SPPLD.
+Esquemas XSD oficiales publicados por la **UIF (Unidad de Inteligencia Financiera)** de la SHCP para validación de archivos XML del portal SPPLD.
 
-## Archivos Esperados
+## Archivos Disponibles
 
 ```
 /schemas/
-├── sppld_sat.xsd              # Esquema principal SPPLD
-├── catalogos_sat.xsd          # Catálogos (actividades vulnerables, formas de pago, etc.)
+├── veh.xsd         # Fracción VIII  - Compraventa de vehículos (PRIORIDAD)
+├── inmu.xsd        # Fracción XV    - Derechos de uso/goce de inmuebles
+├── ssprof2.xsd     # Fracción XI    - Servicios profesionales
 └── README.md
 ```
 
-## Fuente Oficial
+| Archivo | Actividad vulnerable | Fracción LFPIORPI | Namespace | Estado |
+|---|---|---|---|---|
+| **veh.xsd** | Compraventa de vehículos | Fracc. VIII | `http://www.uif.shcp.gob.mx/recepcion/veh` | Activo - Fase 1 |
+| inmu.xsd | Derechos uso/goce inmuebles | Fracc. XV | `http://www.uif.shcp.gob.mx/recepcion/inm` | Referencia futura |
+| ssprof2.xsd | Servicios profesionales | Fracc. XI | `http://www.uif.shcp.gob.mx/recepcion/spr` | Referencia futura |
 
-Los esquemas XSD deben descargarse del portal oficial del SAT:
+## Estructura Común (~80% compartido entre los 3 XSD)
 
-**URL**: https://www.sat.gob.mx/aplicacion/operacion/...
-
-**IMPORTANTE**: Estos archivos NO se incluyen en el repositorio por defecto. Deben descargarse de la fuente oficial del SAT.
+Los tres esquemas comparten la misma estructura envolvente (persona_aviso, domicilio, telefono, beneficiario, liquidacion). Solo difiere el bloque `detalle_operaciones`, que es específico de cada actividad vulnerable. Ver análisis completo en `docs/plans/fase1-extrafields-plan.md`.
 
 ## Uso
 
@@ -27,16 +30,16 @@ Los esquemas se utilizan en:
 
 1. **Validación automática** (pytest):
    ```python
-   xsd_doc = etree.XMLSchema(file='schemas/sppld_sat.xsd')
-   xml_doc = etree.parse('xml-samples/aviso_test.xml.sample')
+   xsd_doc = etree.XMLSchema(file='schemas/veh.xsd')
+   xml_doc = etree.parse('xml-samples/aviso_veh_test.xml.sample')
    assert xsd_doc.validate(xml_doc)
    ```
 
 2. **Generación de XML** (PHP):
    - Verificar campos obligatorios
-   - Validar tipos de datos
+   - Validar tipos de datos y regex (usar el más estricto de los 3 XSD)
    - Verificar estructura jerárquica
 
 ## Actualización
 
-Los esquemas XSD del SAT se actualizan periódicamente. Verificar versión vigente antes de cada envío oficial.
+Los esquemas XSD de la UIF se actualizan periódicamente. Verificar versión vigente antes de cada envío oficial.

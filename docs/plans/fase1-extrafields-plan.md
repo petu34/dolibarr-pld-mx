@@ -1,14 +1,104 @@
 # Plan Fase 1: PLD Vehículos - Implementación de Extrafields en Dolibarr
 
-## 🎯 Objetivo de la Fase 1
+## Objetivo de la Fase 1
 
 Agregar los campos mínimos necesarios mediante **extrafields** (campos adicionales) en Dolibarr para cumplir con los requerimientos de la **Fracción VIII del Art. 17 LFPIORPI** (Compra y venta de vehículos), sin crear tablas nuevas.
 
 ---
 
-## 📊 Alcance de la Fase 1
+## Análisis de Esquemas XSD del SAT
+
+### Archivos XSD disponibles
+
+| Archivo | Actividad vulnerable | Fracción LFPIORPI | Namespace |
+|---|---|---|---|
+| **`schemas/veh.xsd`** | Compraventa de vehículos | Fracc. VIII | `http://www.uif.shcp.gob.mx/recepcion/veh` |
+| `schemas/inmu.xsd` | Derechos de uso/goce de inmuebles | Fracc. XV | `http://www.uif.shcp.gob.mx/recepcion/inm` |
+| `schemas/ssprof2.xsd` | Servicios profesionales | Fracc. XI | `http://www.uif.shcp.gob.mx/recepcion/spr` |
+
+> **Prioridad:** `veh.xsd` es el esquema principal de esta implementación. Los otros dos se incluyen como referencia para diseñar extrafields reutilizables.
+
+### Estructura común a los 3 XSD (~80% compartido)
+
+Los tres esquemas comparten una estructura envolvente idéntica:
+
+```
+archivo -> informe[] ->
+  |-- mes_reportado (YYYYMM)
+  |-- sujeto_obligado (clave_so, clave_actividad, exento?)
+  +-- aviso[] ->
+        |-- referencia_aviso
+        |-- modificatorio? (folio, descripcion)
+        |-- prioridad (1|2)
+        |-- alerta (tipo_alerta, descripcion_alerta?)
+        |-- persona_aviso[] ->
+        |     |-- tipo_persona (persona_fisica | persona_moral | fideicomiso)
+        |     |-- tipo_domicilio? (nacional | extranjero)
+        |     +-- telefono? (clave_pais, numero, correo)
+        |-- dueno_beneficiario[] ->
+        |     +-- tipo_persona_simple (PF | PM | fideicomiso - datos reducidos)
+        +-- detalle_operaciones ->              <-- UNICO BLOQUE QUE DIFIERE
+              +-- datos_operacion[] ->            POR ACTIVIDAD VULNERABLE
+                    +-- (estructura especifica por fraccion)
+```
+
+### Campos específicos por actividad (solo `detalle_operaciones`)
+
+**VEH - Fracción VIII (vehículos):**
+```
+datos_operacion -> fecha_operacion, codigo_postal, tipo_operacion,
+  tipo_vehiculo[] (terrestre | maritimo | aereo) ->
+    marca_fabricante, modelo, anio, vin?, repuve?, placas?, nivel_blindaje
+  datos_liquidacion[] -> fecha_pago, forma_pago, instrumento_monetario?, moneda, monto
+```
+
+**INM - Fracción XV (inmuebles):**
+```
+datos_operacion -> fecha_operacion, tipo_operacion, figura_cliente, figura_so,
+  datos_contraparte[]?,
+  caracteristicas_inmueble[] -> tipo, valor_pactado, direccion, dimensiones, folio_real,
+  contrato_instrumento_publico (instrumento_publico | contrato),
+  datos_liquidacion[]
+```
+
+**SPR - Fracción XI (servicios profesionales):**
+```
+datos_operacion -> fecha_operacion,
+  tipo_actividad (10 subtipos: compra_venta_inmuebles, cesion_derechos,
+    admin_recursos, constitucion_sociedades, aportaciones, fusion, escision,
+    admin_PM, constitucion_fideicomiso, compra_venta_entidades),
+  datos_operacion_financiera[]
+```
+
+### Clasificación de reutilización por tabla Dolibarr
+
+| Tabla extrafields | % Común (3 XSD) | Notas |
+|---|---|---|
+| `llx_socpeople_extrafields` | **100%** | Persona física/moral idéntica en los 3 esquemas |
+| `llx_societe_extrafields` | **~95%** | Solo `clave_actividad` cambia (VEH/INM/SPR) |
+| `llx_product_extrafields` | **0%** - 100% específico | Campos de vehículo solo en VEH |
+| `llx_facture_extrafields` | **~70%** | Datos de operación parcialmente comunes |
+| `llx_paiement_extrafields` | **~90%** | `datos_liquidacion` casi idéntico |
+| `llx_commande_extrafields` | **~70%** | Pre-validación genérica reutilizable |
+
+### Discrepancias de regex entre XSD (usar el más estricto)
+
+| Tipo | VEH (simple) | INM / SPR (estricto) | Recomendación |
+|---|---|---|---|
+| **CURP** | `[A-Z]{4}\d{6}[MH][A-Z]{5}[0-9]{2}` | Valida fecha real + entidad federativa | **Usar SPR** (más estricto) |
+| **RFC física** | `[A-ZÑ&]{4}\d{6}[A-Z0-9]{3}` | Valida fecha + permite `%+` | **Usar SPR** con `Ñ&%+` |
+| **RFC moral** | `[A-ZÑ&]{3}\d{6}[A-Z0-9]{3}` | Valida fecha + permite `%+` | **Usar SPR** con `Ñ&%+` |
+| **fecha_type** | `\d{8}` (cualquier 8 dígitos) | Valida día/mes real (28/30/31) | **Usar INM/SPR** (valida fechas reales) |
+| **nombre_type** | `[A-ZÑ ]{1,200}` | INM permite `.,` adicional | **Usar INM** (más permisivo en nombres) |
+
+> **Regla de implementación:** para cada tipo compartido, usar el regex que pase validación en los 3 XSD. Esto evita tener que cambiar validadores al agregar nuevas actividades vulnerables.
+
+---
+
+## Alcance de la Fase 1
 
 ### Actividad Vulnerable Específica
+
 **Fracción VIII - Comercialización o distribución habitual o profesional de vehículos**
 
 **Umbrales 2026:**
@@ -17,493 +107,539 @@ Agregar los campos mínimos necesarios mediante **extrafields** (campos adiciona
 - **Restricción efectivo**: 3,100 UMAs = $363,661 MXN
 
 ### Entidades Dolibarr Afectadas
-1. ✅ **llx_societe** (Terceros/Clientes)
-2. ✅ **llx_socpeople** (Contactos - representantes legales)
-3. ✅ **llx_product** (Vehículos como productos)
-4. ✅ **llx_facture** (Facturas de venta)
-5. ✅ **llx_paiement** (Formas de pago)
-6. ✅ **llx_commande** (Pedidos - opcional para seguimiento)
+
+1. **llx_societe** (Terceros/Clientes) - reutilizable 95%
+2. **llx_socpeople** (Contactos - representantes legales) - reutilizable 100%
+3. **llx_product** (Vehículos como productos) - específico VEH
+4. **llx_facture** (Facturas de venta) - reutilizable 70%
+5. **llx_paiement** (Formas de pago) - reutilizable 90%
+6. **llx_commande** (Pedidos - opcional para seguimiento) - reutilizable 70%
 
 ---
 
-## 📋 PARTE 1: Extrafields para llx_societe (Clientes)
+## PARTE 1: Extrafields para llx_societe (Clientes) - 95% reutilizable
+
+> Estos campos mapean directamente a `persona_aviso -> tipo_persona` en los 3 XSD.
 
 ### 1.1 Identificación Básica del Cliente
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_tipo_persona** | select | - | ✅ Sí | Física / Moral / Fideicomiso |
-| **pld_curp** | varchar | 18 | ⚠️ Si es PF | CURP (18 caracteres) |
-| **pld_rfc_validado** | varchar | 13 | ✅ Sí | RFC validado contra SAT |
-| **pld_fecha_nacimiento** | date | - | ⚠️ Si es PF | Fecha nacimiento (PF) |
-| **pld_fecha_constitucion** | date | - | ⚠️ Si es PM | Fecha constitución (PM) |
-| **pld_nacionalidad** | varchar | 50 | ✅ Sí | Nacionalidad principal |
-| **pld_pais_nacimiento** | varchar | 50 | ⚠️ Si es PF | País nacimiento |
-| **pld_estado_nacimiento** | varchar | 50 | ⚠️ Si es PF | Entidad federativa nacimiento |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_tipo_persona** | select | - | Si | `tipo_persona` (choice) | Física / Moral / Fideicomiso |
+| **pld_curp** | varchar | 18 | Si es PF | `curp_type` | CURP (18 caracteres) |
+| **pld_rfc_validado** | varchar | 13 | Si | `rfc_fisica_type` / `rfc_moral_type` | RFC validado |
+| **pld_fecha_nacimiento** | date | - | Si es PF | `fecha_nacimiento` | Fecha nacimiento (PF) |
+| **pld_fecha_constitucion** | date | - | Si es PM | `fecha_constitucion` | Fecha constitución (PM) |
+| **pld_nacionalidad** | varchar | 2 | Si | `pais_nacionalidad` (pais_type) | ISO alpha-2, 2 caracteres |
+| **pld_pais_nacimiento** | varchar | 2 | Si es PF | - (campo complementario) | País nacimiento ISO alpha-2 |
+| **pld_estado_nacimiento** | varchar | 50 | Si es PF | - (campo complementario) | Entidad federativa nacimiento |
 
 ### 1.2 Domicilio Fiscal Detallado
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_calle** | varchar | 100 | ✅ Sí | Nombre de la calle |
-| **pld_numero_exterior** | varchar | 10 | ✅ Sí | Número exterior |
-| **pld_numero_interior** | varchar | 10 | ❌ No | Número interior |
-| **pld_colonia** | varchar | 100 | ✅ Sí | Colonia (catálogo SEPOMEX) |
-| **pld_codigo_postal** | varchar | 5 | ✅ Sí | CP (5 dígitos) |
-| **pld_municipio** | varchar | 100 | ✅ Sí | Municipio/Alcaldía |
-| **pld_estado** | select | - | ✅ Sí | Entidad federativa (catálogo) |
-| **pld_pais** | select | - | ✅ Sí | País (por defecto: México) |
+> Mapea a `tipo_domicilio -> nacional` / `extranjero` en los 3 XSD.
+
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_calle** | varchar | 100 | Si | `calle` (direccion_1-100_type) | Nombre de la calle |
+| **pld_numero_exterior** | varchar | 56 | Si | `numero_exterior` (direccion_1-56_type) | Número exterior |
+| **pld_numero_interior** | varchar | 40 | No | `numero_interior` (direccion_1-40_type) | Número interior |
+| **pld_colonia** | varchar | 50 | Si | `colonia` (direccion_1-50_type) | Colonia |
+| **pld_codigo_postal** | varchar | 5 | Si | `codigo_postal` (cp_type) | CP (5 dígitos) |
+| **pld_municipio** | varchar | 100 | Si | - (campo complementario) | Municipio/Alcaldía |
+| **pld_estado** | select | - | Si | - (campo complementario) | Entidad federativa (catálogo) |
+| **pld_pais** | varchar | 2 | Si | `pais` (pais_type) | País ISO alpha-2. Default: MX |
+| **pld_es_domicilio_extranjero** | boolean | - | Si | choice nacional/extranjero | Determina qué bloque XSD usar |
+| **pld_estado_provincia_ext** | varchar | 100 | Si ext | `estado_provincia` (extranjero) | Estado/provincia extranjero |
+| **pld_ciudad_poblacion_ext** | varchar | 100 | Si ext | `ciudad_poblacion` (extranjero) | Ciudad extranjero |
 
 ### 1.3 Actividad Económica
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_actividad_economica** | varchar | 10 | ✅ Sí | Clave actividad SAT |
-| **pld_giro_mercantil** | text | - | ✅ Sí | Descripción del giro |
-| **pld_ocupacion** | varchar | 100 | ⚠️ Si es PF | Profesión u ocupación |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_actividad_economica** | varchar | 7 | Si | `actividad_economica` (digito_7_type) | Clave SCIAN 7 dígitos |
+| **pld_giro_mercantil** | varchar | 7 | Si es PM | `giro_mercantil` (digito_7_type) | Giro mercantil PM 7 dígitos |
+| **pld_ocupacion** | varchar | 100 | Si es PF | - (campo complementario) | Profesión u ocupación |
 
 ### 1.4 Datos Constitutivos (Personas Morales)
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_numero_escritura** | varchar | 20 | ⚠️ Si es PM | Escritura constitutiva |
-| **pld_fecha_escritura** | date | - | ⚠️ Si es PM | Fecha escritura |
-| **pld_notario_numero** | int | - | ⚠️ Si es PM | Número de notario |
-| **pld_notario_nombre** | varchar | 150 | ⚠️ Si es PM | Nombre del notario |
-| **pld_notario_estado** | varchar | 50 | ⚠️ Si es PM | Estado del notario |
-| **pld_folio_mercantil** | varchar | 50 | ⚠️ Si es PM | Folio RPP |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_denominacion_razon** | varchar | 254 | Si es PM | `denominacion_razon` (denominacion_razon_type) | Razón social formal para XML |
+| **pld_numero_escritura** | varchar | 20 | Si es PM | - (campo complementario) | Escritura constitutiva |
+| **pld_fecha_escritura** | date | - | Si es PM | - (campo complementario) | Fecha escritura |
+| **pld_notario_numero** | varchar | 8 | Si es PM | - (campo complementario) | Número de notario |
+| **pld_notario_nombre** | varchar | 150 | Si es PM | - (campo complementario) | Nombre del notario |
+| **pld_notario_estado** | varchar | 50 | Si es PM | - (campo complementario) | Estado del notario |
+| **pld_folio_mercantil** | varchar | 200 | Si es PM | - (campo complementario) | Folio RPP |
 
-### 1.5 Control PLD
+### 1.5 Datos de Fideicomiso
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_cliente_identificado** | boolean | - | ✅ Sí | Ya se identificó |
-| **pld_fecha_identificacion** | date | - | ✅ Sí | Fecha identificación |
-| **pld_expediente_completo** | boolean | - | ✅ Sí | Expediente completo |
-| **pld_es_pep** | boolean | - | ✅ Sí | Persona Expuesta Políticamente |
-| **pld_relacion_pep** | varchar | 200 | ❌ No | Parentesco con PEP |
-| **pld_tiene_beneficiario** | boolean | - | ✅ Sí | Tiene beneficiario controlador |
-| **pld_observaciones** | text | - | ❌ No | Observaciones generales |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_identificador_fideicomiso** | varchar | 40 | Si fideicomiso | `identificador_fideicomiso` (descripcion_1-40_type) | Identificador del fideicomiso |
+
+### 1.6 Control PLD
+
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_cliente_identificado** | boolean | - | Si | - (control interno) | Ya se identificó |
+| **pld_fecha_identificacion** | date | - | Si | - (control interno) | Fecha identificación |
+| **pld_expediente_completo** | boolean | - | Si | - (control interno) | Expediente completo |
+| **pld_es_pep** | boolean | - | Si | - (control interno) | Persona Expuesta Políticamente |
+| **pld_relacion_pep** | varchar | 200 | No | - (control interno) | Parentesco con PEP |
+| **pld_tiene_beneficiario** | boolean | - | Si | presencia de `dueno_beneficiario` | Tiene beneficiario controlador |
+| **pld_observaciones** | text | - | No | - (control interno) | Observaciones generales |
+
+**Subtotal societe: ~33 extrafields**
 
 ---
 
-## 👤 PARTE 2: Extrafields para llx_socpeople (Contactos)
+## PARTE 2: Extrafields para llx_socpeople (Contactos) - 100% reutilizable
+
+> Mapean a `persona_fisica`, `representante_apoderado` y `dueno_beneficiario -> persona_fisica_simple` en los 3 XSD.
 
 ### 2.1 Datos Personales Completos
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_apellido_paterno** | varchar | 50 | ✅ Sí | Apellido paterno |
-| **pld_apellido_materno** | varchar | 50 | ✅ Sí | Apellido materno |
-| **pld_nombre_completo** | varchar | 150 | ✅ Sí | Nombre(s) completo(s) |
-| **pld_curp** | varchar | 18 | ✅ Sí | CURP del contacto |
-| **pld_rfc** | varchar | 13 | ✅ Sí | RFC del contacto |
-| **pld_fecha_nacimiento** | date | - | ✅ Sí | Fecha nacimiento |
-| **pld_nacionalidad** | varchar | 50 | ✅ Sí | Nacionalidad |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_apellido_paterno** | varchar | 200 | Si | `apellido_paterno` (nombre_type) | Apellido paterno |
+| **pld_apellido_materno** | varchar | 200 | Si | `apellido_materno` (nombre_type) | Apellido materno |
+| **pld_nombre_completo** | varchar | 200 | Si | `nombre` (nombre_type) | Nombre(s) completo(s) |
+| **pld_curp** | varchar | 18 | Si | `curp_type` | CURP del contacto |
+| **pld_rfc** | varchar | 13 | Si | `rfc_fisica_type` | RFC del contacto |
+| **pld_fecha_nacimiento** | date | - | Si | `fecha_nacimiento` (fecha_type) | Fecha nacimiento |
+| **pld_nacionalidad** | varchar | 2 | Si | `pais_nacionalidad` (pais_type) | ISO alpha-2 |
+| **pld_actividad_economica** | varchar | 7 | Si | `actividad_economica` (digito_7_type) | Clave SCIAN 7 dígitos |
 
 ### 2.2 Identificación Oficial
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_tipo_identificacion** | select | - | ✅ Sí | INE/IFE/Pasaporte/FM3/Cédula |
-| **pld_numero_identificacion** | varchar | 20 | ✅ Sí | Número de identificación |
-| **pld_vigencia_identificacion** | date | - | ✅ Sí | Fecha vigencia |
-| **pld_autoridad_emite** | varchar | 100 | ✅ Sí | Autoridad emisora |
-| **pld_clave_elector** | varchar | 18 | ⚠️ Si INE | Clave de elector (INE) |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_tipo_identificacion** | select | - | Si | - (control interno) | INE/IFE/Pasaporte/FM3/Cédula |
+| **pld_numero_identificacion** | varchar | 20 | Si | - (control interno) | Número de identificación |
+| **pld_vigencia_identificacion** | date | - | Si | - (control interno) | Fecha vigencia |
+| **pld_autoridad_emite** | varchar | 100 | Si | - (control interno) | Autoridad emisora |
+| **pld_clave_elector** | varchar | 18 | Si INE | - (control interno) | Clave de elector (INE) |
 
 ### 2.3 Representación Legal
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_es_representante_legal** | boolean | - | ✅ Sí | Es representante legal |
-| **pld_tipo_representacion** | select | - | ⚠️ Si rep | Poder general/especial/ambos |
-| **pld_escritura_poder** | varchar | 20 | ⚠️ Si rep | Escritura del poder |
-| **pld_fecha_poder** | date | - | ⚠️ Si rep | Fecha del poder |
-| **pld_notario_poder** | varchar | 150 | ⚠️ Si rep | Notario que dio fe |
+> Mapea a `representante_apoderado` / `apoderado_delegado` en los 3 XSD.
+
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_es_representante_legal** | boolean | - | Si | presencia de `representante_apoderado` | Es representante legal |
+| **pld_tipo_representacion** | select | - | Si rep | - (control interno) | Poder general/especial/ambos |
+| **pld_escritura_poder** | varchar | 20 | Si rep | - (control interno) | Escritura del poder |
+| **pld_fecha_poder** | date | - | Si rep | - (control interno) | Fecha del poder |
+| **pld_notario_poder** | varchar | 150 | Si rep | - (control interno) | Notario que dio fe |
+
+### 2.4 Teléfono y contacto (bloque `telefono` del XSD)
+
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_clave_pais_telefono** | varchar | 2 | No | `clave_pais` (pais_type) | Código país teléfono, ISO alpha-2 |
+| **pld_numero_telefono** | varchar | 12 | No | `numero_telefono` (numero_telefono_type) | 10-12 dígitos |
+| **pld_correo_electronico** | varchar | 60 | No | `correo_electronico` (correo_electronico_type) | Email formato SAT |
+
+**Subtotal socpeople: ~22 extrafields**
 
 ---
 
-## 🚗 PARTE 3: Extrafields para llx_product (Vehículos)
+## PARTE 3: Extrafields para llx_product (Vehículos) - Específico VEH
+
+> Mapean a `tipo_vehiculo` dentro de `detalle_operaciones` en `veh.xsd` exclusivamente. NO son reutilizables para INM ni SPR.
 
 ### 3.1 Identificación del Vehículo
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_tipo_vehiculo** | select | - | ✅ Sí | Terrestre/Aéreo/Marítimo |
-| **pld_subtipo** | varchar | 50 | ✅ Sí | Auto/Camión/Motocicleta/Avión/etc |
-| **pld_marca** | varchar | 50 | ✅ Sí | Marca del vehículo |
-| **pld_submarca** | varchar | 50 | ❌ No | Submarca/línea |
-| **pld_modelo** | varchar | 50 | ✅ Sí | Modelo |
-| **pld_anio_modelo** | int | 4 | ✅ Sí | Año modelo |
-| **pld_version** | varchar | 100 | ❌ No | Versión específica |
-| **pld_color** | varchar | 30 | ✅ Sí | Color del vehículo |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_tipo_vehiculo** | select | - | Si | choice terrestre/maritimo/aereo | Terrestre/Marítimo/Aéreo |
+| **pld_marca** | varchar | 40 | Si | `marca_fabricante` (descveh_1-40_type) | Marca del vehículo |
+| **pld_modelo** | varchar | 40 | Si | `modelo` (descveh_1-40_type) | Modelo |
+| **pld_anio_modelo** | varchar | 4 | Si | `anio` (digito_4_type) | Año modelo (4 dígitos) |
 
 ### 3.2 Números de Serie e Identificadores
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_numero_serie_vin** | varchar | 17 | ✅ Sí | VIN (17 caracteres) |
-| **pld_numero_motor** | varchar | 30 | ✅ Sí | Número de motor |
-| **pld_numero_pedimento** | varchar | 20 | ⚠️ Importado | Pedimento aduanal |
-| **pld_placas** | varchar | 10 | ❌ No | Placas actuales (si aplica) |
-| **pld_numero_registro** | varchar | 30 | ⚠️ Aéreo/Mar | Matrícula aérea/marítima |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_vin** | varchar | 17 | Si terrestre | `vin` (referencia_17_type) | VIN exactamente 17 chars |
+| **pld_repuve** | varchar | 8 | No | `repuve` (repuve_8_type) | Clave REPUVE 8 chars |
+| **pld_placas** | varchar | 12 | No | `placas` (placas_1-12_type) | Placas 1-12 chars |
+| **pld_nivel_blindaje** | varchar | 1 | Si | `nivel_blindaje` (digito_1_type) | 1 dígito |
+| **pld_numero_serie** | varchar | 20 | Si maritimo/aereo | `numero_serie` (numero_serie_1-20_type) | Serie marítimo/aéreo |
+| **pld_bandera** | varchar | 2 | No | `bandera` (pais_type) | País bandera ISO alpha-2 |
+| **pld_matricula** | varchar | 12 | No | `matricula` (placas_1-12_type) | Matrícula aérea/marítima |
 
 ### 3.3 Origen y Estado
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_origen** | select | - | ✅ Sí | Nacional/Importado |
-| **pld_pais_origen** | varchar | 50 | ⚠️ Importado | País fabricación |
-| **pld_estado_vehiculo** | select | - | ✅ Sí | Nuevo/Usado/Seminuevo |
-| **pld_kilometraje** | int | - | ⚠️ Si usado | Kilometraje actual |
-| **pld_uso_destino** | select | - | ✅ Sí | Particular/Comercial/Transporte |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_origen** | select | - | Si | - (control interno) | Nacional/Importado |
+| **pld_pais_origen** | varchar | 2 | Si importado | - (control interno) | País fabricación ISO alpha-2 |
+| **pld_estado_vehiculo** | select | - | Si | - (control interno) | Nuevo/Usado/Seminuevo |
+| **pld_kilometraje** | int | - | Si usado | - (control interno) | Kilometraje actual |
+| **pld_uso_destino** | select | - | Si | - (control interno) | Particular/Comercial/Transporte |
 
-### 3.4 Documentación Legal
+### 3.4 Documentación Legal (vehículos usados)
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_numero_factura_original** | varchar | 30 | ⚠️ Si usado | Factura original |
-| **pld_fecha_factura_original** | date | - | ⚠️ Si usado | Fecha factura original |
-| **pld_propietario_anterior** | varchar | 200 | ⚠️ Si usado | Nombre propietario anterior |
-| **pld_tarjeta_circulacion** | varchar | 20 | ❌ No | Número tarjeta circulación |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_numero_factura_original** | varchar | 30 | Si usado | - (control interno) | Factura original |
+| **pld_fecha_factura_original** | date | - | Si usado | - (control interno) | Fecha factura original |
+| **pld_propietario_anterior** | varchar | 200 | Si usado | - (control interno) | Nombre propietario anterior |
+| **pld_tarjeta_circulacion** | varchar | 20 | No | - (control interno) | Número tarjeta circulación |
+| **pld_numero_pedimento** | varchar | 20 | Si importado | - (control interno) | Pedimento aduanal |
 
 ### 3.5 Valores
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_valor_factura** | decimal | (15,2) | ✅ Sí | Valor facturado |
-| **pld_valor_comercial** | decimal | (15,2) | ✅ Sí | Valor comercial / avalúo |
-| **pld_valor_libro_azul** | decimal | (15,2) | ❌ No | Valor libro azul |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_valor_factura** | decimal | (15,2) | Si | - (control interno) | Valor facturado |
+| **pld_valor_comercial** | decimal | (15,2) | Si | - (control interno) | Valor comercial / avalúo |
+| **pld_valor_libro_azul** | decimal | (15,2) | No | - (control interno) | Valor libro azul |
+
+**Subtotal product: ~24 extrafields**
 
 ---
 
-## 💰 PARTE 4: Extrafields para llx_facture (Facturas)
+## PARTE 4: Extrafields para llx_facture (Facturas) - 70% reutilizable
 
 ### 4.1 Control PLD de la Operación
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_es_actividad_vulnerable** | boolean | - | ✅ Sí | Es actividad vulnerable |
-| **pld_tipo_actividad** | varchar | 5 | ✅ Sí | "VIII" (Fracción LFPIORPI) |
-| **pld_supera_umbral_id** | boolean | - | ✅ Sí | Supera umbral identificación |
-| **pld_supera_umbral_aviso** | boolean | - | ✅ Sí | Supera umbral aviso |
-| **pld_requiere_aviso** | boolean | - | ✅ Sí | Requiere aviso SAT |
-| **pld_tipo_aviso** | select | - | ⚠️ Si req | mensual/24hrs/acumulado |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_es_actividad_vulnerable** | boolean | - | Si | - (control interno) | Es actividad vulnerable |
+| **pld_clave_actividad** | varchar | 3 | Si | `clave_actividad` (VEH/INM/SPR) | Clave de actividad vulnerable |
+| **pld_tipo_operacion** | varchar | 4 | Si | `tipo_operacion` (digito_3-4_type) | Tipo operación del catálogo SAT |
+| **pld_supera_umbral_id** | boolean | - | Si | - (control interno) | Supera umbral identificación |
+| **pld_supera_umbral_aviso** | boolean | - | Si | - (control interno) | Supera umbral aviso |
+| **pld_requiere_aviso** | boolean | - | Si | - (control interno) | Requiere aviso SAT |
+| **pld_tipo_aviso** | select | - | Si req | - (control interno) | mensual/24hrs/acumulado |
 
-### 4.2 Datos de la Operación
+### 4.2 Datos de la Operación (mapeo a `datos_operacion` del XSD)
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_fecha_operacion** | date | - | ✅ Sí | Fecha real operación |
-| **pld_descripcion_operacion** | text | - | ✅ Sí | Descripción detallada |
-| **pld_razon_operacion** | text | - | ✅ Sí | Justificación/motivo |
-| **pld_monto_moneda_nacional** | decimal | (15,2) | ✅ Sí | Monto en MXN |
-| **pld_tipo_cambio_aplicado** | decimal | (10,4) | ⚠️ Si extranjera | Tipo de cambio |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_fecha_operacion** | date | - | Si | `fecha_operacion` (fecha_type) | Fecha real operación (YYYYMMDD) |
+| **pld_codigo_postal_operacion** | varchar | 5 | Si | `codigo_postal` (cp_type) - solo VEH | CP donde ocurre la operación |
+| **pld_descripcion_operacion** | text | - | Si | - (control interno) | Descripción detallada |
+| **pld_razon_operacion** | text | - | Si | - (control interno) | Justificación/motivo |
+| **pld_monto_moneda_nacional** | decimal | (15,2) | Si | - (derivado de monto_operacion) | Monto en MXN |
+| **pld_tipo_cambio_aplicado** | decimal | (10,4) | Si extranjera | - (control interno) | Tipo de cambio |
 
-### 4.3 Acumulación de Operaciones
+### 4.3 Referencia del aviso
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_es_operacion_acumulada** | boolean | - | ✅ Sí | Parte de acumulación 6 meses |
-| **pld_fecha_inicio_acumulacion** | date | - | ⚠️ Si acum | Inicio período |
-| **pld_fecha_fin_acumulacion** | date | - | ⚠️ Si acum | Fin período |
-| **pld_monto_acumulado_total** | decimal | (15,2) | ⚠️ Si acum | Total acumulado |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_referencia_aviso** | varchar | 14 | Si aviso | `referencia_aviso` (referencia_aviso_type) | Ref interna del aviso |
+| **pld_prioridad** | varchar | 1 | Si aviso | `prioridad` (prioridad_type) | 1=Normal, 2=Prioritario |
 
-### 4.4 Control de Avisos
+### 4.4 Alerta
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_aviso_presentado** | boolean | - | ✅ Sí | Ya se presentó aviso |
-| **pld_fecha_presentacion** | date | - | ⚠️ Si pres | Fecha presentación SAT |
-| **pld_folio_aviso** | varchar | 50 | ⚠️ Si pres | Folio del aviso SAT |
-| **pld_mes_reportado** | varchar | 6 | ⚠️ Si pres | YYYYMM reportado |
-| **pld_acuse_sat** | text | - | ⚠️ Si pres | Acuse digital SAT |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_tipo_alerta** | varchar | 4 | Si aviso | `tipo_alerta` (tipo_alerta_type) | Código alerta 3-4 dígitos |
+| **pld_descripcion_alerta** | varchar | 3000 | No | `descripcion_alerta` (descripcion_1-3000_type) | Texto alerta |
 
-### 4.5 Alertas y Excepciones
+### 4.5 Acumulación de Operaciones
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_genera_alerta** | boolean | - | ✅ Sí | Genera alerta interna |
-| **pld_tipo_alerta** | select | - | ⚠️ Si alerta | inusual/lista/patron/otro |
-| **pld_motivo_alerta** | text | - | ⚠️ Si alerta | Razón de la alerta |
-| **pld_requiere_aviso_24hrs** | boolean | - | ✅ Sí | Requiere aviso 24 horas |
-| **pld_razon_24hrs** | text | - | ⚠️ Si 24h | Justificación aviso urgente |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_es_operacion_acumulada** | boolean | - | Si | - (control interno) | Parte de acumulación 6 meses |
+| **pld_fecha_inicio_acumulacion** | date | - | Si acum | - (control interno) | Inicio período |
+| **pld_fecha_fin_acumulacion** | date | - | Si acum | - (control interno) | Fin período |
+| **pld_monto_acumulado_total** | decimal | (15,2) | Si acum | - (control interno) | Total acumulado |
 
----
+### 4.6 Control de Avisos
 
-## 💳 PARTE 5: Extrafields para llx_paiement (Pagos)
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_aviso_presentado** | boolean | - | Si | - (control interno) | Ya se presentó aviso |
+| **pld_fecha_presentacion** | date | - | Si pres | - (control interno) | Fecha presentación SAT |
+| **pld_folio_aviso** | varchar | 14 | Si pres | `folio_modificacion` (folio_modificacion_type) | Folio del aviso SAT |
+| **pld_mes_reportado** | varchar | 6 | Si pres | `mes_reportado` (mes_reportado_type) | YYYYMM reportado |
+| **pld_acuse_sat** | text | - | Si pres | - (control interno) | Acuse digital SAT |
 
-### 5.1 Forma de Pago Detallada
+### 4.7 Modificatorio (correcciones a avisos previos)
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_forma_pago** | select | - | ✅ Sí | Efectivo/Transfer/Cheque/Tarjeta/Otro |
-| **pld_monto_efectivo** | decimal | (15,2) | ✅ Sí | Monto en efectivo |
-| **pld_monto_transferencia** | decimal | (15,2) | ✅ Sí | Monto por transferencia |
-| **pld_monto_cheque** | decimal | (15,2) | ✅ Sí | Monto por cheque |
-| **pld_monto_tarjeta** | decimal | (15,2) | ✅ Sí | Monto por tarjeta |
-| **pld_monto_otros** | decimal | (15,2) | ✅ Sí | Otros medios de pago |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_es_modificatorio** | boolean | - | No | presencia de `modificatorio` | Es corrección de aviso previo |
+| **pld_folio_modificacion** | varchar | 14 | Si modif | `folio_modificacion` | Folio aviso a modificar |
+| **pld_descripcion_modificacion** | varchar | 3000 | Si modif | `descripcion_modificacion` | Razón de la modificación |
 
-### 5.2 Datos Bancarios (Transferencia)
+### 4.8 Alertas y aviso 24 horas
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_banco_origen** | varchar | 100 | ⚠️ Si trans | Institución financiera origen |
-| **pld_cuenta_origen** | varchar | 4 | ⚠️ Si trans | Últimos 4 dígitos cuenta |
-| **pld_clabe_origen** | varchar | 18 | ⚠️ Si trans | CLABE origen (si disponible) |
-| **pld_banco_destino** | varchar | 100 | ⚠️ Si trans | Banco destino |
-| **pld_cuenta_destino** | varchar | 4 | ⚠️ Si trans | Últimos 4 dígitos destino |
-| **pld_numero_autorizacion** | varchar | 20 | ⚠️ Si trans | Número autorización |
-| **pld_fecha_transferencia** | date | - | ⚠️ Si trans | Fecha de transferencia |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_genera_alerta** | boolean | - | Si | - (control interno) | Genera alerta interna |
+| **pld_requiere_aviso_24hrs** | boolean | - | Si | - (control interno) | Requiere aviso 24 horas |
+| **pld_razon_24hrs** | text | - | Si 24h | - (control interno) | Justificación aviso urgente |
 
-### 5.3 Datos del Cheque
-
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_banco_cheque** | varchar | 100 | ⚠️ Si cheque | Banco emisor |
-| **pld_numero_cheque** | varchar | 20 | ⚠️ Si cheque | Número de cheque |
-| **pld_cuenta_cheque** | varchar | 4 | ⚠️ Si cheque | Últimos 4 dígitos cuenta |
-| **pld_fecha_cheque** | date | - | ⚠️ Si cheque | Fecha del cheque |
-| **pld_librador_cheque** | varchar | 200 | ⚠️ Si cheque | Nombre del librador |
-
-### 5.4 Datos de Tarjeta
-
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_tipo_tarjeta** | select | - | ⚠️ Si tarjeta | Débito/Crédito |
-| **pld_emisor_tarjeta** | varchar | 100 | ⚠️ Si tarjeta | Banco emisor |
-| **pld_ultimos_digitos** | varchar | 4 | ⚠️ Si tarjeta | Últimos 4 dígitos |
-| **pld_numero_autorizacion_tarjeta** | varchar | 20 | ⚠️ Si tarjeta | Autorización de compra |
-
-### 5.5 Control de Efectivo
-
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_supera_limite_efectivo** | boolean | - | ✅ Sí | Supera $363,661 MXN |
-| **pld_alerta_efectivo** | boolean | - | ✅ Sí | Alerta por uso de efectivo |
-| **pld_justificacion_efectivo** | text | - | ⚠️ Si alto | Justificación uso efectivo |
+**Subtotal facture: ~31 extrafields**
 
 ---
 
-## 🔄 PARTE 6: Extrafields para llx_commande (Pedidos - Opcional)
+## PARTE 5: Extrafields para llx_paiement (Pagos) - 90% reutilizable
+
+> Mapean a `datos_liquidacion` en los 3 XSD.
+
+### 5.1 Datos de Liquidación (estructura XSD)
+
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_fecha_pago** | date | - | Si | `fecha_pago` (fecha_type) | Fecha del pago YYYYMMDD |
+| **pld_forma_pago** | varchar | 1 | Si | `forma_pago` (digito_1_type) | Catálogo SAT formas de pago |
+| **pld_instrumento_monetario** | varchar | 2 | No | `instrumento_monetario` (digito_1-2_type) | Catálogo instrumento monetario |
+| **pld_moneda** | varchar | 3 | Si | `moneda` (digito_1-3_type) | Catálogo SAT monedas |
+| **pld_monto_operacion** | varchar | 17 | Si | `monto_operacion` (monto_type) | Formato: `\d{1,14}\.\d{2}` |
+
+### 5.2 Desglose por Forma de Pago (control interno)
+
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_monto_efectivo** | decimal | (15,2) | Si | - (control interno) | Monto en efectivo |
+| **pld_monto_transferencia** | decimal | (15,2) | Si | - (control interno) | Monto por transferencia |
+| **pld_monto_cheque** | decimal | (15,2) | Si | - (control interno) | Monto por cheque |
+| **pld_monto_tarjeta** | decimal | (15,2) | Si | - (control interno) | Monto por tarjeta |
+| **pld_monto_otros** | decimal | (15,2) | Si | - (control interno) | Otros medios de pago |
+
+### 5.3 Datos Bancarios (Transferencia)
+
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_banco_origen** | varchar | 100 | Si trans | - (control interno) | Institución financiera origen |
+| **pld_cuenta_origen** | varchar | 4 | Si trans | - (control interno) | Últimos 4 dígitos cuenta |
+| **pld_clabe_origen** | varchar | 18 | Si trans | - (control interno) | CLABE origen |
+| **pld_banco_destino** | varchar | 100 | Si trans | - (control interno) | Banco destino |
+| **pld_cuenta_destino** | varchar | 4 | Si trans | - (control interno) | Últimos 4 dígitos destino |
+| **pld_numero_autorizacion** | varchar | 20 | Si trans | - (control interno) | Número autorización |
+| **pld_fecha_transferencia** | date | - | Si trans | - (control interno) | Fecha de transferencia |
+
+### 5.4 Datos del Cheque
+
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_banco_cheque** | varchar | 100 | Si cheque | - (control interno) | Banco emisor |
+| **pld_numero_cheque** | varchar | 20 | Si cheque | - (control interno) | Número de cheque |
+| **pld_cuenta_cheque** | varchar | 4 | Si cheque | - (control interno) | Últimos 4 dígitos cuenta |
+| **pld_fecha_cheque** | date | - | Si cheque | - (control interno) | Fecha del cheque |
+| **pld_librador_cheque** | varchar | 200 | Si cheque | - (control interno) | Nombre del librador |
+
+### 5.5 Datos de Tarjeta
+
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_tipo_tarjeta** | select | - | Si tarjeta | - (control interno) | Débito/Crédito |
+| **pld_emisor_tarjeta** | varchar | 100 | Si tarjeta | - (control interno) | Banco emisor |
+| **pld_ultimos_digitos** | varchar | 4 | Si tarjeta | - (control interno) | Últimos 4 dígitos |
+| **pld_numero_autorizacion_tarjeta** | varchar | 20 | Si tarjeta | - (control interno) | Autorización de compra |
+
+### 5.6 Control de Efectivo
+
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_supera_limite_efectivo** | boolean | - | Si | - (control interno) | Supera $363,661 MXN |
+| **pld_alerta_efectivo** | boolean | - | Si | - (control interno) | Alerta por uso de efectivo |
+| **pld_justificacion_efectivo** | text | - | Si alto | - (control interno) | Justificación uso efectivo |
+
+**Subtotal paiement: ~29 extrafields**
+
+---
+
+## PARTE 6: Extrafields para llx_commande (Pedidos - Opcional) - 70% reutilizable
 
 ### 6.1 Pre-validación PLD
 
-| Campo Extrafield | Tipo | Longitud | Obligatorio | Descripción |
-|------------------|------|----------|-------------|-------------|
-| **pld_preventa_identificada** | boolean | - | ❌ No | Cliente ya identificado |
-| **pld_anticipo_estimado** | decimal | (15,2) | ❌ No | Anticipo aproximado |
-| **pld_forma_pago_planeada** | select | - | ❌ No | Forma pago esperada |
-| **pld_alerta_previa** | boolean | - | ❌ No | Alerta en cotización |
+| Campo Extrafield | Tipo | Longitud | Obligatorio | XSD origen | Descripción |
+|---|---|---|---|---|---|
+| **pld_preventa_identificada** | boolean | - | No | - (control interno) | Cliente ya identificado |
+| **pld_anticipo_estimado** | decimal | (15,2) | No | - (control interno) | Anticipo aproximado |
+| **pld_forma_pago_planeada** | select | - | No | - (control interno) | Forma pago esperada |
+| **pld_alerta_previa** | boolean | - | No | - (control interno) | Alerta en cotización |
+
+**Subtotal commande: 4 extrafields**
 
 ---
 
-## 🛠️ PARTE 7: Plan de Implementación Técnica
+## Resumen de Extrafields
 
-### 7.1 Herramientas Necesarias
+| Tabla | Extrafields | Reutilizable | Nota |
+|---|---|---|---|
+| `llx_societe` | ~33 | 95% | Persona + domicilio + PLD |
+| `llx_socpeople` | ~22 | 100% | Idéntico en los 3 XSD |
+| `llx_product` | ~24 | 0% | Solo VEH |
+| `llx_facture` | ~31 | 70% | Operación + alertas |
+| `llx_paiement` | ~29 | 90% | Liquidación + control |
+| `llx_commande` | 4 | 70% | Pre-validación |
+| **TOTAL** | **~143** | | |
 
-**Módulo Dolibarr:**
+> **Nota:** El conteo original de 152 extrafields se ajustó a ~143 tras alinear con los campos reales del XSD. Los campos restantes se cubrirán con las tablas especializadas de Fase 2 (beneficiarios, documentos, etc.) donde corresponden mejor.
+
+---
+
+## PARTE 7: Plan de Implementación Técnica
+
+### 7.1 Estructura del Módulo
+
 ```
-htdocs/custom/pldvehiculos/
-  ├── core/
-  │   └── modules/
-  │       └── modPLDVehiculos.class.php
-  ├── admin/
-  │   ├── setup.php
-  │   └── about.php
-  ├── sql/
-  │   ├── llx_societe_extrafields.sql
-  │   ├── llx_socpeople_extrafields.sql
-  │   ├── llx_product_extrafields.sql
-  │   ├── llx_facture_extrafields.sql
-  │   └── llx_paiement_extrafields.sql
-  ├── langs/
-  │   ├── es_MX/
-  │   │   └── pldvehiculos.lang
-  │   └── en_US/
-  │       └── pldvehiculos.lang
-  └── class/
-      └── pldvehiculos.class.php
+htdocs/custom/modulecompliancepld/
+  |-- core/modules/
+  |     +-- modCompliancePLD.class.php
+  |-- admin/
+  |     |-- setup.php
+  |     +-- about.php
+  |-- class/
+  |     |-- compliancepld.class.php
+  |     +-- pldvalidator.class.php
+  |-- langs/es_MX/
+  |     +-- modulecompliancepld.lang
+  +-- css/
+        +-- compliancepld.css
 ```
 
 ### 7.2 Scripts SQL para Extrafields
 
-**Ejemplo: llx_societe_extrafields**
+**Convención de nombres de migración:**
+```
+sql/migrations/
+  |-- migration_001_extrafields_societe.sql
+  |-- migration_002_extrafields_socpeople.sql
+  |-- migration_003_extrafields_product.sql
+  |-- migration_004_extrafields_facture.sql
+  |-- migration_005_extrafields_paiement.sql
+  +-- migration_006_extrafields_commande.sql
+```
+
+**Ejemplo: `migration_001_extrafields_societe.sql`**
 ```sql
--- Tipo de persona
-INSERT INTO llx_extrafields (name, label, type, pos, entity, elementtype, enabled, required)
-VALUES ('pld_tipo_persona', 'Tipo de Persona', 'select', 100, 1, 'societe', 1, 1);
+-- Migration 001: Extrafields PLD para llx_societe (Terceros/Clientes)
+-- Compliance: LFPIORPI Art. 17 Fracc. VIII
+-- XSD: schemas/veh.xsd - persona_aviso -> tipo_persona -> persona_fisica/moral/fideicomiso
+-- Reutilizable: 95% (aplica también para INM Fracc. XV y SPR Fracc. XI)
 
-INSERT INTO llx_extrafields_values (fk_object, name, value)
-VALUES 
-  (LAST_INSERT_ID(), 'options', 'fisica:Persona Física\nmoral:Persona Moral\nfideicomiso:Fideicomiso');
-
--- CURP
+-- Tipo de persona (persona_fisica | persona_moral | fideicomiso)
 INSERT INTO llx_extrafields (name, label, type, size, pos, entity, elementtype, enabled, required, list, help)
-VALUES ('pld_curp', 'CURP', 'varchar', '18', 101, 1, 'societe', 1, 0, 1, 
-  'Clave Única de Registro de Población (18 caracteres). Obligatorio para personas físicas.');
+VALUES ('pld_tipo_persona', 'Tipo de Persona (PLD)', 'select', '', 100, 1, 'societe', 1, 1, 1,
+  'Clasificación según LFPIORPI: Persona Física, Persona Moral o Fideicomiso')
+ON DUPLICATE KEY UPDATE label = VALUES(label);
 
--- RFC validado
-INSERT INTO llx_extrafields (name, label, type, size, pos, entity, elementtype, enabled, required, list)
-VALUES ('pld_rfc_validado', 'RFC Validado', 'varchar', '13', 102, 1, 'societe', 1, 1, 1);
+-- CURP (curp_type: 18 caracteres, regex validado)
+INSERT INTO llx_extrafields (name, label, type, size, pos, entity, elementtype, enabled, required, list, help)
+VALUES ('pld_curp', 'CURP (PLD)', 'varchar', '18', 101, 1, 'societe', 1, 0, 1,
+  'Clave Única de Registro de Población. Obligatorio para personas físicas mexicanas.')
+ON DUPLICATE KEY UPDATE label = VALUES(label);
+
+-- RFC validado (rfc_fisica_type: 13 chars | rfc_moral_type: 12 chars)
+INSERT INTO llx_extrafields (name, label, type, size, pos, entity, elementtype, enabled, required, list, help)
+VALUES ('pld_rfc_validado', 'RFC Validado (PLD)', 'varchar', '13', 102, 1, 'societe', 1, 1, 1,
+  'RFC validado. 13 caracteres para persona física, 12 para persona moral.')
+ON DUPLICATE KEY UPDATE label = VALUES(label);
 
 -- ... continuar con todos los campos
 ```
 
-### 7.3 Archivo de Idioma (es_MX)
+### 7.3 Validaciones PHP (alineadas a regex XSD más estricto)
 
-```ini
-# langs/es_MX/pldvehiculos.lang
+```php
+<?php
+// Regex de validación: se usa el más estricto de los 3 XSD para compatibilidad futura
 
-Module100001Name=PLD Vehículos
-Module100001Desc=Módulo para cumplimiento LFPIORPI en compra-venta de vehículos
+// CURP - basado en ssprof2.xsd (valida fecha real y entidad federativa)
+const PLD_REGEX_CURP = '/^([A-Z]{4})((\d{2})(((0[469]|1[1])(0[1-9]|[12]\d|3[0]))|((0[2])(0[1-9]|[12]\d))|((0[13578]|1[02])(0[1-9]|[12]\d|3[01]))))([MH])([A-Z]{5})([A-J\d][\d])$/';
 
-# Terceros
-PLDTipoPersona=Tipo de Persona
-PLDCURP=CURP
-PLDRFCValidado=RFC Validado
-PLDFechaNacimiento=Fecha de Nacimiento
-PLDNacionalidad=Nacionalidad
+// RFC persona física - basado en ssprof2.xsd (valida fecha)
+const PLD_REGEX_RFC_FISICA = '/^[A-ZÑ&]{4}((\d{2})(((0[469]|1[1])(0[1-9]|[12]\d|3[0]))|((0[2])(0[1-9]|[12]\d))|((0[13578]|1[02])(0[1-9]|[12]\d|3[01]))))[A-Z\d]{3}$/';
 
-# Vehículos
-PLDTipoVehiculo=Tipo de Vehículo
-PLDMarca=Marca
-PLDModelo=Modelo
-PLDAnioModelo=Año Modelo
-PLDNumeroSerieVIN=VIN (Número de Serie)
+// RFC persona moral - basado en ssprof2.xsd (valida fecha)
+const PLD_REGEX_RFC_MORAL = '/^[A-ZÑ&]{3}((\d{2})(((0[469]|1[1])(0[1-9]|[12]\d|3[0]))|((0[2])(0[1-9]|[12]\d))|((0[13578]|1[02])(0[1-9]|[12]\d|3[01]))))[A-Z\d]{3}$/';
 
-# Pagos
-PLDFormaPago=Forma de Pago
-PLDMontoEfectivo=Monto en Efectivo
-PLDMontoTransferencia=Monto Transferencia
+// VIN - basado en veh.xsd (exactamente 17 caracteres alfanuméricos)
+const PLD_REGEX_VIN = '/^[A-Z\d\-_]{17}$/';
+
+// Código postal - basado en los 3 XSD (idéntico)
+const PLD_REGEX_CP = '/^\d{5}$/';
+
+// País - ISO alpha-2 (idéntico en los 3 XSD)
+const PLD_REGEX_PAIS = '/^[A-Z]{2}$/';
+
+// Monto - basado en los 3 XSD (idéntico)
+const PLD_REGEX_MONTO = '/^\d{1,14}\.\d{2}$/';
+
+// Fecha - formato YYYYMMDD con validación de fecha real (INM/SPR)
+const PLD_REGEX_FECHA = '/^([1-9]\d{3})(((0[469]|1[1])(0[1-9]|[12]\d|3[0]))|((0[2])(0[1-9]|[12]\d))|((0[13578]|1[02])(0[1-9]|[12]\d|3[01])))$/';
+
+// Mes reportado (YYYYMM)
+const PLD_REGEX_MES_REPORTADO = '/^([2-9]\d{3})((0([1-9]))|(1[0-2]))$/';
+
+// Actividad económica / giro mercantil (7 dígitos SCIAN)
+const PLD_REGEX_ACTIVIDAD_ECONOMICA = '/^\d{7}$/';
 ```
-
-### 7.4 Cronograma de Implementación
-
-#### Semana 1-2: Preparación
-- [ ] Crear estructura del módulo
-- [ ] Definir scripts SQL para extrafields
-- [ ] Crear archivos de idioma
-- [ ] Configurar módulo descriptor
-
-#### Semana 3: Implementación Terceros
-- [ ] Agregar extrafields a llx_societe
-- [ ] Agregar extrafields a llx_socpeople
-- [ ] Crear formularios personalizados
-- [ ] Validaciones en frontend
-
-#### Semana 4: Implementación Productos
-- [ ] Agregar extrafields a llx_product
-- [ ] Crear fichas de vehículos
-- [ ] Integrar con catálogos externos (marcas/modelos)
-
-#### Semana 5: Implementación Facturación
-- [ ] Agregar extrafields a llx_facture
-- [ ] Agregar extrafields a llx_paiement
-- [ ] Crear lógica de umbrales
-- [ ] Alertas automáticas
-
-#### Semana 6: Validaciones y Testing
-- [ ] Validación de CURP
-- [ ] Validación de RFC
-- [ ] Validación de VIN
-- [ ] Pruebas de cálculo de umbrales
-- [ ] Pruebas de alertas
 
 ---
 
-## ✅ Checklist de Completitud
+## Cronograma de Implementación
+
+### Semana 1-2: Preparación + Terceros
+- [ ] Crear clase descriptor del módulo (`modCompliancePLD.class.php`)
+- [ ] Crear clase validadora (`pldvalidator.class.php`) con regex XSD
+- [ ] Crear archivo de idioma (`es_MX/modulecompliancepld.lang`)
+- [ ] Migración 001: extrafields `llx_societe` (~33 campos)
+- [ ] Migración 002: extrafields `llx_socpeople` (~22 campos)
+- [ ] Tests PHPUnit: validaciones CURP, RFC, VIN, CP, fecha
+
+### Semana 3: Productos + Facturación
+- [ ] Migración 003: extrafields `llx_product` (~24 campos VEH)
+- [ ] Migración 004: extrafields `llx_facture` (~31 campos)
+- [ ] Tests PHPUnit: umbrales de alerta, control de avisos
+
+### Semana 4: Pagos + Pedidos + Integración
+- [ ] Migración 005: extrafields `llx_paiement` (~29 campos)
+- [ ] Migración 006: extrafields `llx_commande` (4 campos)
+- [ ] Tests PHPUnit: desglose de pagos, límite efectivo
+- [ ] Tests de integración: existencia de todos los extrafields en BD
+
+### Semana 5: Validaciones y QA final
+- [ ] Validación completa CURP (regex más estricto SPR)
+- [ ] Validación completa RFC (con fecha real)
+- [ ] Validación VIN (17 caracteres)
+- [ ] Validación fechas YYYYMMDD (con días reales por mes)
+- [ ] Cobertura mínima 80% en módulos de validación
+- [ ] Documentación: diccionario de datos actualizado
+
+---
+
+## Checklist de Completitud
 
 ### Datos Mínimos para Operar Legalmente
 
 **Al registrar un cliente nuevo:**
-- [ ] Tipo de persona identificado
-- [ ] RFC capturado y validado
-- [ ] CURP capturado (si PF)
-- [ ] Domicilio completo con colonia
-- [ ] Actividad económica registrada
+- [ ] Tipo de persona identificado (PF/PM/Fideicomiso)
+- [ ] RFC capturado y validado (regex SPR)
+- [ ] CURP capturado si PF (regex SPR)
+- [ ] Domicilio completo con colonia, CP, municipio
+- [ ] Nacionalidad en ISO alpha-2
+- [ ] Actividad económica (SCIAN 7 dígitos)
 - [ ] Identificación oficial escaneada
 
 **Al registrar un vehículo:**
-- [ ] VIN capturado
-- [ ] Marca, modelo, año
-- [ ] Número de motor
+- [ ] Tipo (terrestre/marítimo/aéreo)
+- [ ] Marca y modelo (descveh_1-40_type)
+- [ ] Año modelo (digito_4_type)
+- [ ] VIN exactamente 17 chars (si terrestre)
+- [ ] Nivel de blindaje (digito_1_type)
 - [ ] Origen (nacional/importado)
 - [ ] Estado (nuevo/usado)
-- [ ] Valor comercial
+- [ ] Valores (factura y comercial)
 
 **Al facturar:**
-- [ ] Validar si supera umbrales
+- [ ] Validar si supera umbrales ($377,778.20 MXN para VEH 2026)
 - [ ] Marcar como operación vulnerable
-- [ ] Registrar forma de pago detallada
-- [ ] Validar límite de efectivo
+- [ ] Registrar forma de pago en formato XSD (digito_1_type)
+- [ ] Validar límite de efectivo ($363,661 MXN)
 - [ ] Generar alerta si corresponde
+- [ ] Asignar referencia de aviso (referencia_aviso_type: 1-14 chars alfanuméricos)
 
 ---
 
-## 📊 Reportes Necesarios Fase 1
-
-### 1. Reporte de Operaciones Pendientes de Aviso
-```
-Facturas que superan umbral y no tienen aviso presentado
-```
-
-### 2. Reporte de Clientes Sin Identificar
-```
-Clientes con operaciones > umbral identificación sin expediente completo
-```
-
-### 3. Reporte Mensual de Operaciones
-```
-Todas las operaciones vulnerables del mes para generar XML
-```
-
-### 4. Reporte de Alertas Generadas
-```
-Operaciones que generaron alerta interna (posibles 24 horas)
-```
-
-### 5. Dashboard de Cumplimiento
-```
-- Operaciones del mes
-- Avisos pendientes
-- Clientes sin identificar
-- Límites de efectivo rebasados
-```
-
----
-
-## 🚨 Validaciones Automáticas Requeridas
-
-### En Alta de Cliente:
-```javascript
-// Validar CURP (si PF)
-if (tipo_persona == 'fisica' && !validarCURP(curp)) {
-  error("CURP inválido");
-}
-
-// Validar RFC
-if (!validarRFC(rfc)) {
-  error("RFC inválido");
-}
-
-// Validar edad mínima (18 años)
-if (fecha_nacimiento && edad < 18) {
-  error("Cliente debe ser mayor de edad");
-}
-```
-
-### En Alta de Vehículo:
-```javascript
-// Validar VIN (17 caracteres alfanuméricos)
-if (!validarVIN(vin)) {
-  error("VIN debe tener 17 caracteres");
-}
-
-// Validar año modelo
-if (anio_modelo < 1900 || anio_modelo > año_actual + 1) {
-  error("Año modelo inválido");
-}
-```
-
-###
+*Plan Fase 1 v2.0 - Actualizado con análisis de esquemas XSD del SAT (veh.xsd, inmu.xsd, ssprof2.xsd) | Febrero 2026*

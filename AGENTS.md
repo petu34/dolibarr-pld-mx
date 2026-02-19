@@ -410,8 +410,8 @@ import os
 
 def test_xml_valido_contra_xsd():
     """Validar XML generado contra esquema XSD del SAT"""
-    xml_path = 'xml-samples/aviso_test.xml.sample'
-    xsd_path = 'schemas/sppld_sat.xsd'
+    xml_path = 'xml-samples/aviso_veh_test.xml.sample'
+    xsd_path = 'schemas/veh.xsd'
     
     assert os.path.exists(xml_path), f"XML no encontrado: {xml_path}"
     assert os.path.exists(xsd_path), f"XSD no encontrado: {xsd_path}"
