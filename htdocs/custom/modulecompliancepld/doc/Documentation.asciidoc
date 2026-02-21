@@ -1,0 +1,81 @@
+= MODULECOMPLIANCEPLD =
+:subtitle: MODULECOMPLIANCEPLD DOCUMENTATION
+:source-highlighter: rouge
+:companyname: Ouroboros
+:corpname: Ouroboros
+:orgname: Ouroboros
+:creator: SuperAdmin
+:title: Documentation of module Modulecompliancepld
+:subject: This document is the document of module Modulecompliancepld.
+:keywords: Modulecompliancepld
+// Date du document :
+:docdate: 2026-02-21
+:toc: manual
+:toc-placement: preamble
+
+
+== TOPIC OF DOCUMENT
+
+This is the documentation of module Modulecompliancepld
+
+
+*Log of versions of document*
+
+[options="header",format="csv"]
+|=== 
+Author, Date, Version
+--- SuperAdmin   ---, 2026-02-21, Version 1.0
+|===
+
+
+[NOTE]
+==============
+This document was generated using Dolibarr ERP CRM process
+==============
+
+
+:toc: manual
+:toc-placement: preamble
+
+
+
+== INTRODUCTION
+
+//include::README.md[]
+__README__
+
+== DATA SPECIFICATIONS
+
+__DATA_SPECIFICATION__
+
+
+== MATRIX OF PERMISSIONS
+
+[options='header',grid=rows,width=60%,caption=Organisation]
+|===
+|Objects|Permission
+|*Read objects of Modulecompliancepld*| 1 , 
+|*// In php code, permission will be checked by test if ($user->hasRight('modulecompliancepld',myobject',read'))
+		1*|myobject , 
+|*myobject*|Create/Update objects of Modulecompliancepld , 
+|*Delete objects of Modulecompliancepld*|// In php code, permission will be checked by test if ($user->hasRight('modulecompliancepld',myobject',write'))
+		1 , 
+|*// In php code, permission will be checked by test if ($user->hasRight('modulecompliancepld',myobject',delete'))
+		1*|myobject , 
+
+|===
+
+
+
+== OTHER
+
+__API_DOC__
+
+
+== CHANGELOG
+
+
+# CHANGELOG MODULECOMPLIANCEPLD FOR [DOLIBARR ERP CRM](https://www.dolibarr.org)
+ 1.0
+Initial version
+

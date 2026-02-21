@@ -37,6 +37,11 @@ temp/
 *.swo
 *~
 
+# Archivos binarios de distribución
+*.zip
+*.tar.gz
+*.docx
+
 # macOS
 .DS_Store
 .AppleDouble
@@ -45,3 +50,6 @@ temp/
 # Dolibarr específico
 htdocs/conf/conf.php
 htdocs/custom/*/conf/conf.php
+
+# OMO / Claude Code
+.mcp.json
