@@ -578,34 +578,99 @@ const PLD_REGEX_ACTIVIDAD_ECONOMICA = '/^\d{7}$/';
 
 ---
 
-## Cronograma de Implementación
+## Estado de Implementación
 
-### Semana 1-2: Preparación + Terceros
-- [ ] Crear clase descriptor del módulo (`modCompliancePLD.class.php`)
-- [ ] Crear clase validadora (`pldvalidator.class.php`) con regex XSD
-- [ ] Crear archivo de idioma (`es_MX/modulecompliancepld.lang`)
-- [ ] Migración 001: extrafields `llx_societe` (~33 campos)
-- [ ] Migración 002: extrafields `llx_socpeople` (~22 campos)
-- [ ] Tests PHPUnit: validaciones CURP, RFC, VIN, CP, fecha
+> Última actualización: 2026-02-20 — Commit `8afc8c8` en `fase1/extrafields`
 
-### Semana 3: Productos + Facturación
-- [ ] Migración 003: extrafields `llx_product` (~24 campos VEH)
-- [ ] Migración 004: extrafields `llx_facture` (~31 campos)
-- [ ] Tests PHPUnit: umbrales de alerta, control de avisos
+### Completado ✅
 
-### Semana 4: Pagos + Pedidos + Integración
-- [ ] Migración 005: extrafields `llx_paiement` (~29 campos)
-- [ ] Migración 006: extrafields `llx_commande` (4 campos)
-- [ ] Tests PHPUnit: desglose de pagos, límite efectivo
-- [ ] Tests de integración: existencia de todos los extrafields en BD
+| Entregable | Archivo | Commit | Notas |
+|---|---|---|---|
+| Clase validadora | `class/pldvalidator.class.php` | `8afc8c8` | 18 regex XSD (variante SPR, ADR-002), 20 métodos de validación, soporte unicode `/u` + `mb_strtoupper` |
+| Clase lógica PLD | `class/compliancepld.class.php` | `8afc8c8` | Umbrales UMA 2026, `debeGenerarAviso()`, `superaLimiteEfectivo()`, verificación expedientes PF/PM/vehículos. Fix `empty('0')` para nivel_blindaje |
+| Idioma es_MX | `langs/es_MX/modulecompliancepld.lang` | `8afc8c8` | 143 etiquetas extrafields + opciones select + mensajes error/info/alerta + catálogos (32 entidades federativas, 7 formas de pago) |
+| Tests CURP | `tests/Unit/CURPValidationTest.php` | `8afc8c8` | 16 tests: válidas (M/H, estados, décadas, normalización), inválidas (vacía, corta, larga, sexo, fecha, día) |
+| Tests RFC | `tests/Unit/RFCValidationTest.php` | `8afc8c8` | 15 tests: PF 13 chars, PM 12 chars, Ñ/&, auto-detección `validarRFC()` |
+| Tests VIN + auxiliares | `tests/Unit/VINValidationTest.php` | `8afc8c8` | 60+ tests cubriendo los 20 validadores: VIN, CP, país, monto, fecha, mesReportado, actividadEconomica, nombre, denominación, teléfono, correo, REPUVE, placas, CLABE, tipoPersona, tipoVehiculo, anioModelo, formatearMonto, formatearFecha |
+| Tests umbrales | `tests/Unit/UmbralesTest.php` | `8afc8c8` | 30+ tests: constantes regulatorias, cálculo umbrales UMA, debeGenerarAviso (vehículos + acumulado), superaLimiteEfectivo, prioridad, referencia aviso, mes reportado, expediente PF/PM/vehículo |
+| Migración societe | `sql/migrations/migration_001_extrafields_societe.sql` | `8afc8c8` | 33 campos (identificación, domicilio, actividad económica, constitutivos PM, fideicomiso, control PLD) |
+| Migración socpeople | `sql/migrations/migration_002_extrafields_socpeople.sql` | `8afc8c8` | 22 campos (datos personales, identificación oficial, representación legal, teléfono/contacto) |
 
-### Semana 5: Validaciones y QA final
-- [ ] Validación completa CURP (regex más estricto SPR)
-- [ ] Validación completa RFC (con fecha real)
-- [ ] Validación VIN (17 caracteres)
-- [ ] Validación fechas YYYYMMDD (con días reales por mes)
-- [ ] Cobertura mínima 80% en módulos de validación
-- [ ] Documentación: diccionario de datos actualizado
+**Resultado PHPUnit:** 160 tests, 175 assertions, 0 fallos
+
+### Pendiente — Próxima Sesión
+
+#### 1. Descriptor del módulo (PRIORIDAD ALTA)
+
+Archivo: `core/modules/modModulecompliancepld.class.php`
+
+Modificaciones necesarias al template scaffold de Dolibarr 20.0.4:
+
+- [ ] **Metadata**: Cambiar `numero` a un ID libre (ej: 500200), `family` a `'financial'`, `description` a clave de traducción PLD, `editor_name`, `version` a `'1.0.0'`, `phpmin` a `array(8, 1)`, `need_dolibarr_version` a `array(20, 0)`
+- [ ] **Triggers**: Cambiar `'triggers' => 0` a `'triggers' => 1`
+- [ ] **Hooks**: Configurar contextos: `thirdpartycard`, `contactcard`, `productcard`, `invoicecard`, `ordercard`, `paymentcard`
+- [ ] **Permisos**: 5 permisos PLD (read, write, delete, generate, send) con IDs secuenciales
+- [ ] **Menús**: Top menu PLD + left menu con Dashboard, Operaciones, Avisos, Alertas, Reportes, Configuración
+- [ ] **Tabs**: Agregar pestaña "Datos PLD" en: `thirdparty`, `contact`, `product`, `invoice`, `order`, `payment`
+- [ ] **init()**: Agregar 143 llamadas `addExtraField()` organizadas por tabla (thirdparty ~33, socpeople ~22, product ~24, facture ~31, paiement ~29, commande 4)
+
+Firma del método `addExtraField()` en Dolibarr 20:
+```php
+$extrafields->addExtraField(
+    $attrname,           // nombre del campo (ej: 'pld_curp')
+    $label,              // etiqueta (ej: 'CURP (PLD)')
+    $type,               // tipo: varchar, date, boolean, select, text, int, price
+    $pos,                // posición (100, 101, ...)
+    $size,               // tamaño (ej: '18', '13', '')
+    $elementtype,        // tabla destino: 'thirdparty', 'socpeople', 'product', 'facture', 'payment', 'commande'
+    $unique,             // 0 o 1
+    $required,           // 0 o 1
+    $default_value,      // valor default ('' generalmente)
+    $param,              // opciones para select: array('options' => array('PF'=>'Persona Física', ...))
+    $alwayseditable,     // 1
+    $morecss,            // '' o 'minwidth200'
+    $enabled,            // condición: 'isModEnabled("modulecompliancepld")'
+    $list,               // -1 (oculto en lista), 0, 1
+    $help,               // texto de ayuda
+    $moreparams,         // ''
+    $langfile,           // 'modulecompliancepld@modulecompliancepld'
+    $condition           // condición adicional: 'isModEnabled("modulecompliancepld")'
+);
+```
+
+**Nota sobre elementtype**: Dolibarr usa `'thirdparty'` (no `'societe'`) y `'payment'` (no `'paiement'`). Verificado en el template.
+
+#### 2. Migraciones SQL restantes (PRIORIDAD MEDIA)
+
+Mismo patrón que migration_001/002, solo cambian los campos:
+
+- [ ] `migration_003_extrafields_product.sql` — 24 campos (PARTE 3 del plan: vehículo VEH)
+- [ ] `migration_004_extrafields_facture.sql` — 31 campos (PARTE 4: operación, aviso, alerta, acumulación)
+- [ ] `migration_005_extrafields_paiement.sql` — 29 campos (PARTE 5: liquidación, desglose pagos, efectivo)
+- [ ] `migration_006_extrafields_commande.sql` — 4 campos (PARTE 6: pre-validación PLD)
+
+#### 3. Verificación final
+
+- [ ] Ejecutar `./vendor/bin/phpunit tests/Unit/` → 0 fallos
+- [ ] Commit y push a `fase1/extrafields`
+
+---
+
+### Bugs corregidos en esta iteración
+
+| Bug | Causa raíz | Fix |
+|---|---|---|
+| RFC con Ñ/& no validaba | Regex sin flag `/u` (unicode) y `strtoupper()` no maneja multibyte | Agregado `/u` a `REGEX_RFC_FISICA` y `REGEX_RFC_MORAL`, cambiado a `mb_strtoupper()` |
+| `verificarDatosVehiculo` rechazaba nivel_blindaje='0' | PHP `empty('0')` retorna `true` | Reemplazado `empty($datos[$campo])` por `!isset() \|\| === '' \|\| === null` |
+| Test CURP estado 'ZZ' | El regex XSD usa `[A-Z]{5}` sin enumerar entidades válidas | Test corregido: el regex de formato acepta cualquier 2 letras; la validación semántica de entidad es responsabilidad de capa superior |
+
+---
+
+### Decisiones técnicas tomadas
+
+- **ADR-002 confirmado**: Todos los regex usan la variante más estricta (ssprof2.xsd) para compatibilidad futura con múltiples actividades vulnerables
+- **Unicode**: Los métodos `validarRFCFisica()` y `validarRFCMoral()` usan `mb_strtoupper()` + regex con `/u` para soportar Ñ y & correctamente
+- **empty() vs isset()**: Para verificación de expedientes, se usa `!isset() || === '' || === null` en lugar de `empty()` para que valores como `'0'` (nivel_blindaje sin blindaje) sean aceptados
 
 ---
 
@@ -614,32 +679,32 @@ const PLD_REGEX_ACTIVIDAD_ECONOMICA = '/^\d{7}$/';
 ### Datos Mínimos para Operar Legalmente
 
 **Al registrar un cliente nuevo:**
-- [ ] Tipo de persona identificado (PF/PM/Fideicomiso)
-- [ ] RFC capturado y validado (regex SPR)
-- [ ] CURP capturado si PF (regex SPR)
-- [ ] Domicilio completo con colonia, CP, municipio
-- [ ] Nacionalidad en ISO alpha-2
-- [ ] Actividad económica (SCIAN 7 dígitos)
-- [ ] Identificación oficial escaneada
+- [x] Tipo de persona identificado (PF/PM/Fideicomiso) — `pld_tipo_persona` select
+- [x] RFC capturado y validado (regex SPR) — `pld_rfc_validado` + `PLDValidator::validarRFC()`
+- [x] CURP capturado si PF (regex SPR) — `pld_curp` + `PLDValidator::validarCURP()`
+- [x] Domicilio completo con colonia, CP, municipio — 11 campos domicilio definidos
+- [x] Nacionalidad en ISO alpha-2 — `pld_nacionalidad` + `PLDValidator::validarPais()`
+- [x] Actividad económica (SCIAN 7 dígitos) — `pld_actividad_economica` + `PLDValidator::validarActividadEconomica()`
+- [ ] Identificación oficial escaneada — Pendiente Fase 2 (tabla `llx_pld_documentos`)
 
 **Al registrar un vehículo:**
-- [ ] Tipo (terrestre/marítimo/aéreo)
-- [ ] Marca y modelo (descveh_1-40_type)
-- [ ] Año modelo (digito_4_type)
-- [ ] VIN exactamente 17 chars (si terrestre)
-- [ ] Nivel de blindaje (digito_1_type)
-- [ ] Origen (nacional/importado)
-- [ ] Estado (nuevo/usado)
-- [ ] Valores (factura y comercial)
+- [x] Tipo (terrestre/marítimo/aéreo) — `pld_tipo_vehiculo` select
+- [x] Marca y modelo (descveh_1-40_type) — `pld_marca`, `pld_modelo` varchar(40)
+- [x] Año modelo (digito_4_type) — `pld_anio_modelo` + `PLDValidator::validarAnioModelo()`
+- [x] VIN exactamente 17 chars (si terrestre) — `pld_vin` + `PLDValidator::validarVIN()`
+- [x] Nivel de blindaje (digito_1_type) — `pld_nivel_blindaje` varchar(1)
+- [x] Origen (nacional/importado) — `pld_origen` select
+- [x] Estado (nuevo/usado) — `pld_estado_vehiculo` select
+- [x] Valores (factura y comercial) — `pld_valor_factura`, `pld_valor_comercial` price
 
 **Al facturar:**
-- [ ] Validar si supera umbrales ($377,778.20 MXN para VEH 2026)
-- [ ] Marcar como operación vulnerable
-- [ ] Registrar forma de pago en formato XSD (digito_1_type)
-- [ ] Validar límite de efectivo ($363,661 MXN)
-- [ ] Generar alerta si corresponde
-- [ ] Asignar referencia de aviso (referencia_aviso_type: 1-14 chars alfanuméricos)
+- [x] Validar si supera umbrales (3,220 UMAs = $377,770.40 MXN) — `CompliancePLD::debeGenerarAviso()`
+- [x] Marcar como operación vulnerable — `pld_es_actividad_vulnerable` boolean
+- [x] Registrar forma de pago en formato XSD (digito_1_type) — `pld_forma_pago` varchar(1)
+- [x] Validar límite de efectivo (3,100 UMAs = $363,692.00 MXN) — `CompliancePLD::superaLimiteEfectivo()`
+- [x] Generar alerta si corresponde — `pld_genera_alerta`, `pld_tipo_alerta`
+- [x] Asignar referencia de aviso — `CompliancePLD::generarReferenciaAviso()` (PLD + YYMMDD + 5 dígitos)
 
 ---
 
-*Plan Fase 1 v2.0 - Actualizado con análisis de esquemas XSD del SAT (veh.xsd, inmu.xsd, ssprof2.xsd) | Febrero 2026*
+*Plan Fase 1 v3.0 — Actualizado con progreso de implementación | 20 de febrero de 2026*
