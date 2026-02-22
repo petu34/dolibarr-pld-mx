@@ -807,6 +807,39 @@ hotfix/*    ← Correcciones urgentes en producción
 5. Merge con squash o merge commit (NO rebase en develop)
 ```
 
+### 10.4 Staging de archivos nuevos (obligatorio)
+
+Después de crear archivos nuevos, el orquestador **debe** agregarlos al staging de Git automáticamente. Esto asegura que ningún archivo generado quede fuera del control de versiones por descuido.
+
+**Procedimiento:**
+
+```bash
+# Agregar todos los archivos nuevos no rastreados, respetando .gitignore
+git add --all
+```
+
+**Reglas:**
+- Ejecutar `git add` después de crear o modificar archivos, **antes** de solicitar revisión o QA
+- Git respeta automáticamente `.gitignore` — los archivos excluidos (`.env`, `*.key`, `*.cert`, etc.) **nunca** se agregan
+- Verificar con `git status` que solo se agregan archivos esperados
+- **NO** usar `git add -f` (force) bajo ninguna circunstancia — si `.gitignore` lo excluye, hay una razón
+- Si un archivo nuevo no aparece en `git status` como untracked, confirmar que no está en `.gitignore` antes de reportar un error
+
+**Ejemplo de flujo correcto:**
+
+```bash
+# 1. Generar archivos
+# ... (el agente crea archivos PHP, SQL, etc.)
+
+# 2. Staging automático (respeta .gitignore)
+git add --all
+
+# 3. Verificar estado
+git status
+
+# 4. Proceder con QA / revisión
+```
+
 ---
 
 ## 11. Referencia Regulatoria LFPIORPI
