@@ -580,7 +580,7 @@ const PLD_REGEX_ACTIVIDAD_ECONOMICA = '/^\d{7}$/';
 
 ## Estado de Implementación
 
-> Última actualización: 2026-02-20 — Commit `8afc8c8` en `fase1/extrafields`
+> Última actualización: 2026-02-22 — Commit `bc9ce73` en `fase1/extrafields`
 
 ### Completado ✅
 
@@ -595,61 +595,17 @@ const PLD_REGEX_ACTIVIDAD_ECONOMICA = '/^\d{7}$/';
 | Tests umbrales | `tests/Unit/UmbralesTest.php` | `8afc8c8` | 30+ tests: constantes regulatorias, cálculo umbrales UMA, debeGenerarAviso (vehículos + acumulado), superaLimiteEfectivo, prioridad, referencia aviso, mes reportado, expediente PF/PM/vehículo |
 | Migración societe | `sql/migrations/migration_001_extrafields_societe.sql` | `8afc8c8` | 33 campos (identificación, domicilio, actividad económica, constitutivos PM, fideicomiso, control PLD) |
 | Migración socpeople | `sql/migrations/migration_002_extrafields_socpeople.sql` | `8afc8c8` | 22 campos (datos personales, identificación oficial, representación legal, teléfono/contacto) |
+| **Descriptor del módulo** | `core/modules/modModulecompliancepld.class.php` | `bc9ce73` | Metadata (numero=500200, family=financial, v1.0.0, php8.1+, doli20+), triggers=1, 6 hooks, 5 permisos PLD, top+left menu (Dashboard/Operaciones/Avisos/Alertas/Reportes/Config), 6 tabs PLD, init() con 143 `addExtraField()` en 6 tablas |
+| Migración product | `sql/migrations/migration_003_extrafields_product.sql` | `5c2b8f2` | 24 campos vehículo VEH (tipo, marca, modelo, año, VIN, REPUVE, placas, blindaje, serie, bandera, matrícula, origen, estado, km, uso, docs legales, valores) |
+| Migración facture | `sql/migrations/migration_004_extrafields_facture.sql` | `5c2b8f2` | 31 campos operación PLD (control, datos operación, referencia aviso, alerta, acumulación, control avisos, modificatorio, alertas 24h) |
+| Migración paiement | `sql/migrations/migration_005_extrafields_paiement.sql` | `5c2b8f2` | 29 campos liquidación (datos XSD, desglose por forma de pago, bancarios, cheque, tarjeta, control efectivo) |
+| Migración commande | `sql/migrations/migration_006_extrafields_commande.sql` | `5c2b8f2` | 4 campos pre-validación PLD (preventa identificada, anticipo, forma pago planeada, alerta previa) |
 
 **Resultado PHPUnit:** 160 tests, 175 assertions, 0 fallos
 
 ### Pendiente — Próxima Sesión
 
-#### 1. Descriptor del módulo (PRIORIDAD ALTA)
-
-Archivo: `core/modules/modModulecompliancepld.class.php`
-
-Modificaciones necesarias al template scaffold de Dolibarr 20.0.4:
-
-- [ ] **Metadata**: Cambiar `numero` a un ID libre (ej: 500200), `family` a `'financial'`, `description` a clave de traducción PLD, `editor_name`, `version` a `'1.0.0'`, `phpmin` a `array(8, 1)`, `need_dolibarr_version` a `array(20, 0)`
-- [ ] **Triggers**: Cambiar `'triggers' => 0` a `'triggers' => 1`
-- [ ] **Hooks**: Configurar contextos: `thirdpartycard`, `contactcard`, `productcard`, `invoicecard`, `ordercard`, `paymentcard`
-- [ ] **Permisos**: 5 permisos PLD (read, write, delete, generate, send) con IDs secuenciales
-- [ ] **Menús**: Top menu PLD + left menu con Dashboard, Operaciones, Avisos, Alertas, Reportes, Configuración
-- [ ] **Tabs**: Agregar pestaña "Datos PLD" en: `thirdparty`, `contact`, `product`, `invoice`, `order`, `payment`
-- [ ] **init()**: Agregar 143 llamadas `addExtraField()` organizadas por tabla (thirdparty ~33, socpeople ~22, product ~24, facture ~31, paiement ~29, commande 4)
-
-Firma del método `addExtraField()` en Dolibarr 20:
-```php
-$extrafields->addExtraField(
-    $attrname,           // nombre del campo (ej: 'pld_curp')
-    $label,              // etiqueta (ej: 'CURP (PLD)')
-    $type,               // tipo: varchar, date, boolean, select, text, int, price
-    $pos,                // posición (100, 101, ...)
-    $size,               // tamaño (ej: '18', '13', '')
-    $elementtype,        // tabla destino: 'thirdparty', 'socpeople', 'product', 'facture', 'payment', 'commande'
-    $unique,             // 0 o 1
-    $required,           // 0 o 1
-    $default_value,      // valor default ('' generalmente)
-    $param,              // opciones para select: array('options' => array('PF'=>'Persona Física', ...))
-    $alwayseditable,     // 1
-    $morecss,            // '' o 'minwidth200'
-    $enabled,            // condición: 'isModEnabled("modulecompliancepld")'
-    $list,               // -1 (oculto en lista), 0, 1
-    $help,               // texto de ayuda
-    $moreparams,         // ''
-    $langfile,           // 'modulecompliancepld@modulecompliancepld'
-    $condition           // condición adicional: 'isModEnabled("modulecompliancepld")'
-);
-```
-
-**Nota sobre elementtype**: Dolibarr usa `'thirdparty'` (no `'societe'`) y `'payment'` (no `'paiement'`). Verificado en el template.
-
-#### 2. Migraciones SQL restantes (PRIORIDAD MEDIA)
-
-Mismo patrón que migration_001/002, solo cambian los campos:
-
-- [ ] `migration_003_extrafields_product.sql` — 24 campos (PARTE 3 del plan: vehículo VEH)
-- [ ] `migration_004_extrafields_facture.sql` — 31 campos (PARTE 4: operación, aviso, alerta, acumulación)
-- [ ] `migration_005_extrafields_paiement.sql` — 29 campos (PARTE 5: liquidación, desglose pagos, efectivo)
-- [ ] `migration_006_extrafields_commande.sql` — 4 campos (PARTE 6: pre-validación PLD)
-
-#### 3. Verificación final
+#### 1. Verificación final
 
 - [ ] Ejecutar `./vendor/bin/phpunit tests/Unit/` → 0 fallos
 - [ ] Commit y push a `fase1/extrafields`
@@ -707,4 +663,4 @@ Mismo patrón que migration_001/002, solo cambian los campos:
 
 ---
 
-*Plan Fase 1 v3.0 — Actualizado con progreso de implementación | 20 de febrero de 2026*
+*Plan Fase 1 v3.2 — Migraciones 003-006 verificadas como completas | 22 de febrero de 2026*
