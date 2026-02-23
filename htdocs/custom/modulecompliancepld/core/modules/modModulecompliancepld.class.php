@@ -407,53 +407,53 @@ class modModulecompliancepld extends DolibarrModules
 		// =====================================================================
 
 		// 1.1 Identificación Básica
-		$extrafields->addExtraField('pld_tipo_persona', 'Tipo de Persona (PLD)', 'select', 100, '', 'thirdparty', 0, 1, '', $optTipoPersona, 1, '', $e, 1, 'PLDTipoPersonaHelp', '', $l, $e);
-		$extrafields->addExtraField('pld_curp', 'CURP (PLD)', 'varchar', 101, '18', 'thirdparty', 0, 0, '', '', 1, '', $e, 1, 'PLDCURPHelp', '', $l, $e);
-		$extrafields->addExtraField('pld_rfc_validado', 'RFC Validado (PLD)', 'varchar', 102, '13', 'thirdparty', 0, 1, '', '', 1, '', $e, 1, 'PLDRFCHelp', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_nacimiento', 'Fecha de Nacimiento (PLD)', 'date', 103, '', 'thirdparty', 0, 0, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_constitucion', 'Fecha de Constitución (PLD)', 'date', 104, '', 'thirdparty', 0, 0, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_nacionalidad', 'Nacionalidad (PLD)', 'varchar', 105, '2', 'thirdparty', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_pais_nacimiento', 'País de Nacimiento (PLD)', 'varchar', 106, '2', 'thirdparty', 0, 0, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_estado_nacimiento', 'Estado de Nacimiento (PLD)', 'varchar', 107, '50', 'thirdparty', 0, 0, '', '', 1, '', $e, 1, '', '', $l, $e);
+		$extrafields->addExtraField('pld_tipo_persona', 'Tipo de Persona (PLD)', 'select', 100, '', 'thirdparty', 0, 1, '', $optTipoPersona, 1, '',1, 'PLDTipoPersonaHelp', '', '', $l, $e);
+		$extrafields->addExtraField('pld_curp', 'CURP (PLD)', 'varchar', 101, '18', 'thirdparty', 0, 0, '', '', 1, '',1, 'PLDCURPHelp', '', '', $l, $e);
+		$extrafields->addExtraField('pld_rfc_validado', 'RFC Validado (PLD)', 'varchar', 102, '13', 'thirdparty', 0, 1, '', '', 1, '',1, 'PLDRFCHelp', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_nacimiento', 'Fecha de Nacimiento (PLD)', 'date', 103, '', 'thirdparty', 0, 0, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_constitucion', 'Fecha de Constitución (PLD)', 'date', 104, '', 'thirdparty', 0, 0, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_nacionalidad', 'Nacionalidad (PLD)', 'varchar', 105, '2', 'thirdparty', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_pais_nacimiento', 'País de Nacimiento (PLD)', 'varchar', 106, '2', 'thirdparty', 0, 0, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_estado_nacimiento', 'Estado de Nacimiento (PLD)', 'varchar', 107, '50', 'thirdparty', 0, 0, '', '', 1, '',1, '', '', '', $l, $e);
 
 		// 1.2 Domicilio Fiscal
-		$extrafields->addExtraField('pld_calle', 'Calle (PLD)', 'varchar', 108, '100', 'thirdparty', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_numero_exterior', 'Número Exterior (PLD)', 'varchar', 109, '56', 'thirdparty', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_numero_interior', 'Número Interior (PLD)', 'varchar', 110, '40', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_colonia', 'Colonia (PLD)', 'varchar', 111, '50', 'thirdparty', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_codigo_postal', 'Código Postal (PLD)', 'varchar', 112, '5', 'thirdparty', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_municipio', 'Municipio / Alcaldía (PLD)', 'varchar', 113, '100', 'thirdparty', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_estado', 'Entidad Federativa (PLD)', 'select', 114, '', 'thirdparty', 0, 1, '', $optEstados, 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_pais', 'País (PLD)', 'varchar', 115, '2', 'thirdparty', 0, 1, 'MX', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_es_domicilio_extranjero', '¿Domicilio Extranjero? (PLD)', 'boolean', 116, '', 'thirdparty', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_estado_provincia_ext', 'Estado/Provincia Extranjero (PLD)', 'varchar', 117, '100', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_ciudad_poblacion_ext', 'Ciudad/Población Extranjero (PLD)', 'varchar', 118, '100', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_calle', 'Calle (PLD)', 'varchar', 108, '100', 'thirdparty', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_numero_exterior', 'Número Exterior (PLD)', 'varchar', 109, '56', 'thirdparty', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_numero_interior', 'Número Interior (PLD)', 'varchar', 110, '40', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_colonia', 'Colonia (PLD)', 'varchar', 111, '50', 'thirdparty', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_codigo_postal', 'Código Postal (PLD)', 'varchar', 112, '5', 'thirdparty', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_municipio', 'Municipio / Alcaldía (PLD)', 'varchar', 113, '100', 'thirdparty', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_estado', 'Entidad Federativa (PLD)', 'select', 114, '', 'thirdparty', 0, 1, '', $optEstados, 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_pais', 'País (PLD)', 'varchar', 115, '2', 'thirdparty', 0, 1, 'MX', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_es_domicilio_extranjero', '¿Domicilio Extranjero? (PLD)', 'boolean', 116, '', 'thirdparty', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_estado_provincia_ext', 'Estado/Provincia Extranjero (PLD)', 'varchar', 117, '100', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_ciudad_poblacion_ext', 'Ciudad/Población Extranjero (PLD)', 'varchar', 118, '100', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 1.3 Actividad Económica
-		$extrafields->addExtraField('pld_actividad_economica', 'Actividad Económica SCIAN (PLD)', 'varchar', 119, '7', 'thirdparty', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_giro_mercantil', 'Giro Mercantil (PLD)', 'varchar', 120, '7', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_ocupacion', 'Ocupación / Profesión (PLD)', 'varchar', 121, '100', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_actividad_economica', 'Actividad Económica SCIAN (PLD)', 'varchar', 119, '7', 'thirdparty', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_giro_mercantil', 'Giro Mercantil (PLD)', 'varchar', 120, '7', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_ocupacion', 'Ocupación / Profesión (PLD)', 'varchar', 121, '100', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 1.4 Datos Constitutivos PM
-		$extrafields->addExtraField('pld_denominacion_razon', 'Denominación o Razón Social (PLD)', 'varchar', 122, '254', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_numero_escritura', 'Número de Escritura (PLD)', 'varchar', 123, '20', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_escritura', 'Fecha de Escritura (PLD)', 'date', 124, '', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_notario_numero', 'Número de Notario (PLD)', 'varchar', 125, '8', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_notario_nombre', 'Nombre del Notario (PLD)', 'varchar', 126, '150', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_notario_estado', 'Estado del Notario (PLD)', 'varchar', 127, '50', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_folio_mercantil', 'Folio Mercantil (PLD)', 'varchar', 128, '200', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_denominacion_razon', 'Denominación o Razón Social (PLD)', 'varchar', 122, '254', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_numero_escritura', 'Número de Escritura (PLD)', 'varchar', 123, '20', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_escritura', 'Fecha de Escritura (PLD)', 'date', 124, '', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_notario_numero', 'Número de Notario (PLD)', 'varchar', 125, '8', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_notario_nombre', 'Nombre del Notario (PLD)', 'varchar', 126, '150', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_notario_estado', 'Estado del Notario (PLD)', 'varchar', 127, '50', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_folio_mercantil', 'Folio Mercantil (PLD)', 'varchar', 128, '200', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 1.5 Fideicomiso
-		$extrafields->addExtraField('pld_identificador_fideicomiso', 'Identificador del Fideicomiso (PLD)', 'varchar', 129, '40', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_identificador_fideicomiso', 'Identificador del Fideicomiso (PLD)', 'varchar', 129, '40', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 1.6 Control PLD
-		$extrafields->addExtraField('pld_cliente_identificado', '¿Cliente Identificado? (PLD)', 'boolean', 130, '', 'thirdparty', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_identificacion', 'Fecha de Identificación (PLD)', 'date', 131, '', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_expediente_completo', '¿Expediente Completo? (PLD)', 'boolean', 132, '', 'thirdparty', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_es_pep', '¿Persona Expuesta Políticamente? (PLD)', 'boolean', 133, '', 'thirdparty', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_relacion_pep', 'Relación con PEP (PLD)', 'varchar', 134, '200', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_tiene_beneficiario', '¿Tiene Beneficiario Controlador? (PLD)', 'boolean', 135, '', 'thirdparty', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_observaciones', 'Observaciones PLD', 'text', 136, '', 'thirdparty', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_cliente_identificado', '¿Cliente Identificado? (PLD)', 'boolean', 130, '', 'thirdparty', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_identificacion', 'Fecha de Identificación (PLD)', 'date', 131, '', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_expediente_completo', '¿Expediente Completo? (PLD)', 'boolean', 132, '', 'thirdparty', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_es_pep', '¿Persona Expuesta Políticamente? (PLD)', 'boolean', 133, '', 'thirdparty', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_relacion_pep', 'Relación con PEP (PLD)', 'varchar', 134, '200', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_tiene_beneficiario', '¿Tiene Beneficiario Controlador? (PLD)', 'boolean', 135, '', 'thirdparty', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_observaciones', 'Observaciones PLD', 'text', 136, '', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// =====================================================================
 		// SOCPEOPLE (llx_socpeople_extrafields) — 22 campos
@@ -461,33 +461,33 @@ class modModulecompliancepld extends DolibarrModules
 		// =====================================================================
 
 		// 2.1 Datos Personales
-		$extrafields->addExtraField('pld_apellido_paterno', 'Apellido Paterno (PLD)', 'varchar', 100, '200', 'socpeople', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_apellido_materno', 'Apellido Materno (PLD)', 'varchar', 101, '200', 'socpeople', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_nombre_completo', 'Nombre(s) Completo(s) (PLD)', 'varchar', 102, '200', 'socpeople', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_curp', 'CURP (PLD)', 'varchar', 103, '18', 'socpeople', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_rfc', 'RFC (PLD)', 'varchar', 104, '13', 'socpeople', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_nacimiento', 'Fecha de Nacimiento (PLD)', 'date', 105, '', 'socpeople', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_nacionalidad', 'Nacionalidad (PLD)', 'varchar', 106, '2', 'socpeople', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_actividad_economica', 'Actividad Económica SCIAN (PLD)', 'varchar', 107, '7', 'socpeople', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_apellido_paterno', 'Apellido Paterno (PLD)', 'varchar', 100, '200', 'socpeople', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_apellido_materno', 'Apellido Materno (PLD)', 'varchar', 101, '200', 'socpeople', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_nombre_completo', 'Nombre(s) Completo(s) (PLD)', 'varchar', 102, '200', 'socpeople', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_curp', 'CURP (PLD)', 'varchar', 103, '18', 'socpeople', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_rfc', 'RFC (PLD)', 'varchar', 104, '13', 'socpeople', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_nacimiento', 'Fecha de Nacimiento (PLD)', 'date', 105, '', 'socpeople', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_nacionalidad', 'Nacionalidad (PLD)', 'varchar', 106, '2', 'socpeople', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_actividad_economica', 'Actividad Económica SCIAN (PLD)', 'varchar', 107, '7', 'socpeople', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 2.2 Identificación Oficial
-		$extrafields->addExtraField('pld_tipo_identificacion', 'Tipo de Identificación (PLD)', 'select', 108, '', 'socpeople', 0, 1, '', $optTipoId, 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_numero_identificacion', 'Número de Identificación (PLD)', 'varchar', 109, '20', 'socpeople', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_vigencia_identificacion', 'Vigencia de Identificación (PLD)', 'date', 110, '', 'socpeople', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_autoridad_emite', 'Autoridad Emisora (PLD)', 'varchar', 111, '100', 'socpeople', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_clave_elector', 'Clave de Elector (PLD)', 'varchar', 112, '18', 'socpeople', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_tipo_identificacion', 'Tipo de Identificación (PLD)', 'select', 108, '', 'socpeople', 0, 1, '', $optTipoId, 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_numero_identificacion', 'Número de Identificación (PLD)', 'varchar', 109, '20', 'socpeople', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_vigencia_identificacion', 'Vigencia de Identificación (PLD)', 'date', 110, '', 'socpeople', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_autoridad_emite', 'Autoridad Emisora (PLD)', 'varchar', 111, '100', 'socpeople', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_clave_elector', 'Clave de Elector (PLD)', 'varchar', 112, '18', 'socpeople', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 2.3 Representación Legal
-		$extrafields->addExtraField('pld_es_representante_legal', '¿Es Representante Legal? (PLD)', 'boolean', 113, '', 'socpeople', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_tipo_representacion', 'Tipo de Representación (PLD)', 'select', 114, '', 'socpeople', 0, 0, '', $optRepresentacion, 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_escritura_poder', 'Escritura del Poder (PLD)', 'varchar', 115, '20', 'socpeople', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_poder', 'Fecha del Poder (PLD)', 'date', 116, '', 'socpeople', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_notario_poder', 'Notario del Poder (PLD)', 'varchar', 117, '150', 'socpeople', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_es_representante_legal', '¿Es Representante Legal? (PLD)', 'boolean', 113, '', 'socpeople', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_tipo_representacion', 'Tipo de Representación (PLD)', 'select', 114, '', 'socpeople', 0, 0, '', $optRepresentacion, 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_escritura_poder', 'Escritura del Poder (PLD)', 'varchar', 115, '20', 'socpeople', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_poder', 'Fecha del Poder (PLD)', 'date', 116, '', 'socpeople', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_notario_poder', 'Notario del Poder (PLD)', 'varchar', 117, '150', 'socpeople', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 2.4 Teléfono y Contacto
-		$extrafields->addExtraField('pld_clave_pais_telefono', 'Clave País Teléfono (PLD)', 'varchar', 118, '2', 'socpeople', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_numero_telefono', 'Número de Teléfono (PLD)', 'varchar', 119, '12', 'socpeople', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_correo_electronico', 'Correo Electrónico (PLD)', 'varchar', 120, '60', 'socpeople', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_clave_pais_telefono', 'Clave País Teléfono (PLD)', 'varchar', 118, '2', 'socpeople', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_numero_telefono', 'Número de Teléfono (PLD)', 'varchar', 119, '12', 'socpeople', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_correo_electronico', 'Correo Electrónico (PLD)', 'varchar', 120, '60', 'socpeople', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// =====================================================================
 		// PRODUCT (llx_product_extrafields) — 24 campos
@@ -495,38 +495,38 @@ class modModulecompliancepld extends DolibarrModules
 		// =====================================================================
 
 		// 3.1 Identificación del Vehículo
-		$extrafields->addExtraField('pld_tipo_vehiculo', 'Tipo de Vehículo (PLD)', 'select', 100, '', 'product', 0, 1, '', $optTipoVehiculo, 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_marca', 'Marca del Fabricante (PLD)', 'varchar', 101, '40', 'product', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_modelo', 'Modelo (PLD)', 'varchar', 102, '40', 'product', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_anio_modelo', 'Año Modelo (PLD)', 'varchar', 103, '4', 'product', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
+		$extrafields->addExtraField('pld_tipo_vehiculo', 'Tipo de Vehículo (PLD)', 'select', 100, '', 'product', 0, 1, '', $optTipoVehiculo, 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_marca', 'Marca del Fabricante (PLD)', 'varchar', 101, '40', 'product', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_modelo', 'Modelo (PLD)', 'varchar', 102, '40', 'product', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_anio_modelo', 'Año Modelo (PLD)', 'varchar', 103, '4', 'product', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
 
 		// 3.2 Números de Serie
-		$extrafields->addExtraField('pld_vin', 'VIN (PLD)', 'varchar', 104, '17', 'product', 0, 0, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_repuve', 'Clave REPUVE (PLD)', 'varchar', 105, '8', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_placas', 'Placas (PLD)', 'varchar', 106, '12', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_nivel_blindaje', 'Nivel de Blindaje (PLD)', 'varchar', 107, '1', 'product', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_numero_serie', 'Número de Serie (PLD)', 'varchar', 108, '20', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_bandera', 'País de Bandera (PLD)', 'varchar', 109, '2', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_matricula', 'Matrícula (PLD)', 'varchar', 110, '12', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_vin', 'VIN (PLD)', 'varchar', 104, '17', 'product', 0, 0, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_repuve', 'Clave REPUVE (PLD)', 'varchar', 105, '8', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_placas', 'Placas (PLD)', 'varchar', 106, '12', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_nivel_blindaje', 'Nivel de Blindaje (PLD)', 'varchar', 107, '1', 'product', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_numero_serie', 'Número de Serie (PLD)', 'varchar', 108, '20', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_bandera', 'País de Bandera (PLD)', 'varchar', 109, '2', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_matricula', 'Matrícula (PLD)', 'varchar', 110, '12', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 3.3 Origen y Estado
-		$extrafields->addExtraField('pld_origen', 'Origen del Vehículo (PLD)', 'select', 111, '', 'product', 0, 1, '', $optOrigen, 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_pais_origen', 'País de Fabricación (PLD)', 'varchar', 112, '2', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_estado_vehiculo', 'Estado del Vehículo (PLD)', 'select', 113, '', 'product', 0, 1, '', $optEstadoVeh, 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_kilometraje', 'Kilometraje (PLD)', 'int', 114, '', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_uso_destino', 'Uso / Destino (PLD)', 'select', 115, '', 'product', 0, 1, '', $optUsoDestino, 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_origen', 'Origen del Vehículo (PLD)', 'select', 111, '', 'product', 0, 1, '', $optOrigen, 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_pais_origen', 'País de Fabricación (PLD)', 'varchar', 112, '2', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_estado_vehiculo', 'Estado del Vehículo (PLD)', 'select', 113, '', 'product', 0, 1, '', $optEstadoVeh, 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_kilometraje', 'Kilometraje (PLD)', 'int', 114, '', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_uso_destino', 'Uso / Destino (PLD)', 'select', 115, '', 'product', 0, 1, '', $optUsoDestino, 1, '',0, '', '', '', $l, $e);
 
 		// 3.4 Documentación Legal
-		$extrafields->addExtraField('pld_numero_factura_original', 'Número Factura Original (PLD)', 'varchar', 116, '30', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_factura_original', 'Fecha Factura Original (PLD)', 'date', 117, '', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_propietario_anterior', 'Propietario Anterior (PLD)', 'varchar', 118, '200', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_tarjeta_circulacion', 'Tarjeta de Circulación (PLD)', 'varchar', 119, '20', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_numero_pedimento', 'Número de Pedimento (PLD)', 'varchar', 120, '20', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_numero_factura_original', 'Número Factura Original (PLD)', 'varchar', 116, '30', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_factura_original', 'Fecha Factura Original (PLD)', 'date', 117, '', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_propietario_anterior', 'Propietario Anterior (PLD)', 'varchar', 118, '200', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_tarjeta_circulacion', 'Tarjeta de Circulación (PLD)', 'varchar', 119, '20', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_numero_pedimento', 'Número de Pedimento (PLD)', 'varchar', 120, '20', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 3.5 Valores
-		$extrafields->addExtraField('pld_valor_factura', 'Valor de Factura (PLD)', 'price', 121, '15,2', 'product', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_valor_comercial', 'Valor Comercial (PLD)', 'price', 122, '15,2', 'product', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_valor_libro_azul', 'Valor Libro Azul (PLD)', 'price', 123, '15,2', 'product', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_valor_factura', 'Valor de Factura (PLD)', 'price', 121, '15,2', 'product', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_valor_comercial', 'Valor Comercial (PLD)', 'price', 122, '15,2', 'product', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_valor_libro_azul', 'Valor Libro Azul (PLD)', 'price', 123, '15,2', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// =====================================================================
 		// FACTURE (llx_facture_extrafields) — 31 campos
@@ -534,52 +534,52 @@ class modModulecompliancepld extends DolibarrModules
 		// =====================================================================
 
 		// 4.1 Control PLD
-		$extrafields->addExtraField('pld_es_actividad_vulnerable', '¿Es Actividad Vulnerable? (PLD)', 'boolean', 100, '', 'facture', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_clave_actividad', 'Clave de Actividad Vulnerable (PLD)', 'varchar', 101, '3', 'facture', 0, 1, '', '', 1, '', $e, 1, '', '', $l, $e);
-		$extrafields->addExtraField('pld_tipo_operacion', 'Tipo de Operación (PLD)', 'varchar', 102, '4', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_supera_umbral_id', '¿Supera Umbral Identificación? (PLD)', 'boolean', 103, '', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_supera_umbral_aviso', '¿Supera Umbral Aviso? (PLD)', 'boolean', 104, '', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_requiere_aviso', '¿Requiere Aviso SAT? (PLD)', 'boolean', 105, '', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_tipo_aviso', 'Tipo de Aviso (PLD)', 'select', 106, '', 'facture', 0, 0, '', $optTipoAviso, 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_es_actividad_vulnerable', '¿Es Actividad Vulnerable? (PLD)', 'boolean', 100, '', 'facture', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_clave_actividad', 'Clave de Actividad Vulnerable (PLD)', 'varchar', 101, '3', 'facture', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_tipo_operacion', 'Tipo de Operación (PLD)', 'varchar', 102, '4', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_supera_umbral_id', '¿Supera Umbral Identificación? (PLD)', 'boolean', 103, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_supera_umbral_aviso', '¿Supera Umbral Aviso? (PLD)', 'boolean', 104, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_requiere_aviso', '¿Requiere Aviso SAT? (PLD)', 'boolean', 105, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_tipo_aviso', 'Tipo de Aviso (PLD)', 'select', 106, '', 'facture', 0, 0, '', $optTipoAviso, 1, '',0, '', '', '', $l, $e);
 
 		// 4.2 Datos de la Operación
-		$extrafields->addExtraField('pld_fecha_operacion', 'Fecha de Operación (PLD)', 'date', 107, '', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_codigo_postal_operacion', 'Código Postal de la Operación (PLD)', 'varchar', 108, '5', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_descripcion_operacion', 'Descripción de la Operación (PLD)', 'text', 109, '', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_razon_operacion', 'Razón / Justificación (PLD)', 'text', 110, '', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_monto_moneda_nacional', 'Monto en Moneda Nacional (PLD)', 'price', 111, '15,2', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_tipo_cambio_aplicado', 'Tipo de Cambio Aplicado (PLD)', 'price', 112, '10,4', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_operacion', 'Fecha de Operación (PLD)', 'date', 107, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_codigo_postal_operacion', 'Código Postal de la Operación (PLD)', 'varchar', 108, '5', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_descripcion_operacion', 'Descripción de la Operación (PLD)', 'text', 109, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_razon_operacion', 'Razón / Justificación (PLD)', 'text', 110, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_monto_moneda_nacional', 'Monto en Moneda Nacional (PLD)', 'price', 111, '15,2', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_tipo_cambio_aplicado', 'Tipo de Cambio Aplicado (PLD)', 'price', 112, '10,4', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 4.3 Referencia del Aviso
-		$extrafields->addExtraField('pld_referencia_aviso', 'Referencia del Aviso (PLD)', 'varchar', 113, '14', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_prioridad', 'Prioridad del Aviso (PLD)', 'varchar', 114, '1', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_referencia_aviso', 'Referencia del Aviso (PLD)', 'varchar', 113, '14', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_prioridad', 'Prioridad del Aviso (PLD)', 'varchar', 114, '1', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 4.4 Alerta
-		$extrafields->addExtraField('pld_tipo_alerta', 'Tipo de Alerta (PLD)', 'varchar', 115, '4', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_descripcion_alerta', 'Descripción de la Alerta (PLD)', 'text', 116, '', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_tipo_alerta', 'Tipo de Alerta (PLD)', 'varchar', 115, '4', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_descripcion_alerta', 'Descripción de la Alerta (PLD)', 'text', 116, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 4.5 Acumulación
-		$extrafields->addExtraField('pld_es_operacion_acumulada', '¿Operación Acumulada? (PLD)', 'boolean', 117, '', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_inicio_acumulacion', 'Fecha Inicio Acumulación (PLD)', 'date', 118, '', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_fin_acumulacion', 'Fecha Fin Acumulación (PLD)', 'date', 119, '', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_monto_acumulado_total', 'Monto Acumulado Total (PLD)', 'price', 120, '15,2', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_es_operacion_acumulada', '¿Operación Acumulada? (PLD)', 'boolean', 117, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_inicio_acumulacion', 'Fecha Inicio Acumulación (PLD)', 'date', 118, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_fin_acumulacion', 'Fecha Fin Acumulación (PLD)', 'date', 119, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_monto_acumulado_total', 'Monto Acumulado Total (PLD)', 'price', 120, '15,2', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 4.6 Control de Avisos
-		$extrafields->addExtraField('pld_aviso_presentado', '¿Aviso Presentado? (PLD)', 'boolean', 121, '', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_presentacion', 'Fecha de Presentación (PLD)', 'date', 122, '', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_folio_aviso', 'Folio del Aviso SAT (PLD)', 'varchar', 123, '14', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_mes_reportado', 'Mes Reportado (PLD)', 'varchar', 124, '6', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_acuse_sat', 'Acuse SAT (PLD)', 'text', 125, '', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_aviso_presentado', '¿Aviso Presentado? (PLD)', 'boolean', 121, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_presentacion', 'Fecha de Presentación (PLD)', 'date', 122, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_folio_aviso', 'Folio del Aviso SAT (PLD)', 'varchar', 123, '14', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_mes_reportado', 'Mes Reportado (PLD)', 'varchar', 124, '6', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_acuse_sat', 'Acuse SAT (PLD)', 'text', 125, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 4.7 Modificatorio
-		$extrafields->addExtraField('pld_es_modificatorio', '¿Es Aviso Modificatorio? (PLD)', 'boolean', 126, '', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_folio_modificacion', 'Folio del Aviso a Modificar (PLD)', 'varchar', 127, '14', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_descripcion_modificacion', 'Descripción de la Modificación (PLD)', 'text', 128, '', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_es_modificatorio', '¿Es Aviso Modificatorio? (PLD)', 'boolean', 126, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_folio_modificacion', 'Folio del Aviso a Modificar (PLD)', 'varchar', 127, '14', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_descripcion_modificacion', 'Descripción de la Modificación (PLD)', 'text', 128, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 4.8 Alertas y Aviso 24h
-		$extrafields->addExtraField('pld_genera_alerta', '¿Genera Alerta Interna? (PLD)', 'boolean', 129, '', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_requiere_aviso_24hrs', '¿Requiere Aviso 24 Horas? (PLD)', 'boolean', 130, '', 'facture', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_razon_24hrs', 'Razón del Aviso 24 Horas (PLD)', 'text', 131, '', 'facture', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_genera_alerta', '¿Genera Alerta Interna? (PLD)', 'boolean', 129, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_requiere_aviso_24hrs', '¿Requiere Aviso 24 Horas? (PLD)', 'boolean', 130, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_razon_24hrs', 'Razón del Aviso 24 Horas (PLD)', 'text', 131, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// =====================================================================
 		// PAYMENT (llx_paiement_extrafields) — 29 campos
@@ -587,55 +587,55 @@ class modModulecompliancepld extends DolibarrModules
 		// =====================================================================
 
 		// 5.1 Datos de Liquidación XSD
-		$extrafields->addExtraField('pld_fecha_pago', 'Fecha de Pago (PLD)', 'date', 100, '', 'payment', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_forma_pago', 'Forma de Pago SAT (PLD)', 'varchar', 101, '1', 'payment', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_instrumento_monetario', 'Instrumento Monetario (PLD)', 'varchar', 102, '2', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_moneda', 'Moneda (PLD)', 'varchar', 103, '3', 'payment', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_monto_operacion', 'Monto de la Operación (PLD)', 'varchar', 104, '17', 'payment', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_pago', 'Fecha de Pago (PLD)', 'date', 100, '', 'payment', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_forma_pago', 'Forma de Pago SAT (PLD)', 'varchar', 101, '1', 'payment', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_instrumento_monetario', 'Instrumento Monetario (PLD)', 'varchar', 102, '2', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_moneda', 'Moneda (PLD)', 'varchar', 103, '3', 'payment', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_monto_operacion', 'Monto de la Operación (PLD)', 'varchar', 104, '17', 'payment', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 5.2 Desglose por Forma de Pago
-		$extrafields->addExtraField('pld_monto_efectivo', 'Monto en Efectivo (PLD)', 'price', 105, '15,2', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_monto_transferencia', 'Monto por Transferencia (PLD)', 'price', 106, '15,2', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_monto_cheque', 'Monto por Cheque (PLD)', 'price', 107, '15,2', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_monto_tarjeta', 'Monto por Tarjeta (PLD)', 'price', 108, '15,2', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_monto_otros', 'Monto por Otros Medios (PLD)', 'price', 109, '15,2', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_monto_efectivo', 'Monto en Efectivo (PLD)', 'price', 105, '15,2', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_monto_transferencia', 'Monto por Transferencia (PLD)', 'price', 106, '15,2', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_monto_cheque', 'Monto por Cheque (PLD)', 'price', 107, '15,2', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_monto_tarjeta', 'Monto por Tarjeta (PLD)', 'price', 108, '15,2', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_monto_otros', 'Monto por Otros Medios (PLD)', 'price', 109, '15,2', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 5.3 Datos Bancarios (Transferencia)
-		$extrafields->addExtraField('pld_banco_origen', 'Banco Origen (PLD)', 'varchar', 110, '100', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_cuenta_origen', 'Cuenta Origen (últ. 4 dígitos) (PLD)', 'varchar', 111, '4', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_clabe_origen', 'CLABE Origen (PLD)', 'varchar', 112, '18', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_banco_destino', 'Banco Destino (PLD)', 'varchar', 113, '100', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_cuenta_destino', 'Cuenta Destino (últ. 4 dígitos) (PLD)', 'varchar', 114, '4', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_numero_autorizacion', 'Número de Autorización (PLD)', 'varchar', 115, '20', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_transferencia', 'Fecha de Transferencia (PLD)', 'date', 116, '', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_banco_origen', 'Banco Origen (PLD)', 'varchar', 110, '100', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_cuenta_origen', 'Cuenta Origen (últ. 4 dígitos) (PLD)', 'varchar', 111, '4', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_clabe_origen', 'CLABE Origen (PLD)', 'varchar', 112, '18', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_banco_destino', 'Banco Destino (PLD)', 'varchar', 113, '100', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_cuenta_destino', 'Cuenta Destino (últ. 4 dígitos) (PLD)', 'varchar', 114, '4', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_numero_autorizacion', 'Número de Autorización (PLD)', 'varchar', 115, '20', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_transferencia', 'Fecha de Transferencia (PLD)', 'date', 116, '', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 5.4 Datos del Cheque
-		$extrafields->addExtraField('pld_banco_cheque', 'Banco Emisor del Cheque (PLD)', 'varchar', 117, '100', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_numero_cheque', 'Número de Cheque (PLD)', 'varchar', 118, '20', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_cuenta_cheque', 'Cuenta del Cheque (últ. 4 dígitos) (PLD)', 'varchar', 119, '4', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_cheque', 'Fecha del Cheque (PLD)', 'date', 120, '', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_librador_cheque', 'Librador del Cheque (PLD)', 'varchar', 121, '200', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_banco_cheque', 'Banco Emisor del Cheque (PLD)', 'varchar', 117, '100', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_numero_cheque', 'Número de Cheque (PLD)', 'varchar', 118, '20', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_cuenta_cheque', 'Cuenta del Cheque (últ. 4 dígitos) (PLD)', 'varchar', 119, '4', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_cheque', 'Fecha del Cheque (PLD)', 'date', 120, '', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_librador_cheque', 'Librador del Cheque (PLD)', 'varchar', 121, '200', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 5.5 Datos de Tarjeta
-		$extrafields->addExtraField('pld_tipo_tarjeta', 'Tipo de Tarjeta (PLD)', 'select', 122, '', 'payment', 0, 0, '', $optTipoTarjeta, 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_emisor_tarjeta', 'Emisor de la Tarjeta (PLD)', 'varchar', 123, '100', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_ultimos_digitos', 'Últimos 4 Dígitos Tarjeta (PLD)', 'varchar', 124, '4', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_numero_autorizacion_tarjeta', 'Número Autorización Tarjeta (PLD)', 'varchar', 125, '20', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_tipo_tarjeta', 'Tipo de Tarjeta (PLD)', 'select', 122, '', 'payment', 0, 0, '', $optTipoTarjeta, 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_emisor_tarjeta', 'Emisor de la Tarjeta (PLD)', 'varchar', 123, '100', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_ultimos_digitos', 'Últimos 4 Dígitos Tarjeta (PLD)', 'varchar', 124, '4', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_numero_autorizacion_tarjeta', 'Número Autorización Tarjeta (PLD)', 'varchar', 125, '20', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// 5.6 Control de Efectivo
-		$extrafields->addExtraField('pld_supera_limite_efectivo', '¿Supera Límite de Efectivo? (PLD)', 'boolean', 126, '', 'payment', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_alerta_efectivo', 'Alerta por Efectivo (PLD)', 'boolean', 127, '', 'payment', 0, 1, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_justificacion_efectivo', 'Justificación Uso de Efectivo (PLD)', 'text', 128, '', 'payment', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_supera_limite_efectivo', '¿Supera Límite de Efectivo? (PLD)', 'boolean', 126, '', 'payment', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_alerta_efectivo', 'Alerta por Efectivo (PLD)', 'boolean', 127, '', 'payment', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_justificacion_efectivo', 'Justificación Uso de Efectivo (PLD)', 'text', 128, '', 'payment', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// =====================================================================
 		// COMMANDE (llx_commande_extrafields) — 4 campos
 		// Pre-validación PLD en pedidos
 		// =====================================================================
 
-		$extrafields->addExtraField('pld_preventa_identificada', '¿Preventa Identificada? (PLD)', 'boolean', 100, '', 'commande', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_anticipo_estimado', 'Anticipo Estimado (PLD)', 'price', 101, '15,2', 'commande', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_forma_pago_planeada', 'Forma de Pago Planeada (PLD)', 'select', 102, '', 'commande', 0, 0, '', $optPagoPlaneado, 1, '', $e, 0, '', '', $l, $e);
-		$extrafields->addExtraField('pld_alerta_previa', '¿Alerta Previa? (PLD)', 'boolean', 103, '', 'commande', 0, 0, '', '', 1, '', $e, 0, '', '', $l, $e);
+		$extrafields->addExtraField('pld_preventa_identificada', '¿Preventa Identificada? (PLD)', 'boolean', 100, '', 'commande', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_anticipo_estimado', 'Anticipo Estimado (PLD)', 'price', 101, '15,2', 'commande', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_forma_pago_planeada', 'Forma de Pago Planeada (PLD)', 'select', 102, '', 'commande', 0, 0, '', $optPagoPlaneado, 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_alerta_previa', '¿Alerta Previa? (PLD)', 'boolean', 103, '', 'commande', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		$this->remove($options);
 
