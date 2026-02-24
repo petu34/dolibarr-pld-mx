@@ -376,6 +376,9 @@ class modModulecompliancepld extends DolibarrModules
 		include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 		$extrafields = new ExtraFields($this->db);
 
+		// Limpiar fieldcomputed residual de init() previos con args desalineados (fix commit 49c6cb3)
+		$this->db->query("UPDATE ".MAIN_DB_PREFIX."extrafields SET fieldcomputed = NULL WHERE name LIKE 'pld_%' AND fieldcomputed LIKE 'PLD%'");
+
 		$e = 'isModEnabled("modulecompliancepld")';
 		$l = 'modulecompliancepld@modulecompliancepld';
 
