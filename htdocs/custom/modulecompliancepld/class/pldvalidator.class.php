@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * @file        pldvalidator.class.php
  * @module      CompliancePLD
@@ -33,7 +35,7 @@ class PLDValidator
 	 * CURP: 18 caracteres. Valida fecha real y entidad federativa.
 	 * Fuente: ssprof2.xsd curp_type
 	 */
-	const REGEX_CURP = '/^([A-Z]{4})((\d{2})(((0[469]|1[1])(0[1-9]|[12]\d|3[0]))|((0[2])(0[1-9]|[12]\d))|((0[13578]|1[02])(0[1-9]|[12]\d|3[01]))))([MH])([A-Z]{5})([A-J\d][\d])$/';
+	const REGEX_CURP = '/^[A-Z]{1}[AEIOU]{1}[A-Z]{2}[0-9]{2}(0[1-9]|1[0-2])(0[1-9]|1[0-9]|2[0-9]|3[0-1])[HM]{1}(AS|BC|BS|CC|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TL|TS|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]{1}[0-9]{1}$/';
 
 	/**
 	 * RFC persona física: 13 caracteres. Incluye Ñ y & como acepta el SAT.
@@ -189,7 +191,16 @@ class PLDValidator
 		if (strlen($curp) !== 18) {
 			return false;
 		}
-		return (bool) preg_match(self::REGEX_CURP, $curp);
+		if (!preg_match(self::REGEX_CURP, $curp)) {
+			return false;
+		}
+		// Validación adicional de fecha real (el regex permite día 31 en cualquier mes)
+		$anio_2d = (int) substr($curp, 4, 2);
+		$mes     = (int) substr($curp, 6, 2);
+		$dia     = (int) substr($curp, 8, 2);
+		// CURP usa año de 2 dígitos; asumir 2000+ para ≤30, 1900+ para >30
+		$anio = $anio_2d <= 30 ? 2000 + $anio_2d : 1900 + $anio_2d;
+		return checkdate($mes, $dia, $anio);
 	}
 
 	/**

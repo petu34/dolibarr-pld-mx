@@ -143,15 +143,14 @@ class CURPValidationTest extends TestCase
 	}
 
 	/**
-	 * CURP con código de entidad no estándar — el regex XSD acepta [A-Z]{5}
-	 * sin enumerar entidades, por lo que 'ZZ' pasa la validación de formato.
-	 * La validación semántica de entidad se hará en una capa superior.
+	 * CURP inválida — código de entidad no válido (ZZ no está en las 31 entidades)
+	 * El regex AGENTS.md enumera las 31 entidades federativas válidas.
 	 */
-	public function testCURPEstadoNoEstandarAceptadaPorRegex(): void
+	public function testCURPInvalidaEntidadNoValida(): void
 	{
-		$this->assertTrue(
+		$this->assertFalse(
 			$this->validator->validarCURP('GOGA850315HZZNZR07'),
-			'CURP con entidad ZZ pasa validación de formato (regex XSD no enumera entidades)'
+			'CURP con entidad ZZ debe ser rechazada (no es entidad válida)'
 		);
 	}
 
@@ -207,6 +206,45 @@ class CURPValidationTest extends TestCase
 		$this->assertFalse(
 			$this->validator->validarCURP('GOGA850230HDFNZR07'),
 			'CURP con día 30 en febrero debe ser rechazada'
+		);
+	}
+
+	/**
+	 * CURP inválida — posición 2 no es vocal
+	 * El regex AGENTS.md requiere [AEIOU] en posición 2.
+	 */
+	public function testCURPInvalidaSinVocalEnPosicion2(): void
+	{
+		// GBGA... — B no es vocal
+		$this->assertFalse(
+			$this->validator->validarCURP('GBGA850315HDFNZR07'),
+			'CURP sin vocal en posición 2 debe ser rechazada'
+		);
+	}
+
+	/**
+	 * CURP inválida — vocal en posición consonante (14-16)
+	 * Posiciones 14-16 requieren [B-DF-HJ-NP-TV-Z] (solo consonantes).
+	 */
+	public function testCURPInvalidaVocalEnPosicionConsonante(): void
+	{
+		// ...HDFAZR07 — A es vocal, no consonante
+		$this->assertFalse(
+			$this->validator->validarCURP('GOGA850315HDFAZR07'),
+			'CURP con vocal en posición de consonante (14) debe ser rechazada'
+		);
+	}
+
+	/**
+	 * CURP inválida — febrero 29 en año no bisiesto
+	 * El regex permite día 29 en cualquier mes; checkdate lo valida.
+	 */
+	public function testCURPInvalidaFeb29AnioNoBisiesto(): void
+	{
+		// 850229 = 29 feb 1985 — 1985 no es bisiesto
+		$this->assertFalse(
+			$this->validator->validarCURP('GOGA850229HDFNZR07'),
+			'CURP con 29 de febrero en año no bisiesto debe ser rechazada'
 		);
 	}
 }
