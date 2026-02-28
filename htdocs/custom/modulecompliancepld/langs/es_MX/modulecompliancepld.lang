@@ -622,3 +622,60 @@ PLDAlertaEfectivoAlto = Monto alto en efectivo detectado. Revisar justificación
 PLDAlertaAcumulado = Se detectó acumulación de operaciones con el mismo cliente que supera el umbral
 PLDAlertaPEP = El cliente es o está relacionado con una Persona Expuesta Políticamente
 PLDAlertaIdentificacionProximaVencer = La identificación del cliente está próxima a vencer
+
+# ============================================================
+# PARTE 7: Formularios UI Fase 2
+# Operaciones PLD, Beneficiarios, Documentos
+# ============================================================
+
+# Operación PLD (operacion.php)
+PLDOperacion = Operación PLD
+NuevaOperacionPLD = Nueva Operación PLD
+TipoOperacion = Tipo de Operación
+TipoVehiculo = Tipo de Vehículo
+ActividadVulnerable = Actividad Vulnerable
+FechaOperacion = Fecha de Operación
+MontoMXN = Monto en MXN
+OperacionPLD = Operación PLD
+Folio = Folio
+SuperaUmbral = Supera Umbral
+RequiereAviso = Requiere Aviso
+
+# Beneficiario PLD (beneficiario.php)
+PLDBeneficiario = Beneficiario PLD
+NuevoBeneficiarioPLD = Nuevo Beneficiario PLD
+TipoBeneficiario = Tipo de Beneficiario
+Nombre = Nombre
+ApellidoPaterno = Apellido Paterno
+ApellidoMaterno = Apellido Materno
+CURP = CURP
+RFC = RFC
+Nacionalidad = Nacionalidad
+PorcentajeParticipacion = Porcentaje de Participación
+EsPEP = ¿Es Persona Expuesta Políticamente?
+BeneficiarioPLD = Beneficiario PLD
+NombreCompleto = Nombre Completo
+Verificado = Verificado
+
+# Documento PLD (documento.php)
+PLDDocumento = Documento PLD
+SubirDocumentoPLD = Subir Documento PLD
+TipoDocumento = Tipo de Documento
+NumeroDocumento = Número de Documento
+FechaEmision = Fecha de Emisión
+FechaVencimiento = Fecha de Vencimiento
+AutoridadEmite = Autoridad Emisora
+Archivo = Archivo
+Subir = Subir
+DocumentoPLD = Documento PLD
+DocumentoVencido = ⚠️ Este documento está vencido
+VerificarDocumento = Verificar Documento
+DocumentoSubidoCorrectamente = Documento subido correctamente
+DocumentoVerificado = Documento verificado correctamente
+NoSeSeleccionoArchivo = No se seleccionó ningún archivo
+
+# Botones y acciones comunes
+Crear = Crear
+Empresa = Empresa
+Factura = Factura
+Estado = Estado
