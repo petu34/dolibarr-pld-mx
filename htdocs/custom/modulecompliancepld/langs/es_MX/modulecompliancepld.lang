@@ -582,6 +582,24 @@ PLDErrorEfectivoSuperado = El pago en efectivo supera el límite de %s MXN (Art.
 PLDErrorAvisoRequerido = Esta operación requiere la presentación de un aviso al SAT
 PLDErrorIdentificacionVencida = La identificación oficial presentada está vencida
 
+# Mensajes de validación — formularios PLD (hook doActions)
+PLDErrorTelefonoInvalido = El número de teléfono PLD debe tener entre 10 y 12 dígitos
+PLDErrorCorreoInvalido = El correo electrónico PLD no tiene un formato válido (máximo 60 caracteres)
+
+# Mensajes de log — triggers PLD
+PLDTriggerContactoValidado = Contacto %s validado correctamente por módulo PLD
+PLDTriggerContactoError = Error de validación PLD en contacto %s: %s
+PLDTriggerEmpresaValidada = Empresa %s validada correctamente por módulo PLD
+PLDTriggerEmpresaError = Error de validación PLD en empresa %s: %s
+
+# Mensajes de validación — JavaScript (client-side)
+PLDJSErrorCURPFormato = Formato CURP inválido: debe ser 18 caracteres (letra, vocal, 2 letras, fecha, sexo, entidad, 3 consonantes, dígito verificador)
+PLDJSErrorRFCFormato = Formato RFC inválido: persona física 13 caracteres, persona moral 12 caracteres
+PLDJSErrorCPFormato = Formato de código postal inválido: debe ser exactamente 5 dígitos
+PLDJSErrorTelefonoFormato = Formato de teléfono inválido: debe tener entre 10 y 12 dígitos
+PLDJSErrorCorreoFormato = Formato de correo electrónico inválido
+PLDJSCampoValido = Formato válido
+
 # ============================================================
 # Mensajes Informativos
 # ============================================================

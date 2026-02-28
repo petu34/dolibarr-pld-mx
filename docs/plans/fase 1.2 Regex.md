@@ -1,8 +1,36 @@
 # Plan de Implementación — Fase 1.2: Integración PLDValidator con Dolibarr
 
-> **Versión:** 1.0 | **Fecha:** 26 de febrero de 2026
+> **Versión:** 1.1 | **Fecha:** 27 de febrero de 2026
 > **Generado por:** Sisyphus (Claude Code) + Plan Agent
 > **Compliance:** LFPIORPI Art. 17 Fracc. VIII — PLD México
+
+---
+
+## Estado de Avance (actualizado 27 de febrero de 2026)
+
+| Fase | Descripción | Estado | Commit | Notas |
+|------|-------------|--------|--------|-------|
+| **Fase 1** | Corregir Regex CURP + `strict_types` + Tests | ✅ Completada | `c428dbc` | 163 tests / 178 assertions pasan |
+| **Fase 2** | Implementar Trigger Handlers | ✅ Completada | `91db595` | 4 handlers + 2 helpers privados |
+| **Fase 3** | Implementar Hook Class (formularios) | ✅ Completada | `91db595` + `9d1e500` | `doActions()` real + boilerplate limpio |
+| **Fase 4** | Agregar Entradas de Idioma | ⚠️ Parcial | `91db595` | Faltan: `PLDErrorTelefonoInvalido`, `PLDErrorCorreoInvalido`, `PLDJSError*`, `PLDTrigger*` |
+| **Fase 5** | Validación JS Client-Side | ❌ Pendiente | — | Archivo JS sigue siendo boilerplate |
+| **Fase 6** | Verificación Integral | ❌ Pendiente | — | Depende de Fases 4-5 |
+
+### Detalle de lo pendiente en Fase 4
+
+Las siguientes keys de idioma son referenciadas en código PHP pero **no existen** en `modulecompliancepld.lang`:
+
+| Key faltante | Usada por | Archivo |
+|---|---|---|
+| `PLDErrorTelefonoInvalido` | Hook `validarFormularioContacto()` | `actions_modulecompliancepld.class.php:341` |
+| `PLDErrorCorreoInvalido` | Hook `validarFormularioContacto()` | `actions_modulecompliancepld.class.php:347` |
+| `PLDJSErrorCURPFormato` | JS client-side (Fase 5) | `modulecompliancepld.js.php` |
+| `PLDJSErrorRFCFormato` | JS client-side (Fase 5) | `modulecompliancepld.js.php` |
+| `PLDJSErrorCPFormato` | JS client-side (Fase 5) | `modulecompliancepld.js.php` |
+| `PLDJSErrorTelefonoFormato` | JS client-side (Fase 5) | `modulecompliancepld.js.php` |
+| `PLDJSErrorCorreoFormato` | JS client-side (Fase 5) | `modulecompliancepld.js.php` |
+| `PLDJSCampoValido` | JS client-side (Fase 5) | `modulecompliancepld.js.php` |
 
 ---
 
@@ -72,9 +100,10 @@ Fase 1 (CURP regex + strict_types + tests)
 
 ---
 
-## Fase 1: Corregir Regex CURP + `declare(strict_types=1)` + Actualizar Tests
+## Fase 1: Corregir Regex CURP + `declare(strict_types=1)` + Actualizar Tests ✅
 
-**Tiempo estimado**: ~20 minutos
+**Estado**: Completada — commit `c428dbc`
+**Tiempo real**: ~20 minutos
 **Dependencias**: Ninguna (primera fase)
 
 ### Archivos modificados
@@ -254,9 +283,10 @@ public function testCURPInvalidaFeb29AnioNoBisiesto(): void
 
 ---
 
-## Fase 2: Implementar Trigger Handlers
+## Fase 2: Implementar Trigger Handlers ✅
 
-**Tiempo estimado**: ~25 minutos
+**Estado**: Completada — commit `91db595`
+**Tiempo real**: ~25 minutos
 **Dependencias**: Fase 1 (necesita `PLDValidator` con regex CURP corregido)
 
 ### Archivos modificados
@@ -467,9 +497,10 @@ private function validarCamposPLDEmpresa($object, Translate $langs): int
 
 ---
 
-## Fase 3: Implementar Hook Class (Validación en Formularios)
+## Fase 3: Implementar Hook Class (Validación en Formularios) ✅
 
-**Tiempo estimado**: ~25 minutos
+**Estado**: Completada — commits `91db595` + `9d1e500` (cleanup boilerplate)
+**Tiempo real**: ~25 minutos
 **Dependencias**: Fase 1 (necesita `PLDValidator`)
 
 ### Archivos modificados
@@ -639,9 +670,10 @@ Eliminar `$this->resprints = 'A text to show';` (línea 150) y `$this->results =
 
 ---
 
-## Fase 4: Agregar Entradas de Idioma
+## Fase 4: Agregar Entradas de Idioma ⚠️ PARCIAL
 
-**Tiempo estimado**: ~15 minutos
+**Estado**: Parcialmente completada — faltan 8 keys de idioma (ver tabla en Estado de Avance)
+**Tiempo estimado restante**: ~10 minutos
 **Dependencias**: Fases 2-3 (necesita saber qué keys de lang se referencian)
 
 ### Archivos modificados
@@ -706,8 +738,9 @@ PLDJSCampoValido = Formato válido
 
 ---
 
-## Fase 5: Validación JS Client-Side
+## Fase 5: Validación JS Client-Side ❌ PENDIENTE
 
+**Estado**: Pendiente — archivo JS sigue siendo boilerplate del scaffold Dolibarr
 **Tiempo estimado**: ~20 minutos
 **Dependencias**: Fase 4 (necesita keys de lang JS), Fase 1 (regex CURP correcto a replicar)
 
@@ -845,8 +878,9 @@ $(document).ready(function() {
 
 ---
 
-## Fase 6: Verificación Integral
+## Fase 6: Verificación Integral ❌ PENDIENTE
 
+**Estado**: Pendiente — depende de Fases 4 y 5
 **Tiempo estimado**: ~10 minutos
 **Dependencias**: Todas las fases anteriores
 
