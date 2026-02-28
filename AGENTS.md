@@ -589,10 +589,10 @@ Mantener la documentación técnica y regulatoria actualizada **en paralelo** al
 │   └── css/
 │       └── compliancepld.css
 ├── sql/
-│   ├── llx_pld_operaciones.sql
-│   ├── llx_pld_beneficiarios.sql
-│   ├── llx_pld_documentos.sql
-│   ├── llx_pld_alertas.sql
+│   ├── llx_pld_operacion.sql
+│   ├── llx_pld_beneficiario.sql
+│   ├── llx_pld_documento.sql
+│   ├── llx_pld_alerta.sql
 │   └── migrations/
 │       └── migration_001_extrafields.sql
 ├── langs/
@@ -621,10 +621,10 @@ $fecha_operacion = '';
 const PLD_UMBRAL_VEHICULO_NUEVO = 250000;
 const PLD_UMBRAL_VEHICULO_USADO = 100000;
 
-// Tablas SQL: llx_ + nombre_descriptivo
-// llx_pld_operaciones
-// llx_pld_beneficiarios
-// llx_pld_documentos_digitalizados
+// Tablas SQL: llx_ + nombre_descriptivo (singular)
+// llx_pld_operacion
+// llx_pld_beneficiario
+// llx_pld_documento
 
 // Extrafields: pld_ + nombre_campo
 // pld_curp, pld_rfc, pld_nacionalidad
@@ -660,7 +660,7 @@ if (!defined('DOL_VERSION')) {
 
 ```sql
 -- Tabla principal de operaciones vulnerables
-llx_pld_operaciones (
+llx_pld_operacion (
   rowid, ref, fk_soc, fk_facture,
   tipo_operacion, monto, moneda,
   fecha_operacion, estado_aviso,
@@ -668,16 +668,18 @@ llx_pld_operaciones (
   tms_creation, tms_modification, fk_user_creat
 )
 
--- Beneficiarios finales de las operaciones
-llx_pld_beneficiarios (
-  rowid, fk_pld_operacion, nombre_completo,
+-- Beneficiarios controladores de personas morales
+llx_pld_beneficiario (
+  rowid, fk_societe, fk_socpeople,
+  tipo_beneficiario, nombre, apellido_paterno, apellido_materno,
   curp, rfc, fecha_nacimiento, nacionalidad,
   tipo_identificacion, numero_identificacion,
+  porcentaje_participacion, es_pep,
   pais_residencia, entidad_federativa
 )
 
 -- Documentos digitalizados de identificación
-llx_pld_documentos (
+llx_pld_documento (
   rowid, fk_soc, tipo_documento,
   numero_documento, fecha_emision, fecha_vencimiento,
   archivo_nombre, archivo_hash, archivo_ruta,
@@ -685,19 +687,20 @@ llx_pld_documentos (
 )
 
 -- Alertas automáticas del sistema
-llx_pld_alertas (
+llx_pld_alerta (
   rowid, tipo_alerta, nivel_riesgo,
   fk_soc, fk_pld_operacion,
   descripcion, estado,
   fecha_alerta, fk_user_asignado, fecha_resolucion
 )
 
--- Log de envíos al SAT
-llx_pld_envios_sat (
-  rowid, numero_folio_sat, tipo_aviso,
-  fk_pld_operacion, xml_generado,
-  estado_envio, respuesta_sat,
-  fecha_generacion, fecha_envio, fk_user_envio
+-- Control de avisos presentados al SAT
+llx_pld_aviso (
+  rowid, tipo_aviso, mes_reportado,
+  fk_pld_operacion, referencia_aviso,
+  archivo_xml_ruta, archivo_xml_hash,
+  presentado, folio_sat, estado_acuse,
+  estado, fecha_presentacion, fk_user_envio
 )
 
 -- Configuración del módulo PLD
@@ -707,7 +710,7 @@ llx_pld_configuracion (
 )
 
 -- Períodos de reporte
-llx_pld_periodos_reporte (
+llx_pld_periodo_reporte (
   rowid, periodo_inicio, periodo_fin,
   estado, total_operaciones, total_avisos,
   xml_consolidado, fecha_cierre
@@ -776,7 +779,7 @@ Compliance: Art. 17 Fracc. VIII LFPIORPI
 
 [DOC] docs: agregar trazabilidad campo pld_curp → Art. 17 Fracc. VIII
 
-[GEN] sql: migración 003 — crear tabla llx_pld_beneficiarios
+[GEN] sql: migración 003 — crear tabla llx_pld_beneficiario
 ```
 
 ### 10.2 Reglas de ramas
