@@ -13,24 +13,11 @@
 | **Fase 1** | Corregir Regex CURP + `strict_types` + Tests | ✅ Completada | `c428dbc` | 163 tests / 178 assertions pasan |
 | **Fase 2** | Implementar Trigger Handlers | ✅ Completada | `91db595` | 4 handlers + 2 helpers privados |
 | **Fase 3** | Implementar Hook Class (formularios) | ✅ Completada | `91db595` + `9d1e500` | `doActions()` real + boilerplate limpio |
-| **Fase 4** | Agregar Entradas de Idioma | ⚠️ Parcial | `91db595` | Faltan: `PLDErrorTelefonoInvalido`, `PLDErrorCorreoInvalido`, `PLDJSError*`, `PLDTrigger*` |
-| **Fase 5** | Validación JS Client-Side | ❌ Pendiente | — | Archivo JS sigue siendo boilerplate |
-| **Fase 6** | Verificación Integral | ❌ Pendiente | — | Depende de Fases 4-5 |
+| **Fase 4** | Agregar Entradas de Idioma | ✅ Completada | — | 14 keys agregadas: hook, trigger, JS |
+| **Fase 5** | Validación JS Client-Side | ✅ Completada | — | Regex espejo PHP, 5 validators on blur, auto-uppercase |
+| **Fase 6** | Verificación Integral | ✅ Completada | — | php -l 4/4, PHPUnit 163/163, lang 0 duplicados, regex PHP≡JS |
 
-### Detalle de lo pendiente en Fase 4
-
-Las siguientes keys de idioma son referenciadas en código PHP pero **no existen** en `modulecompliancepld.lang`:
-
-| Key faltante | Usada por | Archivo |
-|---|---|---|
-| `PLDErrorTelefonoInvalido` | Hook `validarFormularioContacto()` | `actions_modulecompliancepld.class.php:341` |
-| `PLDErrorCorreoInvalido` | Hook `validarFormularioContacto()` | `actions_modulecompliancepld.class.php:347` |
-| `PLDJSErrorCURPFormato` | JS client-side (Fase 5) | `modulecompliancepld.js.php` |
-| `PLDJSErrorRFCFormato` | JS client-side (Fase 5) | `modulecompliancepld.js.php` |
-| `PLDJSErrorCPFormato` | JS client-side (Fase 5) | `modulecompliancepld.js.php` |
-| `PLDJSErrorTelefonoFormato` | JS client-side (Fase 5) | `modulecompliancepld.js.php` |
-| `PLDJSErrorCorreoFormato` | JS client-side (Fase 5) | `modulecompliancepld.js.php` |
-| `PLDJSCampoValido` | JS client-side (Fase 5) | `modulecompliancepld.js.php` |
+### Todas las fases completadas — 27 de febrero de 2026
 
 ---
 
