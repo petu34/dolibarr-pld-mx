@@ -1,9 +1,12 @@
 # Plan Fase 2.1: Formularios UI y Páginas de Navegación PLD
 
-> **Versión:** 1.0  
-> **Fecha:** 27 de febrero de 2026  
-> **Prerequisito:** Fase 2 completada — 6 tablas PLD desplegadas + 12 FKs + 38 índices  
-> **Rama:** `fase2/ui-forms`  
+> **Versión:** 1.1
+> **Fecha:** 27 de febrero de 2026
+> **Actualizado:** 15 de marzo de 2026
+> **Prerequisito:** Fase 2 completada — 6 tablas PLD desplegadas + 12 FKs + 38 índices
+> **Rama:** `fase1/extrafields`
+> **Commit:** `85bb002`
+> **Estado:** 🟡 PARCIALMENTE COMPLETO — PARTE 3 pendiente
 
 ---
 
@@ -231,53 +234,54 @@ PLDMenu (top)
 
 ## 📅 Secuencia de Implementación
 
-| Orden | Parte | Archivos | Estimado | Dependencias |
-|-------|-------|----------|----------|--------------|
-| 1 | PARTE 7 | `modModulecompliancepld.class.php` | 30 min | Ninguna |
-| 2 | PARTE 6 | `modulecompliancepld.lang` | 30 min | Ninguna |
-| 3 | PARTE 1a | `operaciones_list.php` | 1.5 hrs | PARTE 6 |
-| 4 | PARTE 3a | `operacion.php` (mejoras) | 45 min | PARTE 1a |
-| 5 | PARTE 1b | `avisos_list.php` | 1 hr | PARTE 6 |
-| 6 | PARTE 1c | `alertas_list.php` | 1 hr | PARTE 6 |
-| 7 | PARTE 1d | `beneficiarios_list.php` | 1 hr | PARTE 6 |
-| 8 | PARTE 1e | `documentos_list.php` | 1 hr | PARTE 6 |
-| 9 | PARTE 3b | `beneficiario.php`, `documento.php` (mejoras) | 45 min | PARTE 1d, 1e |
-| 10 | PARTE 2 | `index.php` (dashboard) | 1.5 hrs | PARTE 1a-1e |
-| 11 | PARTE 4 | `admin/setup.php` | 1 hr | PARTE 6 |
-| 12 | PARTE 5 | `reportes.php` | 1 hr | PARTE 1a-1e |
-
-**Total estimado:** ~10-11 horas de desarrollo
+| Orden | Parte | Archivos | Estado |
+|-------|-------|----------|--------|
+| 1 | PARTE 7 | `modModulecompliancepld.class.php` | ✅ Completado |
+| 2 | PARTE 6 | `modulecompliancepld.lang` | ✅ Completado (+125 claves) |
+| 3 | PARTE 1a | `operaciones_list.php` | ✅ Completado |
+| 4 | PARTE 3a | `operacion.php` (mejoras) | ⏳ Pendiente |
+| 5 | PARTE 1b | `avisos_list.php` | ✅ Completado |
+| 6 | PARTE 1c | `alertas_list.php` | ✅ Completado |
+| 7 | PARTE 1d | `beneficiarios_list.php` | ✅ Completado |
+| 8 | PARTE 1e | `documentos_list.php` | ✅ Completado |
+| 9 | PARTE 3b | `beneficiario.php`, `documento.php` (mejoras) | ⏳ Pendiente |
+| 10 | PARTE 2 | `index.php` (dashboard) | ✅ Completado |
+| 11 | PARTE 4 | `admin/setup.php` | ✅ Completado |
+| 12 | PARTE 5 | `reportes.php` | ✅ Completado |
 
 ---
 
 ## ✅ Criterios de Aceptación
 
 ### Funcional
-- [ ] Todas las entradas del menú PLD navegan sin 404
-- [ ] Las 5 páginas de lista muestran datos de la BD con paginación y filtros
-- [ ] Los formularios de creación insertan registros correctamente
-- [ ] Los formularios de edición actualizan registros correctamente
-- [ ] La eliminación funciona con confirmación
-- [ ] El dashboard muestra contadores y tablas resumen
-- [ ] La página admin guarda y recupera configuración
+- [x] Todas las entradas del menú PLD navegan sin 404
+- [x] Las 5 páginas de lista muestran datos de la BD con paginación y filtros
+- [x] Los formularios de creación insertan registros correctamente (card pages previas)
+- [x] Los formularios de edición actualizan registros correctamente (card pages previas)
+- [x] La eliminación funciona con confirmación (operaciones_list)
+- [x] El dashboard muestra contadores y tablas resumen
+- [x] La página admin guarda y recupera configuración
+- [ ] Redirect a lista desde card pages sin `action` ni `id` *(PARTE 3 — pendiente)*
+- [ ] Breadcrumbs y botones de acción en vistas de detalle *(PARTE 3 — pendiente)*
 
 ### Seguridad
-- [ ] Todas las páginas verifican `$user->hasRight('modulecompliancepld', 'read')`
-- [ ] Acciones de escritura verifican `$user->hasRight('modulecompliancepld', 'write')`
-- [ ] Admin setup verifica `$user->admin`
-- [ ] Todas las entradas sanitizadas con `GETPOST()`
-- [ ] Token CSRF en todos los formularios (`newToken()`)
+- [x] Todas las páginas verifican `$user->hasRight('modulecompliancepld', 'read')`
+- [x] Acciones de escritura verifican `$user->hasRight('modulecompliancepld', 'write')`
+- [x] Admin setup verifica `$user->admin`
+- [x] Todas las entradas sanitizadas con `GETPOST()`
+- [x] Token CSRF en todos los formularios (`newToken()`)
 
 ### Compatibilidad
-- [ ] Funciona con PostgreSQL (driver pgsql de Dolibarr)
-- [ ] Compatible con Dolibarr 20 y 21
-- [ ] Todas las queries usan `MAIN_DB_PREFIX` (no `llx_` hardcodeado)
-- [ ] Idioma en español mexicano completo
+- [x] Funciona con PostgreSQL (driver pgsql de Dolibarr)
+- [x] Compatible con Dolibarr 20 y 21
+- [x] Todas las queries usan `MAIN_DB_PREFIX` (no `llx_` hardcodeado)
+- [x] Idioma en español mexicano completo (+125 claves nuevas)
 
 ### Calidad
-- [ ] 0 errores en `lsp_diagnostics` en archivos modificados
-- [ ] Sin `as any`, `@ts-ignore` (no aplica PHP, pero equivalente: sin `@` para suprimir errores)
-- [ ] Cada archivo con encabezado PHP estándar del proyecto
+- [x] 0 errores de sintaxis PHP (`php -l`) en todos los archivos
+- [x] Sin supresión de errores (`@`) en código nuevo
+- [x] Cada archivo con encabezado PHP estándar del proyecto
+- [x] Clases CSS nativas Dolibarr (`badge-status*`, `div-table-responsive`)
 
 ---
 
