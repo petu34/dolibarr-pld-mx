@@ -30,7 +30,7 @@ if (!$user->hasRight('modulecompliancepld', 'read')) {
 	accessforbidden();
 }
 
-$sortfield = GETPOST('sortfield', 'aZ09comma') ?: 'al.fecha_alerta';
+$sortfield = GETPOST('sortfield', 'aZ09comma') ?: 'al.datec';
 $sortorder = GETPOST('sortorder', 'aZ09comma') ?: 'DESC';
 $page      = max(0, (int) GETPOST('page', 'int'));
 $limit     = getDolGlobalInt('MAIN_SIZE_LISTE_LIMIT', 25);
@@ -65,7 +65,7 @@ print '<td><input type="submit" class="button" value="'.$langs->trans('Search').
 print '<a class="button button-cancel" href="'.$_SERVER["PHP_SELF"].'">'.$langs->trans('Clear').'</a></td>';
 print '</tr></table></div></form>';
 
-$sql  = "SELECT al.rowid, al.tipo_alerta, al.nivel_riesgo, al.fk_societe, al.descripcion, al.estado, al.fecha_alerta, s.nom as empresa_nom";
+$sql  = "SELECT al.rowid, al.tipo_alerta, al.nivel_riesgo, al.fk_societe, al.descripcion, al.estado, al.datec as fecha_alerta, s.nom as empresa_nom";
 $sql .= " FROM ".MAIN_DB_PREFIX."pld_alerta as al";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = al.fk_societe";
 $sql .= " WHERE al.entity IN (".getEntity('modulecompliancepld').")";
@@ -100,7 +100,7 @@ print_liste_field_titre($langs->trans('ColNivelRiesgo'), $_SERVER["PHP_SELF"], '
 print_liste_field_titre($langs->trans('ColEmpresa'), $_SERVER["PHP_SELF"], 's.nom', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('ColDescripcion'), '', '', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('ColEstado'), $_SERVER["PHP_SELF"], 'al.estado', '', $param, 'class="center"', $sortfield, $sortorder);
-print_liste_field_titre($langs->trans('ColFechaAlerta'), $_SERVER["PHP_SELF"], 'al.fecha_alerta', '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans('ColFechaAlerta'), $_SERVER["PHP_SELF"], 'al.datec', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre('', '', '');
 print '</tr>';
 

@@ -78,7 +78,7 @@ print '</tr></table></div></form>';
 
 // Query
 $sql  = "SELECT a.rowid, a.referencia_aviso, a.tipo_aviso, a.mes_reportado, a.estado,";
-$sql .= " a.fecha_presentacion, a.folio_sat, a.total_operaciones, a.monto_total_mxn";
+$sql .= " a.fecha_presentacion, a.folio_sat, a.numero_operaciones, a.monto_total_operaciones";
 $sql .= " FROM ".MAIN_DB_PREFIX."pld_aviso as a";
 $sql .= " WHERE a.entity IN (".getEntity('modulecompliancepld').")";
 if (!empty($filtro_tipo))   { $sql .= " AND a.tipo_aviso = '".$db->escape($filtro_tipo)."'"; }
@@ -113,7 +113,7 @@ print_liste_field_titre($langs->trans('ColMesReportado'), $_SERVER["PHP_SELF"], 
 print_liste_field_titre($langs->trans('ColEstado'), $_SERVER["PHP_SELF"], 'a.estado', '', $param, 'class="center"', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('ColFechaPresentacion'), $_SERVER["PHP_SELF"], 'a.fecha_presentacion', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('ColFolioSAT'), $_SERVER["PHP_SELF"], 'a.folio_sat', '', $param, '', $sortfield, $sortorder);
-print_liste_field_titre($langs->trans('TotalOperaciones'), $_SERVER["PHP_SELF"], 'a.total_operaciones', '', $param, 'class="right"', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans('TotalOperaciones'), $_SERVER["PHP_SELF"], 'a.numero_operaciones', '', $param, 'class="right"', $sortfield, $sortorder);
 print_liste_field_titre('', '', '');
 print '</tr>';
 
@@ -138,7 +138,7 @@ if ($resql) {
 		print '<td class="center"><span class="badge '.$ec.'">'.dol_escape_htmltag($el).'</span></td>';
 		print '<td>'.dol_print_date($db->jdate($obj->fecha_presentacion), 'day').'</td>';
 		print '<td>'.dol_escape_htmltag($obj->folio_sat).'</td>';
-		print '<td class="right">'.((int) $obj->total_operaciones).'</td>';
+		print '<td class="right">'.((int) $obj->numero_operaciones).'</td>';
 		print '<td class="right nowrap"><a href="aviso.php?id='.$obj->rowid.'">'.img_picto($langs->trans('BtnVerDetalle'), 'view').'</a></td>';
 		print '</tr>';
 		$i++;

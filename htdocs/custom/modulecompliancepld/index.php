@@ -152,11 +152,11 @@ if ($num_last_ops == 0) {
 print '</table><br>';
 
 // Alertas sin resolver
-$sql_open_alerts  = "SELECT al.rowid, al.tipo_alerta, al.nivel_riesgo, al.fecha_alerta, s.nom as empresa_nom";
+$sql_open_alerts  = "SELECT al.rowid, al.tipo_alerta, al.nivel_riesgo, al.datec as fecha_alerta, s.nom as empresa_nom";
 $sql_open_alerts .= " FROM ".MAIN_DB_PREFIX."pld_alerta as al";
 $sql_open_alerts .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = al.fk_societe";
 $sql_open_alerts .= " WHERE al.entity IN (".getEntity('modulecompliancepld').") AND al.estado = 'abierta'";
-$sql_open_alerts .= " ORDER BY CASE al.nivel_riesgo WHEN 'alto' THEN 1 WHEN 'medio' THEN 2 ELSE 3 END, al.fecha_alerta DESC";
+$sql_open_alerts .= " ORDER BY CASE al.nivel_riesgo WHEN 'alto' THEN 1 WHEN 'medio' THEN 2 ELSE 3 END, al.datec DESC";
 $sql_open_alerts .= $db->plimit(10, 0);
 
 $res_open_alerts  = $db->query($sql_open_alerts);
@@ -190,7 +190,7 @@ print '</table><br>';
 print '</div><div class="fichetwothirdright">';
 
 // Avisos SAT pendientes
-$sql_pending_avisos  = "SELECT a.rowid, a.referencia_aviso, a.tipo_aviso, a.mes_reportado, a.total_operaciones, a.monto_total_mxn";
+$sql_pending_avisos  = "SELECT a.rowid, a.referencia_aviso, a.tipo_aviso, a.mes_reportado, a.numero_operaciones, a.monto_total_operaciones";
 $sql_pending_avisos .= " FROM ".MAIN_DB_PREFIX."pld_aviso as a";
 $sql_pending_avisos .= " WHERE a.entity IN (".getEntity('modulecompliancepld').") AND a.estado IN ('borrador', 'pendiente')";
 $sql_pending_avisos .= " ORDER BY a.mes_reportado ASC, a.datec DESC";
@@ -216,8 +216,8 @@ if ($num_pending == 0) {
 		print '<td><a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/aviso.php?id='.$obj->rowid.'">'.dol_escape_htmltag($obj->referencia_aviso ?: '#'.$obj->rowid).'</a></td>';
 		print '<td>'.dol_escape_htmltag($tipo_labels[$obj->tipo_aviso] ?? $obj->tipo_aviso).'</td>';
 		print '<td>'.dol_escape_htmltag($obj->mes_reportado).'</td>';
-		print '<td class="right">'.((int) $obj->total_operaciones).' ops.</td>';
-		print '<td class="right nowrap">'.price($obj->monto_total_mxn).'</td>';
+		print '<td class="right">'.((int) $obj->numero_operaciones).' ops.</td>';
+		print '<td class="right nowrap">'.price($obj->monto_total_operaciones).'</td>';
 		print '</tr>';
 	}
 }

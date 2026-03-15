@@ -30,7 +30,7 @@ if (!$user->hasRight('modulecompliancepld', 'read')) {
 	accessforbidden();
 }
 
-$sortfield = GETPOST('sortfield', 'aZ09comma') ?: 'b.nombre_completo';
+$sortfield = GETPOST('sortfield', 'aZ09comma') ?: 'b.apellido_paterno';
 $sortorder = GETPOST('sortorder', 'aZ09comma') ?: 'ASC';
 $page      = max(0, (int) GETPOST('page', 'int'));
 $limit     = getDolGlobalInt('MAIN_SIZE_LISTE_LIMIT', 25);
@@ -63,7 +63,7 @@ print '<td><input type="submit" class="button" value="'.$langs->trans('Search').
 print '<a class="button button-cancel" href="'.$_SERVER["PHP_SELF"].'">'.$langs->trans('Clear').'</a></td>';
 print '</tr></table></div></form>';
 
-$sql  = "SELECT b.rowid, b.fk_societe, b.nombre_completo, b.curp, b.rfc, b.tipo_beneficiario, b.porcentaje_participacion, b.es_pep, b.verificado, s.nom as empresa_nom";
+$sql  = "SELECT b.rowid, b.fk_societe, CONCAT(b.nombre, ' ', b.apellido_paterno, CASE WHEN b.apellido_materno IS NOT NULL THEN CONCAT(' ', b.apellido_materno) ELSE '' END) as nombre_completo, b.curp, b.rfc, b.tipo_beneficiario, b.porcentaje_participacion, b.es_pep, b.activo, s.nom as empresa_nom";
 $sql .= " FROM ".MAIN_DB_PREFIX."pld_beneficiario as b";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = b.fk_societe";
 $sql .= " WHERE b.entity IN (".getEntity('modulecompliancepld').")";
@@ -91,7 +91,7 @@ print '<div class="div-table-responsive">';
 print '<table class="tagtable liste">';
 print '<tr class="liste_titre">';
 print_liste_field_titre($langs->trans('ColEmpresa'), $_SERVER["PHP_SELF"], 's.nom', '', $param, '', $sortfield, $sortorder);
-print_liste_field_titre($langs->trans('ColNombreCompleto'), $_SERVER["PHP_SELF"], 'b.nombre_completo', '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans('ColNombreCompleto'), $_SERVER["PHP_SELF"], 'b.apellido_paterno', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('ColCURP'), $_SERVER["PHP_SELF"], 'b.curp', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('ColRFC'), $_SERVER["PHP_SELF"], 'b.rfc', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('ColTipoBeneficiario'), $_SERVER["PHP_SELF"], 'b.tipo_beneficiario', '', $param, '', $sortfield, $sortorder);

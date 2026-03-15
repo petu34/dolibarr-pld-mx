@@ -66,7 +66,7 @@ print '<a class="button button-cancel" href="'.$_SERVER["PHP_SELF"].'">'.$langs-
 print '</tr></table></div></form>';
 
 $now = dol_now();
-$sql  = "SELECT d.rowid, d.fk_societe, d.fk_socpeople, d.tipo_documento, d.numero_documento,";
+$sql  = "SELECT d.rowid, d.fk_societe, d.fk_socpeople, d.tipo_documento_pld, d.numero_documento,";
 $sql .= " d.fecha_emision, d.fecha_vencimiento, d.verificado, s.nom as empresa_nom,";
 $sql .= " CONCAT(sp.firstname, ' ', sp.lastname) as contacto_nom";
 $sql .= " FROM ".MAIN_DB_PREFIX."pld_documento as d";
@@ -74,12 +74,12 @@ $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = d.fk_societe";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."socpeople as sp ON sp.rowid = d.fk_socpeople";
 $sql .= " WHERE d.entity IN (".getEntity('modulecompliancepld').")";
 if ($filtro_empresa > 0)   { $sql .= " AND d.fk_societe = ".$filtro_empresa; }
-if (!empty($filtro_tipo))  { $sql .= " AND d.tipo_documento LIKE '%".$db->escape($filtro_tipo)."%'"; }
+if (!empty($filtro_tipo))  { $sql .= " AND d.tipo_documento_pld LIKE '%".$db->escape($filtro_tipo)."%'"; }
 if ($filtro_verif !== '')   { $sql .= " AND d.verificado = ".((int) $filtro_verif); }
 
 $sqlcount  = "SELECT COUNT(d.rowid) as total FROM ".MAIN_DB_PREFIX."pld_documento as d WHERE d.entity IN (".getEntity('modulecompliancepld').")";
 if ($filtro_empresa > 0)   { $sqlcount .= " AND d.fk_societe = ".$filtro_empresa; }
-if (!empty($filtro_tipo))  { $sqlcount .= " AND d.tipo_documento LIKE '%".$db->escape($filtro_tipo)."%'"; }
+if (!empty($filtro_tipo))  { $sqlcount .= " AND d.tipo_documento_pld LIKE '%".$db->escape($filtro_tipo)."%'"; }
 if ($filtro_verif !== '')   { $sqlcount .= " AND d.verificado = ".((int) $filtro_verif); }
 
 $rescount = $db->query($sqlcount);
@@ -101,7 +101,7 @@ print '<table class="tagtable liste">';
 print '<tr class="liste_titre">';
 print_liste_field_titre($langs->trans('ColEmpresa'), $_SERVER["PHP_SELF"], 's.nom', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('ColContacto'), '', '', '', $param, '', $sortfield, $sortorder);
-print_liste_field_titre($langs->trans('ColTipoDocumento'), $_SERVER["PHP_SELF"], 'd.tipo_documento', '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans('ColTipoDocumento'), $_SERVER["PHP_SELF"], 'd.tipo_documento_pld', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('ColNumeroDocumento'), $_SERVER["PHP_SELF"], 'd.numero_documento', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('ColFechaEmision'), $_SERVER["PHP_SELF"], 'd.fecha_emision', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('FechaVencimiento'), $_SERVER["PHP_SELF"], 'd.fecha_vencimiento', '', $param, '', $sortfield, $sortorder);
