@@ -679,3 +679,128 @@ Crear = Crear
 Empresa = Empresa
 Factura = Factura
 Estado = Estado
+
+# ============================================================
+# PARTE 8: Fase 2.1 - Páginas de Lista y Dashboard
+# ============================================================
+
+# Títulos de páginas de lista
+ListaOperaciones = Lista de Operaciones Vulnerables
+ListaAvisos = Lista de Avisos SAT
+ListaAlertas = Lista de Alertas
+ListaBeneficiarios = Lista de Beneficiarios Controladores
+ListaDocumentos = Lista de Documentos PLD
+
+# Encabezados de columnas
+ColFolioInterno = Folio Interno
+ColEmpresa = Empresa
+ColTipoOperacion = Tipo de Operación
+ColFecha = Fecha
+ColMonto = Monto MXN
+ColSuperaUmbral = Supera Umbral
+ColEstado = Estado
+ColReferenciaAviso = Referencia
+ColTipoAviso = Tipo de Aviso
+ColMesReportado = Mes Reportado
+ColFechaPresentacion = Fecha Presentación
+ColFolioSAT = Folio SAT
+ColTipoAlerta = Tipo de Alerta
+ColNivelRiesgo = Nivel de Riesgo
+ColDescripcion = Descripción
+ColFechaAlerta = Fecha de Alerta
+ColNombreCompleto = Nombre Completo
+ColCURP = CURP
+ColRFC = RFC
+ColTipoBeneficiario = Tipo
+ColPorcentaje = % Participación
+ColEsPEP = PEP
+ColContacto = Contacto
+ColTipoDocumento = Tipo Documento
+ColNumeroDocumento = Número
+ColFechaEmision = Fecha Emisión
+ColVerificado = Verificado
+
+# Botones de acción
+BtnNuevaOperacion = Nueva Operación
+BtnNuevoAviso = Nuevo Aviso
+BtnNuevaAlerta = Nueva Alerta
+BtnNuevoBeneficiario = Nuevo Beneficiario
+BtnNuevoDocumento = Nuevo Documento
+BtnEditar = Editar
+BtnEliminar = Eliminar
+BtnVolver = Volver a la lista
+BtnVerDetalle = Ver detalle
+
+# Filtros
+FiltroTodos = Todos
+FiltroEmpresa = Empresa
+FiltroTipoOperacion = Tipo de Operación
+FiltroEstado = Estado
+FiltroFechaDesde = Fecha desde
+FiltroFechaHasta = Fecha hasta
+FiltroNivelRiesgo = Nivel de Riesgo
+FiltroTipoAlerta = Tipo de Alerta
+FiltroTipoAviso = Tipo de Aviso
+FiltroEsPEP = Solo PEP
+FiltroVerificado = Solo Verificados
+
+# Estados de operación
+EstadoBorrador = Borrador
+EstadoPendiente = Pendiente
+EstadoCompletado = Completado
+EstadoCancelado = Cancelado
+EstadoAbierta = Abierta
+EstadoResuelta = Resuelta
+EstadoPresentado = Presentado
+
+# Dashboard
+DashPanelControl = Panel de Control PLD
+DashOperacionesMes = Operaciones del Mes
+DashAvisosEspera = Avisos Pendientes
+DashAlertasAbiertas = Alertas Abiertas
+DashDocumentosVencidos = Documentos Vencidos
+DashUltimasOperaciones = Últimas Operaciones Vulnerables
+DashAlertasSinResolver = Alertas Sin Resolver
+DashAvisosSATEspera = Avisos SAT Pendientes de Envío
+DashSinRegistros = Sin registros
+
+# Tipos de operación
+TipoOpVentaVehiculo = Venta de Vehículo
+TipoOpArrendamiento = Arrendamiento
+TipoOpPermuta = Permuta
+TipoOpConsignacion = Consignación
+
+# Niveles de riesgo
+NivelRiesgoAlto = Alto
+NivelRiesgoMedio = Medio
+NivelRiesgoBajo = Bajo
+
+# Configuración admin
+AdminSetupPLD = Configuración PLD
+AdminSetupDesc = Configure los parámetros del módulo de Prevención de Lavado de Dinero
+SeccionUMA = Valores UMA y Umbrales
+SeccionAlertas = Configuración de Alertas
+SeccionGeneral = Configuración General
+UMAValor = Valor UMA Vigente (MXN)
+UMAAnio = Año del Valor UMA
+UmbralVehNuevo = Umbral Vehículo Nuevo (MXN)
+UmbralVehUsado = Umbral Vehículo Usado (MXN)
+DiasAlertaID = Días para alertar vencimiento de ID
+OficialCumplimiento = Oficial de Cumplimiento (ID usuario)
+PeriodoConservacion = Período de Conservación (años)
+ActividadVulnerable = Fracción Art. 17 aplicable
+
+# Reportes
+ReportesPLD = Reportes PLD
+ReporteResumenMensual = Resumen Mensual
+ReporteOperacionesPorCliente = Operaciones por Cliente
+ReporteEstadoAvisos = Estado de Avisos
+ReporteAlertasPorTipo = Alertas por Tipo
+SeleccionarReporte = Seleccionar tipo de reporte
+ParametroMes = Mes
+ParametroAnio = Año
+GenerarReporte = Generar Reporte
+TotalOperaciones = Total Operaciones
+TotalMonto = Monto Total
+AvisosPresen = Avisos Presentados
+AvisosPend = Avisos Pendientes

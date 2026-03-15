@@ -334,6 +334,36 @@ class modModulecompliancepld extends DolibarrModules
 		$this->menu[$r++] = array(
 			'fk_menu' => 'fk_mainmenu=modulecompliancepld',
 			'type' => 'left',
+			'titre' => 'ListaBeneficiarios',
+			'mainmenu' => 'modulecompliancepld',
+			'leftmenu' => 'pld_beneficiarios',
+			'url' => '/modulecompliancepld/beneficiarios_list.php',
+			'langs' => $menuLang,
+			'position' => 1000 + $r,
+			'enabled' => $enabledCond,
+			'perms' => $readPerm,
+			'target' => '',
+			'user' => 2,
+		);
+
+		$this->menu[$r++] = array(
+			'fk_menu' => 'fk_mainmenu=modulecompliancepld',
+			'type' => 'left',
+			'titre' => 'ListaDocumentos',
+			'mainmenu' => 'modulecompliancepld',
+			'leftmenu' => 'pld_documentos',
+			'url' => '/modulecompliancepld/documentos_list.php',
+			'langs' => $menuLang,
+			'position' => 1000 + $r,
+			'enabled' => $enabledCond,
+			'perms' => $readPerm,
+			'target' => '',
+			'user' => 2,
+		);
+
+		$this->menu[$r++] = array(
+			'fk_menu' => 'fk_mainmenu=modulecompliancepld',
+			'type' => 'left',
 			'titre' => 'PLDReportes',
 			'mainmenu' => 'modulecompliancepld',
 			'leftmenu' => 'pld_reportes',
