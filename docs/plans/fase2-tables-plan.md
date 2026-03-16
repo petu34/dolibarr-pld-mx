@@ -3,7 +3,7 @@
 > **Versión:** 2.1 — Estado actualizado
 > **Fecha:** Febrero 2026
 > **Actualizado:** 2026-03-16
-> **Estado:** 🟡 PARCIALMENTE COMPLETO — tests y tabs pendientes
+> **Estado:** 🟢 COMPLETO — todos los entregables implementados
 > **Enfoque:** Híbrido — reutiliza ECM nativo de Dolibarr para documentos
 
 ---
@@ -486,8 +486,8 @@ CREATE TABLE IF NOT EXISTS llx_pld_alerta (
 | 5 | UI completa (Fase 2.1) — listas, cards, dashboard, admin, reportes | ✅ | Commit `85bb002` |
 | 6 | Tab PLD en ficha de factura (`pld_invoice.php`) | ✅ | Commit `98d4019` |
 | 7 | Trigger `PAYMENT_CUSTOMER_CREATE` → `pld_fecha_operacion` | ✅ | Commit `98d4019` |
-| 8 | Mejoras card pages — redirect, breadcrumbs, botones acción | ⏳ | `operacion.php`, `beneficiario.php`, `documento.php` |
-| 9 | Tabs PLD en otras fichas | ⏳ | Faltan: `pld_thirdparty.php`, `pld_contact.php`, `pld_product.php`, `pld_order.php`, `pld_payment.php` |
+| 8 | Mejoras card pages — redirect, breadcrumbs, botones acción | ✅ | `operacion.php`, `beneficiario.php`, `documento.php` — commit 2026-03-16 |
+| 9 | Tabs PLD en otras fichas | ✅ | `pld_thirdparty.php`, `pld_contact.php`, `pld_product.php`, `pld_order.php`, `pld_payment.php` — commit 2026-03-16 |
 | 10 | PHPUnit tests | ❌ | Diferido — sin carpeta `tests/`. Prioridad baja hasta Fase 3 estable |
 
 ---
@@ -511,8 +511,8 @@ CREATE TABLE IF NOT EXISTS llx_pld_alerta (
 - [x] 5 páginas de lista (`*_list.php`) con filtros y paginación
 - [x] Tab PLD en ficha de factura (`pld_invoice.php`)
 - [x] Dashboard, admin setup, reportes
-- [ ] Mejoras card pages — redirect, breadcrumbs, botones (PARTE 3 pendiente)
-- [ ] Tabs PLD en thirdparty, contact, product, order, payment
+- [x] Mejoras card pages — redirect, breadcrumbs, botones (PARTE 3 completado 2026-03-16)
+- [x] Tabs PLD en thirdparty, contact, product, order, payment (completado 2026-03-16)
 
 ### Integración ECM
 - [x] `llx_pld_documento` solo almacena metadatos
@@ -533,7 +533,7 @@ CREATE TABLE IF NOT EXISTS llx_pld_alerta (
 | Tablas creadas | 5/5 + 1 relacional | ✅ 6/6 |
 | Clases PHP implementadas | 5/5 | ✅ 5/5 |
 | Páginas UI operativas | 10+ | ✅ Completado |
-| Tab PLD en fichas | 6 objetos | ⏳ 1/6 (invoice) |
+| Tab PLD en fichas | 6 objetos | ✅ 6/6 (invoice, thirdparty, contact, product, order, payment) |
 | Tests PHPUnit passing | 100% | ❌ 0% (diferido) |
 | SQL anti-patterns | 0 | ✅ |
 | Documentos gestionados con ECM | 100% | ⚠️ Pendiente verificación |

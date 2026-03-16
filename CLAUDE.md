@@ -16,10 +16,28 @@
 - **Usuario:** `doli20_user`
 - **Contraseña:** `tirejkandani`
 
-## Módulo
+## Proyecto
+
+**Módulo de Prevención de Lavado de Dinero (PLD)** para Dolibarr ERP.
+Cumplimiento **LFPIORPI Art. 17 Fracciones V, VIII, XI, XII, XIII y XV** — actividades vulnerables de compra-venta de vehículos en México.
+
+### Módulo
 - **Nombre interno:** `modulecompliancepld`
 - **Ruta en repo:** `htdocs/custom/modulecompliancepld/`
 - **Rama principal del módulo:** `fase1/extrafields`
+
+### Documentación disponible en `docs/`
+
+| Ruta | Contenido |
+|------|-----------|
+| `docs/plans/` | Planes de implementación por fases (1, 2, 2.1, …) |
+| `docs/architecture/llx-best-practices.md` | Estándares de código Dolibarr para este proyecto |
+| `docs/architecture/DECISIONS.md` | Decisiones técnicas tomadas y su justificación |
+| `docs/database/field-mapping-analysis.md` | Gap analysis entre campos Dolibarr nativos y requerimientos PLD |
+| `docs/database/dolibarr-tables-reference.md` | Referencia de tablas `llx_*` relevantes |
+| `docs/regulatorio/RESOLUCION-Avisos.pdf` | Resolución SAT/SHCP sobre avisos (referencia legal) |
+
+> Antes de implementar algo nuevo, consultar `docs/architecture/` para respetar las decisiones ya tomadas.
 
 ## Flujo de trabajo
 

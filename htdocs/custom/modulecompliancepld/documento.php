@@ -27,6 +27,22 @@ $fk_societe = GETPOST('fk_societe', 'int');
 $fk_socpeople = GETPOST('fk_socpeople', 'int');
 $cancel = GETPOST('cancel', 'alpha');
 
+// Redirect to list when no action/id
+if (empty($action) && empty($id) && empty($fk_societe) && empty($fk_socpeople)) {
+    header("Location: documentos_list.php");
+    exit;
+}
+
+if ($cancel) {
+    header("Location: documentos_list.php");
+    exit;
+}
+
+// Security check
+if (!$user->hasRight('modulecompliancepld', 'read')) {
+    accessforbidden();
+}
+
 $object = new PLDDocumento($db);
 $uploader = new PLDDocumentoUploader($db);
 
@@ -142,32 +158,37 @@ if ($action == 'create' || !empty($fk_societe) || !empty($fk_socpeople)) {
     
 } elseif ($id > 0) {
     print load_fiche_titre($langs->trans('DocumentoPLD'));
-    
+
+    print '<div class="tabsAction" style="padding-bottom:5px">';
+    print '<a href="documentos_list.php" class="butActionRefused">&larr; '.$langs->trans('BackToList').'</a>';
+    print '</div>';
+
     print '<div class="fichecenter">';
     print '<div class="underbanner clearboth"></div>';
-    
+
     print '<table class="border centpercent tableforfield">';
-    
+
     print '<tr><td class="titlefield">'.$langs->trans('TipoDocumento').'</td><td>'.$object->tipo_documento_pld.'</td></tr>';
     print '<tr><td>'.$langs->trans('NumeroDocumento').'</td><td>'.$object->numero_documento.'</td></tr>';
     print '<tr><td>'.$langs->trans('FechaEmision').'</td><td>'.dol_print_date($object->fecha_emision, 'day').'</td></tr>';
     print '<tr><td>'.$langs->trans('FechaVencimiento').'</td><td>'.dol_print_date($object->fecha_vencimiento, 'day').'</td></tr>';
     print '<tr><td>'.$langs->trans('AutoridadEmite').'</td><td>'.$object->autoridad_emite.'</td></tr>';
     print '<tr><td>'.$langs->trans('Verificado').'</td><td>'.yn($object->verificado).'</td></tr>';
-    
+
     if ($object->estaVencido()) {
         print '<tr><td colspan="2"><div class="warning">'.$langs->trans('DocumentoVencido').'</div></td></tr>';
     }
-    
+
     print '</table>';
-    
+
+    print '</div>';
+
+    print '<div class="tabsAction">';
     if ($object->verificado == 0 && $user->hasRight('modulecompliancepld', 'write')) {
-        print '<div class="center" style="margin-top: 20px;">';
         print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?id='.$id.'&action=verificar&token='.newToken().'">';
         print $langs->trans('VerificarDocumento').'</a>';
-        print '</div>';
     }
-    
+    print '<a href="documentos_list.php" class="butAction">'.$langs->trans('BackToList').'</a>';
     print '</div>';
 }
 

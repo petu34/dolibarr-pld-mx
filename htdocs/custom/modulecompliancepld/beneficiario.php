@@ -25,6 +25,22 @@ $id = GETPOST('id', 'int');
 $fk_societe = GETPOST('fk_societe', 'int');
 $cancel = GETPOST('cancel', 'alpha');
 
+// Redirect to list when no action/id
+if (empty($action) && empty($id) && empty($fk_societe)) {
+    header("Location: beneficiarios_list.php");
+    exit;
+}
+
+if ($cancel) {
+    header("Location: beneficiarios_list.php");
+    exit;
+}
+
+// Security check
+if (!$user->hasRight('modulecompliancepld', 'read')) {
+    accessforbidden();
+}
+
 $object = new PLDBeneficiario($db);
 
 if ($id > 0) {
@@ -128,12 +144,16 @@ if ($action == 'create' || !empty($fk_societe)) {
     
 } elseif ($id > 0) {
     print load_fiche_titre($langs->trans('BeneficiarioPLD').' - '.$object->obtenerNombreCompleto());
-    
+
+    print '<div class="tabsAction" style="padding-bottom:5px">';
+    print '<a href="beneficiarios_list.php" class="butActionRefused">&larr; '.$langs->trans('BackToList').'</a>';
+    print '</div>';
+
     print '<div class="fichecenter">';
     print '<div class="underbanner clearboth"></div>';
-    
+
     print '<table class="border centpercent tableforfield">';
-    
+
     print '<tr><td class="titlefield">'.$langs->trans('NombreCompleto').'</td><td>'.$object->obtenerNombreCompleto().'</td></tr>';
     print '<tr><td>'.$langs->trans('TipoBeneficiario').'</td><td>'.$object->tipo_beneficiario.'</td></tr>';
     print '<tr><td>'.$langs->trans('CURP').'</td><td>'.$object->curp.'</td></tr>';
@@ -141,9 +161,16 @@ if ($action == 'create' || !empty($fk_societe)) {
     print '<tr><td>'.$langs->trans('PorcentajeParticipacion').'</td><td>'.$object->porcentaje_participacion.' %</td></tr>';
     print '<tr><td>'.$langs->trans('EsPEP').'</td><td>'.yn($object->es_pep).'</td></tr>';
     print '<tr><td>'.$langs->trans('Verificado').'</td><td>'.yn($object->verificado).'</td></tr>';
-    
+
     print '</table>';
-    
+
+    print '</div>';
+
+    print '<div class="tabsAction">';
+    if ($user->hasRight('modulecompliancepld', 'write')) {
+        print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$id.'&action=edit&token='.newToken().'" class="butAction">'.$langs->trans('Modify').'</a>';
+    }
+    print '<a href="beneficiarios_list.php" class="butAction">'.$langs->trans('BackToList').'</a>';
     print '</div>';
 }
 
