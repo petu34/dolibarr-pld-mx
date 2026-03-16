@@ -1,7 +1,9 @@
 # Plan Fase 2: Tablas Especializadas PLD — Enfoque Híbrido ECM
 
-> **Versión:** 2.0 — Reescritura completa  
-> **Fecha:** Febrero 2026  
+> **Versión:** 2.1 — Estado actualizado
+> **Fecha:** Febrero 2026
+> **Actualizado:** 2026-03-16
+> **Estado:** 🟡 PARCIALMENTE COMPLETO — tests y tabs pendientes
 > **Enfoque:** Híbrido — reutiliza ECM nativo de Dolibarr para documentos
 
 ---
@@ -473,82 +475,96 @@ CREATE TABLE IF NOT EXISTS llx_pld_alerta (
 
 ---
 
-## 🛠️ Plan de Implementación Fase 2
+## 🛠️ Estado de Implementación Fase 2 (actualizado 2026-03-16)
 
-### Timeline: **2-3 semanas** (12-15 días hábiles)
-
-#### Semana 1: Core Database (Días 1-5)
-- [ ] **Día 1-2:** Crear script de migración SQL con las 5 tablas + tabla relacional
-- [ ] **Día 2-3:** Crear clases PHP para cada tabla (`PLDOperacion`, `PLDBeneficiario`, etc.)
-- [ ] **Día 3-4:** Implementar métodos CRUD básicos en cada clase
-- [ ] **Día 4-5:** Tests unitarios PHPUnit para clases (mínimo 80% cobertura)
-
-#### Semana 2: Business Logic + ECM Integration (Días 6-10)
-- [ ] **Día 6-7:** Integración con `llx_ecm_files` para documentos
-- [ ] **Día 7-8:** Lógica de umbrales en `CompliancePLD` class
-- [ ] **Día 8-9:** Validación de beneficiarios (porcentajes, PEP)
-- [ ] **Día 9-10:** Tests de integración ECM
-
-#### Semana 3: UI + Verificación (Días 11-15)
-- [ ] **Día 11-12:** Formulario de operaciones (`operacion.php`)
-- [ ] **Día 12-13:** Formulario de beneficiarios (`beneficiario.php`)
-- [ ] **Día 13-14:** Upload de documentos con ECM
-- [ ] **Día 14-15:** Tests funcionales + corrección de bugs
+| # | Componente | Estado | Notas |
+|---|-----------|--------|-------|
+| 1 | Migración SQL — 5 tablas + relacional | ✅ | `migration_007_fase2_tablas_pld.sql` |
+| 2 | 5 clases PHP con CRUD | ✅ | `pldoperacion`, `pldbeneficiario`, `plddocumento`, `pldaviso`, `pldalerta` |
+| 3 | `compliancepld.class.php` — umbrales y validaciones | ✅ | `debeGenerarAviso()`, `evaluarUmbral()` |
+| 4 | `plddocumentouploader.class.php` — integración ECM | ⚠️ | Clase existe, flujo upload end-to-end pendiente verificación |
+| 5 | UI completa (Fase 2.1) — listas, cards, dashboard, admin, reportes | ✅ | Commit `85bb002` |
+| 6 | Tab PLD en ficha de factura (`pld_invoice.php`) | ✅ | Commit `98d4019` |
+| 7 | Trigger `PAYMENT_CUSTOMER_CREATE` → `pld_fecha_operacion` | ✅ | Commit `98d4019` |
+| 8 | Mejoras card pages — redirect, breadcrumbs, botones acción | ⏳ | `operacion.php`, `beneficiario.php`, `documento.php` |
+| 9 | Tabs PLD en otras fichas | ⏳ | Faltan: `pld_thirdparty.php`, `pld_contact.php`, `pld_product.php`, `pld_order.php`, `pld_payment.php` |
+| 10 | PHPUnit tests | ❌ | Diferido — sin carpeta `tests/`. Prioridad baja hasta Fase 3 estable |
 
 ---
 
 ## ✅ Checklist de Completitud
 
 ### Base de Datos
-- [ ] 5 tablas creadas con `IF NOT EXISTS`
-- [ ] Tabla relacional `llx_pld_aviso_operacion` creada
-- [ ] Todas las FK definidas correctamente
-- [ ] Índices en columnas de búsqueda frecuente
-- [ ] Script de migración ejecutable múltiples veces (idempotente)
+- [x] 5 tablas creadas con `IF NOT EXISTS`
+- [x] Tabla relacional `llx_pld_aviso_operacion` creada
+- [x] Todas las FK definidas correctamente
+- [x] Índices en columnas de búsqueda frecuente
+- [x] Script de migración ejecutable múltiples veces (idempotente)
 
 ### Clases PHP
-- [ ] 5 clases con `declare(strict_types=1)`
-- [ ] Heredan de `CommonObject` de Dolibarr
-- [ ] Métodos CRUD: `create()`, `fetch()`, `update()`, `delete()`
-- [ ] Validaciones en PHP (no triggers SQL)
+- [x] 5 clases con `declare(strict_types=1)`
+- [x] Heredan de `CommonObject` de Dolibarr
+- [x] Métodos CRUD: `create()`, `fetch()`, `update()`, `delete()`
+- [x] Validaciones en PHP (no triggers SQL)
+
+### UI
+- [x] 5 páginas de lista (`*_list.php`) con filtros y paginación
+- [x] Tab PLD en ficha de factura (`pld_invoice.php`)
+- [x] Dashboard, admin setup, reportes
+- [ ] Mejoras card pages — redirect, breadcrumbs, botones (PARTE 3 pendiente)
+- [ ] Tabs PLD en thirdparty, contact, product, order, payment
 
 ### Integración ECM
-- [ ] Documentos se suben vía `EcmFiles` class
-- [ ] `llx_pld_documento` solo almacena metadatos
-- [ ] Hash SHA256 se calcula en PHP
-- [ ] Retención 5 años se calcula automáticamente
+- [x] `llx_pld_documento` solo almacena metadatos
+- [x] Clase `PLDDocumentoUploader` creada
+- [ ] Flujo upload end-to-end verificado en UI
 
 ### Tests
-- [ ] PHPUnit: 100% tests pasan
-- [ ] Cobertura mínima: 80% en clases de negocio
-- [ ] Tests de integridad referencial
+- [ ] PHPUnit: 100% tests pasan *(diferido)*
+- [ ] Cobertura mínima: 80% en clases de negocio *(diferido)*
+- [ ] Tests de integridad referencial *(diferido)*
 
 ---
 
 ## 📊 Métricas de Éxito
 
-| Métrica | Objetivo |
-|---------|----------|
-| Tablas creadas | 5/5 + 1 relacional |
-| Clases PHP implementadas | 5/5 |
-| Tests PHPUnit passing | 100% |
-| Cobertura de código | ≥ 80% |
-| Tiempo de implementación | ≤ 15 días |
-| SQL anti-patterns | 0 |
-| Documentos gestionados con ECM | 100% |
+| Métrica | Objetivo | Estado |
+|---------|----------|--------|
+| Tablas creadas | 5/5 + 1 relacional | ✅ 6/6 |
+| Clases PHP implementadas | 5/5 | ✅ 5/5 |
+| Páginas UI operativas | 10+ | ✅ Completado |
+| Tab PLD en fichas | 6 objetos | ⏳ 1/6 (invoice) |
+| Tests PHPUnit passing | 100% | ❌ 0% (diferido) |
+| SQL anti-patterns | 0 | ✅ |
+| Documentos gestionados con ECM | 100% | ⚠️ Pendiente verificación |
 
 ---
 
 ## 🚀 Post Fase 2 → Fase 3
 
-**Inputs necesarios para Fase 3:**
-- ✅ `llx_pld_operacion` con datos completos
-- ✅ `llx_pld_beneficiario` verificados
-- ✅ `llx_pld_documento` con archivos en ECM
-- ✅ `llx_pld_aviso` con estructura lista para XML
+**Fuentes de datos para el generador XML (Fase 3):**
+
+El generador XML leerá de **dos fuentes complementarias**:
+
+| Fuente | Contenido | Acceso |
+|--------|-----------|--------|
+| `llx_pld_operacion` | Operación vulnerable — folio, monto, fechas, estado | `PLDOperacion::fetch()` |
+| `llx_facture_extrafields` (`pld_*`) | Datos de aviso, acumulación, alertas | `Facture::fetch_optionals()` vía `fk_facture` |
+| `llx_societe_extrafields` (`pld_*`) | Datos de persona / identificación | `Societe::fetch_optionals()` vía `fk_societe` |
+| `llx_pld_beneficiario` | Beneficiarios controladores | `PLDBeneficiario::fetchAll(fk_societe)` |
+| `llx_product_extrafields` (`pld_*`) | Datos del vehículo (VIN, motor, etc.) | `Product::fetch_optionals()` vía `fk_product` |
+
+**Nota:** `fecha_operacion` en `llx_pld_operacion` se puede poblar automáticamente desde el trigger `PAYMENT_CUSTOMER_CREATE` que ya escribe en `pld_fecha_operacion` del extrafield de factura.
+
+**Inputs listos para Fase 3:**
+- ✅ Estructura de tablas PLD
+- ✅ Clases PHP con CRUD
+- ✅ UI para captura de datos
+- ✅ Trigger de fecha de pago automático
+- ⚠️ Métodos `fetchCliente()`, `fetchVehiculo()`, `fetchBeneficiarios()`, `fetchFormasPago()` pendientes de implementar en `PLDOperacion`
 
 **Outputs de Fase 3:**
-- Generador de XML SAT según XSD
+- Generador de XML SAT según XSD VEH
 - Integración con e.firma
 - Envío automático SPPLD
 
@@ -567,10 +583,12 @@ CREATE TABLE IF NOT EXISTS llx_pld_alerta (
 ### ✅ Por qué SÍ usamos:
 - **Foreign keys:** Integridad referencial esencial
 - **Índices:** Performance en queries de reporte
-- **TINYINT(1):** Para booleanos (compatible con Dolibarr)
+- **BOOLEAN:** Para booleanos en PostgreSQL (no `TINYINT(1)`)
 - **VARCHAR en lugar de ENUM:** Flexibilidad sin cambios de schema
 - **Clases PHP:** Lógica de negocio testeable y auditable
 - **Híbrido ECM:** Reutiliza infraestructura probada de Dolibarr
+
+> **Nota (2026-03-16):** La BD es **PostgreSQL**, no MySQL. Los SQL del plan usan sintaxis MySQL (AUTO_INCREMENT, InnoDB) pero las tablas reales fueron creadas con sintaxis PostgreSQL compatible vía Dolibarr. Ver `migration_007_fase2_tablas_pld.sql` para la versión real ejecutada.
 
 ---
 
