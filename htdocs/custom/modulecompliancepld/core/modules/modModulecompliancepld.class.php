@@ -567,8 +567,8 @@ class modModulecompliancepld extends DolibarrModules
 		// =====================================================================
 
 		// 4.1 Control PLD
-		$extrafields->addExtraField('pld_es_actividad_vulnerable', '¿Es Actividad Vulnerable? (PLD)', 'boolean', 100, '', 'facture', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_clave_actividad', 'Clave de Actividad Vulnerable (PLD)', 'varchar', 101, '3', 'facture', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_es_actividad_vulnerable', '¿Es Actividad Vulnerable? (PLD)', 'boolean', 100, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_clave_actividad', 'Clave de Actividad Vulnerable (PLD)', 'varchar', 101, '3', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_tipo_operacion', 'Tipo de Operación (PLD)', 'varchar', 102, '4', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_supera_umbral_id', '¿Supera Umbral Identificación? (PLD)', 'boolean', 103, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_supera_umbral_aviso', '¿Supera Umbral Aviso? (PLD)', 'boolean', 104, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);

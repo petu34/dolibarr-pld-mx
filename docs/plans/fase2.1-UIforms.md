@@ -6,7 +6,7 @@
 > **Prerequisito:** Fase 2 completada — 6 tablas PLD desplegadas + 12 FKs + 38 índices
 > **Rama:** `fase1/extrafields`
 > **Commit:** `85bb002`
-> **Estado:** 🟡 PARCIALMENTE COMPLETO — PARTE 3 pendiente
+> **Estado:** 🟢 FASE 2.1 COMPLETA + Tab PLD en factura implementado
 
 ---
 
@@ -248,6 +248,8 @@ PLDMenu (top)
 | 10 | PARTE 2 | `index.php` (dashboard) | ✅ Completado |
 | 11 | PARTE 4 | `admin/setup.php` | ✅ Completado |
 | 12 | PARTE 5 | `reportes.php` | ✅ Completado |
+| 13 | EXTRA | `pld_invoice.php` — Tab PLD en ficha de factura | ✅ Completado (2026-03-16) |
+| 14 | EXTRA | Trigger `PAYMENT_CUSTOMER_CREATE` — fecha de pago → `pld_fecha_operacion` | ✅ Completado (2026-03-16) |
 
 ---
 
@@ -336,6 +338,34 @@ htdocs/custom/modulecompliancepld/
 ```
 
 **Total:** 6 archivos nuevos + 6 archivos modificados = 12 archivos
+
+---
+
+## ✅ Completado (2026-03-16): Tab PLD en Ficha de Factura
+
+**Problema resuelto:** Los 32 extrafields PLD de `facture` aparecían en el formulario de creación/edición nativo de facturas, saturando la pantalla de facturación.
+
+**Solución implementada:**
+
+### `pld_invoice.php` — Tab PLD en ficha de factura
+- Nuevo archivo que implementa el tab `invoice:+plddata` ya registrado en el módulo
+- Muestra los 32 extrafields organizados en 6 secciones:
+  1. Control PLD (actividad vulnerable, umbrales, tipo de aviso)
+  2. Datos de la Operación (fecha, CP, montos, descripción)
+  3. Referencia del Aviso SAT (folio, mes, acuse)
+  4. Aviso Modificatorio
+  5. Operación Acumulada
+  6. Alertas y Aviso 24 horas
+- Modo vista con botón "Modificar" y modo edición con guardado vía `insertExtraFields()`
+- Requiere permiso `modulecompliancepld::read` para ver, `modulecompliancepld::write` + `facture::creer` para editar
+
+### Extrafields ocultos del formulario nativo
+- `modModulecompliancepld.class.php`: `list=1→0` para `pld_es_actividad_vulnerable` y `pld_clave_actividad`
+- BD actualizada directamente: `list=0` en los 32 extrafields PLD de `facture`
+
+### Trigger `PAYMENT_CUSTOMER_CREATE` — fecha automática
+- Al registrar un pago de cliente, el trigger copia `$payment->datepaye` → `pld_fecha_operacion` en cada factura vinculada al pago
+- Soporta pagos de múltiples facturas simultáneos
 
 ---
 
