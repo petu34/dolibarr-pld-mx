@@ -409,6 +409,11 @@ class modModulecompliancepld extends DolibarrModules
 		// Limpiar fieldcomputed residual de init() previos con args desalineados (fix commit 49c6cb3)
 		$this->db->query("UPDATE ".MAIN_DB_PREFIX."extrafields SET fieldcomputed = NULL WHERE name LIKE 'pld_%' AND fieldcomputed LIKE 'PLD%'");
 
+		// Ocultar extrafields PLD del formulario nativo de facturas (list=0).
+		// Los campos se muestran exclusivamente en el tab pld_invoice.php.
+		// fix: tab PLD en factura 2026-03-16
+		$this->db->query("UPDATE ".MAIN_DB_PREFIX."extrafields SET list = '0' WHERE elementtype = 'facture' AND name LIKE 'pld_%'");
+
 		$e = 'isModEnabled("modulecompliancepld")';
 		$l = 'modulecompliancepld@modulecompliancepld';
 
