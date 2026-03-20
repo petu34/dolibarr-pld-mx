@@ -39,6 +39,45 @@ Cumplimiento **LFPIORPI Art. 17 Fracciones V, VIII, XI, XII, XIII y XV** — act
 
 > Antes de implementar algo nuevo, consultar `docs/architecture/` para respetar las decisiones ya tomadas.
 
+## Dolibarr DDL Rules (MySQL-first, DoliDB-compatible)
+
+### Archivos SQL — siempre sintaxis MySQL
+- DoliDB traduce a PostgreSQL en tiempo de ejecución; nunca escribir sintaxis nativa PgSQL
+- Todo `CREATE TABLE` debe terminar con `ENGINE=InnoDB`
+- Clave primaria siempre: `rowid INTEGER AUTO_INCREMENT PRIMARY KEY`
+- Nunca usar `SERIAL`, `SEQUENCE` ni `nextval()` — DoliDB lo gestiona
+- Nunca comillas dobles para strings: usar `'valor'` no `"valor"`
+- Campos BLOB/TEXT **no** deben tener `DEFAULT`
+
+### Nombres de índices y claves (requerido por namespace global de PostgreSQL)
+- Claves únicas: `uk_<tabla>_<campo>`
+- Índices de rendimiento: `idx_<tabla>_<campo>`
+- Nombres de FK: `fk_<tabla_referenciante>_<campo_referenciante>`
+
+### Foreign keys — solo lógicas (soft)
+- Nunca usar `FOREIGN KEY ... REFERENCES ... ON DELETE CASCADE` en DDL
+- La integridad referencial se aplica en PHP mediante métodos de `CommonObject`
+- Las FK duras omiten los triggers PHP de Dolibarr y rompen los hooks del módulo
+
+### Campos estándar obligatorios en toda tabla
+```sql
+rowid         INTEGER AUTO_INCREMENT PRIMARY KEY
+entity        INTEGER DEFAULT 1
+date_creation datetime
+tms           timestamp
+fk_user_creat integer
+fk_user_modif integer
+import_key    varchar(14) DEFAULT NULL
+```
+
+### Floats/doubles
+- Nunca comillar valores numéricos en INSERT para campos float/double
+- Usar `double(24,8)` para importes monetarios
+
+### Helpers SQL (nunca el equivalente SQL crudo)
+- Usar `$db->ifsql()` para expresiones IF (no SQL IF directo)
+- Usar `$db->escape()` para todo input de usuario
+
 ## Flujo de trabajo
 
 ### Sincronizar cambios del repo al container Docker

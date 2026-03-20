@@ -1,8 +1,10 @@
-# MODULECOMPLIANCEPLD FOR [DOLIBARR ERP & CRM](https://www.dolibarr.org)
+# Compliance PLD México — Módulo Dolibarr
 
-## Features
+Módulo de **Prevención de Lavado de Dinero (PLD)** para Dolibarr ERP.
+Cumplimiento **LFPIORPI Art. 17 Fracciones V, VIII, XI, XII, XIII y XV** —
+actividades vulnerables de compra-venta de vehículos en México.
 
-Description of the module...
+Genera, firma y prepara el envío de **avisos XML** al portal SPPLD del SAT.
 
 <!--
 ![Screenshot modulecompliancepld](img/screenshot_modulecompliancepld.png?raw=true "Modulecompliancepld"){imgmd}
@@ -84,6 +86,71 @@ Using your browser:
   - You should now be able to find and enable the module
 
 
+
+---
+
+## Instalación de e.firma (FIEL SAT) — Instrucciones para el implementador técnico
+
+La generación de XMLs firmados requiere que el **sujeto obligado** cuente con
+su e.firma vigente (antes FIEL) emitida por el SAT. Esta consiste en dos archivos:
+
+| Archivo | Descripción |
+|---------|-------------|
+| `*.cer` | Certificado público X.509 |
+| `*.key` | Llave privada cifrada |
+
+Además se necesita la **contraseña** que protege el archivo `.key`.
+
+### Paso 1 — Crear el directorio seguro en el servidor
+
+El directorio debe quedar **fuera del docroot** de Apache/Nginx para que
+no sea accesible por HTTP. Ejemplo en Linux:
+
+```bash
+mkdir -p /var/datos_pld/efirma
+chmod 700 /var/datos_pld/efirma
+chown www-data:www-data /var/datos_pld/efirma   # o el usuario del servidor web
+```
+
+> **Nunca** colocar estos archivos dentro de `htdocs/` ni de ninguna carpeta
+> que el servidor web sirva públicamente.
+
+### Paso 2 — Copiar los archivos al servidor
+
+```bash
+scp certificado_empresa.cer usuario@servidor:/var/datos_pld/efirma/
+scp llave_privada.key       usuario@servidor:/var/datos_pld/efirma/
+chmod 600 /var/datos_pld/efirma/*.cer /var/datos_pld/efirma/*.key
+```
+
+### Paso 3 — Configurar las rutas y contraseña en Dolibarr
+
+En `Configuración > Módulos > Compliance PLD > Ajustes`, registrar:
+
+| Constante | Valor ejemplo |
+|-----------|---------------|
+| `MODULECOMPLIANCEPLD_RFC_SUJETO` | RFC del sujeto obligado (12 o 13 chars) |
+| `MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH` | `/var/datos_pld/efirma/certificado.cer` |
+| `MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH` | `/var/datos_pld/efirma/llave_privada.key` |
+| `MODULECOMPLIANCEPLD_EFIRMA_PASSWORD` | Contraseña del archivo `.key` |
+
+> La contraseña queda almacenada en la base de datos de Dolibarr (tabla
+> `llx_const`). Asegurarse de que la BD esté protegida y con backups cifrados.
+
+### Consideraciones de seguridad
+
+- La llave privada **nunca debe viajar por la red en texto plano**; usar siempre SCP/SFTP.
+- El proceso de firma ocurre enteramente en el servidor; el archivo `.key` nunca sale.
+- Renovar la e.firma antes de su vencimiento (4 años desde su emisión) en el SAT.
+- Ante pérdida o compromiso de la llave privada, revocar inmediatamente ante el SAT.
+
+### Verificar la configuración
+
+Desde la UI de administración del módulo (`Acerca de > e.firma`) se puede
+ejecutar una prueba de validación que verifica que los archivos existen y son
+legibles por PHP sin realizar ninguna firma real.
+
+---
 
 ## Licenses
 

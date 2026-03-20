@@ -49,6 +49,11 @@ if ($action == 'update') {
 		'MODULECOMPLIANCEPLD_OFICIAL_CUMPLIMIENTO' => array('type' => 'int',    'default' => 0),
 		'MODULECOMPLIANCEPLD_PERIODO_CONSERVACION' => array('type' => 'int',    'default' => 5),
 		'MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE' => array('type' => 'chaine', 'default' => 'VIII'),
+		// Sujeto obligado y e.firma
+		'MODULECOMPLIANCEPLD_RFC_SUJETO'           => array('type' => 'chaine', 'default' => ''),
+		'MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH'     => array('type' => 'chaine', 'default' => ''),
+		'MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH'      => array('type' => 'chaine', 'default' => ''),
+		'MODULECOMPLIANCEPLD_EFIRMA_PASSWORD'      => array('type' => 'chaine', 'default' => ''),
 	);
 
 	foreach ($params as $constname => $info) {

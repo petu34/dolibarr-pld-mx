@@ -804,3 +804,21 @@ TotalOperaciones = Total Operaciones
 TotalMonto = Monto Total
 AvisosPresen = Avisos Presentados
 AvisosPend = Avisos Pendientes
+
+# Generador de XML / e.firma
+PLDMesReportado = Mes a reportar (YYYYMM)
+PLDFirmarXML = Firmar con e.firma
+PLDBtnGenerarXML = Generar XML
+PLDXMLGenerado = XML generado
+PLDDescargarXML = Descargar XML
+PLDHistorialXML = Historial de XMLs generados
+PLDArchivoXML = Archivo
+PLDEFirmaEstado = Estado e.firma
+PLDRFCSujeto = RFC sujeto obligado
+PLDEFirmaCert = Certificado (.cer)
+PLDEFirmaKey = Llave privada (.key)
+AdminSetupPLD = Configuración PLD
+PLDRFCSujetoLabel = RFC del sujeto obligado
+PLDEFirmaCertPath = Ruta del certificado e.firma (.cer)
+PLDEFirmaKeyPath = Ruta de la llave privada e.firma (.key)
+PLDEFirmaPasswordLabel = Contraseña de la llave privada

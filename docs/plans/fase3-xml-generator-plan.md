@@ -202,7 +202,7 @@ $conf->global->MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE // Fracción Art. 17
 - Usar `$db->escape()` para strings, `$db->plimit()` para paginación
 - No usar `DATE_FORMAT()` → usar `dol_print_date()` en PHP
 - No usar `GROUP_CONCAT` → usar `string_agg()` o procesar en PHP
-- No usar `TINYINT(1)` → usar `BOOLEAN` o cast en PHP
+- No usar `BOOLEAN` en DDL → usar `TINYINT(1)` (sintaxis MySQL-first); interpretar el valor en PHP si es necesario
 
 ### Fuente de datos para el XML
 El generador construye cada `<aviso>` combinando:
