@@ -1,7 +1,40 @@
 # Plan Fase 3: Compliance PLD México - Generador de XML y Envío Automático
 
-> **Actualizado:** 2026-03-16
-> **Estado:** 🔴 NO INICIADA — prerequisitos de Fase 2 parcialmente pendientes
+> **Actualizado:** 2026-03-19
+> **Estado:** 🟡 PARCIALMENTE COMPLETADA — commit `90affe8` en `fase1/extrafields`
+
+## ✅ Implementado (2026-03-19)
+
+| Componente | Archivo | Estado |
+|------------|---------|--------|
+| 4 métodos fetch prerequisito (`fetchCliente`, `fetchVehiculo`, `fetchBeneficiarios`, `fetchFormasPago`) | `class/pldoperacion.class.php` | ✅ |
+| Motor de generación XML (`veh.xsd`) | `class/pldxmlgenerator.class.php` | ✅ |
+| Integración e.firma (firma digital, cadena original, sello) | `class/pldefirmaintegration.class.php` | ✅ |
+| UI generador (mes, firma opcional, preview, historial, descarga) | `xml_generator.php` | ✅ |
+| Constantes configuración e.firma en admin | `admin/setup.php` | ✅ |
+| Panel estado e.firma en about | `admin/about.php` | ✅ |
+| Instrucciones instalación e.firma | `README.md` | ✅ |
+| Cadenas de idioma | `langs/es_MX/modulecompliancepld.lang` | ✅ |
+
+## ⏳ Pendiente
+
+| Componente | Notas |
+|------------|-------|
+| Validador XML contra XSD offline | Requiere descargar XSDs del SAT a `xsd/` |
+| Gestor de catálogos SAT | Sincronización de catálogos (forma_pago, tipo_vehiculo, etc.) |
+| API Cliente SPPLD | Envío automático al portal SAT (requiere credenciales SPPLD) |
+| Sistema de acuses | Almacenar respuesta/folio SAT en `llx_pld_aviso` |
+| Verificación flujo ECM end-to-end | Pendiente de Fase 2 |
+| Soporte multi-actividad (V, XI, XII, XIII, XV) | Pospuesto a **Fase 4** (ver `fase4-multi-actividad-plan.md`) |
+
+## ⚠️ Decisiones técnicas tomadas
+
+- **Scope Fase 3 = solo `veh.xsd` (Fracción VIII)**. Soporte para otras actividades
+  vulnerables requiere refactorización a `PLDXMLGeneratorBase` + subclases.
+  Documentado en `docs/plans/fase4-multi-actividad-plan.md`.
+- **e.firma: instalación manual en servidor** (sin upload desde UI) por seguridad.
+  Instrucciones en `README.md`.
+- `TINYINT(1)` en DDL (no `BOOLEAN`) — consistente con DDL Rules MySQL-first.
 
 ## 🎯 Objetivo de la Fase 3
 
