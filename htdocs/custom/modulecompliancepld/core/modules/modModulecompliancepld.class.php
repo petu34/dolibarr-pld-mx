@@ -377,6 +377,21 @@ class modModulecompliancepld extends DolibarrModules
 		);
 
 		$this->menu[$r++] = array(
+			'fk_menu'  => 'fk_mainmenu=modulecompliancepld',
+			'type'     => 'left',
+			'titre'    => 'PLDGenerarXML',
+			'mainmenu' => 'modulecompliancepld',
+			'leftmenu' => 'pld_xml_generator',
+			'url'      => '/modulecompliancepld/xml_generator.php',
+			'langs'    => $menuLang,
+			'position' => 1000 + $r,
+			'enabled'  => $enabledCond,
+			'perms'    => '$user->hasRight("modulecompliancepld", "write")',
+			'target'   => '',
+			'user'     => 2,
+		);
+
+		$this->menu[$r++] = array(
 			'fk_menu' => 'fk_mainmenu=modulecompliancepld',
 			'type' => 'left',
 			'titre' => 'PLDConfiguracion',

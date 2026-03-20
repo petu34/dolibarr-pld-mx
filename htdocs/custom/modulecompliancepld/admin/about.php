@@ -108,7 +108,7 @@ require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldefirmainteg
 $efirma = new PLDEFirmaIntegration($db);
 $cert_path = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH');
 $key_path  = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH');
-$rfc_sujeto = getDolGlobalString('MODULECOMPLIANCEPLD_RFC_SUJETO');
+$rfc_sujeto = $mysoc->profid1;
 
 $cert_ok = !empty($cert_path) && file_exists($cert_path);
 $key_ok  = !empty($key_path)  && file_exists($key_path);

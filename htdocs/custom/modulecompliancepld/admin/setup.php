@@ -50,7 +50,6 @@ if ($action == 'update') {
 		'MODULECOMPLIANCEPLD_PERIODO_CONSERVACION' => array('type' => 'int',    'default' => 5),
 		'MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE' => array('type' => 'chaine', 'default' => 'VIII'),
 		// Sujeto obligado y e.firma
-		'MODULECOMPLIANCEPLD_RFC_SUJETO'           => array('type' => 'chaine', 'default' => ''),
 		'MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH'     => array('type' => 'chaine', 'default' => ''),
 		'MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH'      => array('type' => 'chaine', 'default' => ''),
 		'MODULECOMPLIANCEPLD_EFIRMA_PASSWORD'      => array('type' => 'chaine', 'default' => ''),
@@ -183,6 +182,44 @@ print '<tr class="oddeven">';
 print '<td><label for="MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE">'.$langs->trans("ActividadVulnerable").'</label></td>';
 print '<td><input type="text" id="MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE" name="MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE" class="flat minwidth100" value="'.dol_escape_htmltag($actividad).'"></td>';
 print '<td class="opacitymedium">Fraccion del Art. 17 LFPIORPI aplicable. Para vehiculos: VIII</td>';
+print '</tr>';
+
+print '</table><br>';
+
+// ======= SECCIÓN SUJETO OBLIGADO Y E.FIRMA =======
+print load_fiche_titre($langs->trans("SeccionSujetoObligado"), '', '');
+print '<table class="noborder centpercent">';
+print '<tr class="liste_titre">';
+print '<td>'.$langs->trans("Parameter").'</td>';
+print '<td>'.$langs->trans("Value").'</td>';
+print '<td>'.$langs->trans("Description").'</td>';
+print '</tr>';
+
+print '<tr class="oddeven">';
+print '<td>RFC Sujeto Obligado</td>';
+print '<td><strong>'.dol_escape_htmltag($mysoc->profid1 ?: '—').'</strong> &nbsp; <a href="'.DOL_URL_ROOT.'/admin/company.php">'.$langs->trans("Modify").'</a></td>';
+print '<td class="opacitymedium">RFC de la empresa (campo R.F.C. en <em>Configuración &rsaquo; Empresa</em>)</td>';
+print '</tr>';
+
+$efirmaCert = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH', '');
+print '<tr class="oddeven">';
+print '<td><label for="MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH">Ruta certificado .cer</label></td>';
+print '<td><input type="text" id="MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH" name="MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH" class="flat minwidth300" value="'.dol_escape_htmltag($efirmaCert).'"></td>';
+print '<td class="opacitymedium">Ruta absoluta al archivo .cer de la e.firma (fuera del docroot)</td>';
+print '</tr>';
+
+$efirmaKey = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH', '');
+print '<tr class="oddeven">';
+print '<td><label for="MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH">Ruta llave privada .key</label></td>';
+print '<td><input type="text" id="MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH" name="MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH" class="flat minwidth300" value="'.dol_escape_htmltag($efirmaKey).'"></td>';
+print '<td class="opacitymedium">Ruta absoluta al archivo .key de la e.firma (fuera del docroot)</td>';
+print '</tr>';
+
+$efirmaPass = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_PASSWORD', '');
+print '<tr class="oddeven">';
+print '<td><label for="MODULECOMPLIANCEPLD_EFIRMA_PASSWORD">Contraseña e.firma</label></td>';
+print '<td><input type="password" id="MODULECOMPLIANCEPLD_EFIRMA_PASSWORD" name="MODULECOMPLIANCEPLD_EFIRMA_PASSWORD" class="flat minwidth200" value="'.dol_escape_htmltag($efirmaPass).'"></td>';
+print '<td class="opacitymedium">Contraseña de la llave privada de la e.firma</td>';
 print '</tr>';
 
 print '</table><br>';

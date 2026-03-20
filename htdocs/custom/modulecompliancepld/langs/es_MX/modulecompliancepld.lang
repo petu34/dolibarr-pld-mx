@@ -53,6 +53,8 @@ PLDAvisosGenerar = Generar Aviso
 PLDAvisosHistorial = Historial de Avisos
 PLDAlertas = Alertas
 PLDReportes = Reportes
+PLDGenerarXML = Generar XML SAT
+SeccionSujetoObligado = Sujeto Obligado y e.firma
 PLDConfiguracion = Configuración
 
 #

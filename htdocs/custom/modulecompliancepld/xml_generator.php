@@ -121,7 +121,7 @@ foreach ($msgs_err as $m) { setEventMessages($m, null, 'errors'); }
 // Estado de e.firma
 $cert_path  = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH');
 $key_path   = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH');
-$rfc_sujeto = getDolGlobalString('MODULECOMPLIANCEPLD_RFC_SUJETO');
+$rfc_sujeto = $mysoc->profid1;
 $efirma_ok  = !empty($cert_path) && file_exists($cert_path)
            && !empty($key_path)  && file_exists($key_path);
 
