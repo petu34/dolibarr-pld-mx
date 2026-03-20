@@ -60,6 +60,7 @@ if (!$res) {
 
 require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once __DIR__.'/../class/pldoperacion.class.php';
 
@@ -88,7 +89,7 @@ $clientes = array(
     array('PATRICIA ELENA', 'MARTINEZ', 'SUAREZ',   'MASP681130TF8', 'MASP681130MVZRRT04', '1968-11-30', 'M', 'Veracruz',  '2291234567', '91700', 'Veracruz',        'Centro',          'Independencia',       '88',  '6117000'),
     array('FERNANDO ANTONIO','REYES',   'GOMEZ',    'REGF920415HN9', 'REGF920415HPLYMR06', '1992-04-15', 'H', 'Puebla',    '2221234567', '72000', 'Puebla',          'El Mirador',      'Blvd. Atlixcáyotl',   '4500','6117000'),
     array('LUCIA ISABEL',   'VARGAS',   'CASTILLO', 'VACL850720GH2', 'VACL850720MDFRSC09', '1985-07-20', 'M', 'CDMX',      '5587654321', '11000', 'Miguel Hidalgo',  'Polanco',         'Masaryk',             '111', '6117000'),
-    array('MIGUEL ANGEL',   'FLORES',   'RAMOS',    'FORM710615PK4', 'FORM710615HDFRLMG03','1971-06-15', 'H', 'CDMX',      '5543219876', '07700', 'Gustavo A. Madero','San Juan Ixhuatepec','Cerrada de la Palma','8',  '6117000'),
+    array('MIGUEL ANGEL',   'FLORES',   'RAMOS',    'FORM710615PK4', 'FORM710615HDFRLMG3', '1971-06-15', 'H', 'CDMX',      '5543219876', '07700', 'Gustavo A. Madero','San Juan Ixhuatepec','Cerrada de la Palma','8',  '6117000'),
     array('SILVIA CECILIA', 'TORRES',   'MEDINA',   'TOMS930901WN7', 'TOMS930901MNLRDL05', '1993-09-01', 'M', 'Nuevo León','8187654321', '66400', 'San Nicolás',     'Las Puentes',     'Calle Pino',          '30',  '6117000'),
 );
 
@@ -146,8 +147,191 @@ $vehiculos_acumulados = array(
 // -----------------------------------------------------------------------
 // HELPERS
 // -----------------------------------------------------------------------
-$stats = array('clientes' => 0, 'vehiculos' => 0, 'ops_a' => 0, 'ops_b' => 0, 'ops_c' => 0, 'errores' => 0);
+$stats = array('clientes' => 0, 'vehiculos' => 0, 'ops_a' => 0, 'ops_b' => 0, 'ops_c' => 0, 'facturas' => 0, 'pagos' => 0, 'errores' => 0);
 
+/**
+ * Crea la tabla llx_paiement_extrafields si no existe.
+ * Necesaria para que fetchFormasPago() pueda leer datos PLD del pago.
+ * Nota: utiliza sintaxis PostgreSQL porque el entorno de prueba es PgSQL.
+ */
+function asegurarTablaExtrasPago($db)
+{
+    $tabla = MAIN_DB_PREFIX.'paiement_extrafields';
+    // Verificar existencia
+    $sql = "SELECT 1 FROM information_schema.tables"
+        ." WHERE table_schema = current_schema()"
+        ." AND table_name = '".$db->escape($tabla)."' LIMIT 1";
+    $res = $db->query($sql);
+    if ($res && $db->num_rows($res) > 0) {
+        echo "  [INFO] $tabla ya existe.\n";
+        return true;
+    }
+
+    // Crear tabla con columnas mínimas para fetchFormasPago()
+    // Nota: usar decimal(24,8) — estándar SQL, sin traducción por DoliDB.
+    //       float8/double precision son manglados por DoliDB MySQL→PgSQL.
+    $sql = "CREATE TABLE IF NOT EXISTS $tabla ("
+        ."  fk_object       integer      NOT NULL PRIMARY KEY,"
+        ."  pld_forma_pago  varchar(2)   DEFAULT NULL,"
+        ."  pld_instrumento_monetario varchar(2) DEFAULT NULL,"
+        ."  pld_moneda      varchar(3)   DEFAULT NULL,"
+        ."  pld_monto_operacion varchar(17) DEFAULT NULL,"
+        ."  pld_monto_efectivo     decimal(24,8) DEFAULT NULL,"
+        ."  pld_monto_transferencia decimal(24,8) DEFAULT NULL,"
+        ."  pld_monto_cheque       decimal(24,8) DEFAULT NULL,"
+        ."  pld_monto_tarjeta      decimal(24,8) DEFAULT NULL,"
+        ."  pld_banco_destino  varchar(100) DEFAULT NULL,"
+        ."  pld_cuenta_destino varchar(4)   DEFAULT NULL,"
+        ."  pld_banco_cheque   varchar(100) DEFAULT NULL,"
+        ."  pld_numero_cheque  varchar(20)  DEFAULT NULL,"
+        ."  pld_clabe_origen   varchar(18)  DEFAULT NULL"
+        .")";
+    $res = $db->query($sql);
+    if (!$res) {
+        echo "  [ERROR] No se pudo crear $tabla: ".$db->lasterror()."\n";
+        return false;
+    }
+    echo "  [OK] Tabla $tabla creada.\n";
+    return true;
+}
+
+/**
+ * Crea una factura estándar con una línea para el vehículo.
+ * Si ya existe una factura para esa operación (fk_facture != NULL en pld_operacion), la omite.
+ *
+ * @return Facture|null  Objeto Factura creado y validado, o null si error
+ */
+function crearFactura($db, $user, PLDOperacion $op, Societe $soc, Product $prod, &$stats)
+{
+    $factura = new Facture($db);
+    $factura->socid               = $soc->id;
+    $factura->type                = Facture::TYPE_STANDARD;
+    $factura->date                = strtotime($op->fecha_operacion);
+    $factura->date_pointoftax     = strtotime($op->fecha_operacion);
+    $factura->cond_reglement_id   = 1;  // RECEP — pago al recibir
+    $factura->mode_reglement_id   = 2;  // VIR por defecto; se sobrescribe en el pago
+    $factura->fk_account          = 0;
+    $factura->entity              = 1;
+
+    $result = $factura->create($user);
+    if ($result <= 0) {
+        echo "  [ERROR] Factura para op #{$op->id}: ".implode(', ', $factura->errors)."\n";
+        $stats['errores']++;
+        return null;
+    }
+
+    // Línea: vehículo sin IVA (el monto_mxn en PLDOperacion es el monto reportado al SAT)
+    $res_line = $factura->addline(
+        strtoupper($prod->label),  // desc
+        (float)$op->monto_mxn,     // pu_ht
+        1,                         // qty
+        0,                         // vatrate (0 para simplificar datos de prueba)
+        0,                         // localtax1
+        0,                         // localtax2
+        $prod->id,                 // fk_product
+        0,                         // remise_percent
+        '',                        // date_start
+        '',                        // date_end
+        0,                         // fk_code_ventilation
+        0,                         // info_bits
+        0,                         // fk_remise_except
+        'HT'                       // price_base_type
+    );
+    if ($res_line < 0) {
+        echo "  [WARN] addline para factura #{$factura->id} falló (op #{$op->id}).\n";
+    }
+
+    // Validar factura
+    $factura->validate($user);
+
+    // Actualizar fk_facture en llx_pld_operacion
+    $sql = "UPDATE ".MAIN_DB_PREFIX."pld_operacion"
+        ." SET fk_facture = ".(int)$factura->id
+        .", tms = tms"   // preserve tms
+        ." WHERE rowid = ".(int)$op->id;
+    $db->query($sql);
+
+    $stats['facturas']++;
+    echo "  [OK] Factura #{$factura->id} — op #{$op->id} — MXN ".number_format((float)$op->monto_mxn, 0, '.', ',')."\n";
+    return $factura;
+}
+
+/**
+ * Crea un pago (llx_paiement + llx_paiement_facture + llx_paiement_extrafields)
+ * con datos PLD requeridos por fetchFormasPago().
+ *
+ * @param int    $fk_paiement_code  ID en llx_c_paiement (2=VIR, 4=LIQ, 7=CHQ)
+ * @param array  $extras            [pld_forma_pago, pld_instrumento_monetario, pld_moneda,
+ *                                   pld_banco_destino, pld_cuenta_destino,
+ *                                   pld_banco_cheque, pld_numero_cheque,
+ *                                   pld_monto_efectivo, pld_monto_transferencia, pld_monto_cheque]
+ * @return int|false  rowid del pago, o false si error
+ */
+function crearPago($db, $user, int $factura_id, float $monto, string $fecha_op, int $fk_paiement_code, array $extras, &$stats)
+{
+    $datep = $db->idate(strtotime($fecha_op));
+
+    // Insertar pago
+    $sql = "INSERT INTO ".MAIN_DB_PREFIX."paiement"
+        ." (entity, datec, datep, amount, fk_paiement, num_paiement, fk_bank, fk_user_creat, statut)"
+        ." VALUES ("
+        ."  1,"
+        ."  '".$db->idate(dol_now())."',"
+        ."  '".$datep."',"
+        ."  ".price2num($monto, 'MT').", "
+        ."  ".(int)$fk_paiement_code.","
+        ."  '',"   // num_paiement (referencia libre)
+        ."  0,"    // fk_bank
+        ."  ".(int)$user->id.","
+        ."  1"     // statut validated
+        .")";
+
+    if (!$db->query($sql)) {
+        echo "  [ERROR] Insertar pago (factura #{$factura_id}): ".$db->lasterror()."\n";
+        $stats['errores']++;
+        return false;
+    }
+    $paiement_id = $db->last_insert_id(MAIN_DB_PREFIX.'paiement', 'rowid');
+
+    // Enlazar pago → factura
+    $sql2 = "INSERT INTO ".MAIN_DB_PREFIX."paiement_facture (fk_paiement, fk_facture, amount)"
+        ." VALUES (".(int)$paiement_id.", ".(int)$factura_id.", ".price2num($monto, 'MT').")";
+    $db->query($sql2);
+
+    // Extrafields PLD del pago
+    $pld_fp    = $db->escape($extras['pld_forma_pago']         ?? '04');
+    $pld_ins   = $db->escape($extras['pld_instrumento_monetario'] ?? '03');
+    $pld_mon   = $db->escape($extras['pld_moneda']             ?? 'MXN');
+    $pld_monto = price2num($monto, 'MT');
+    $pld_ef    = price2num($extras['pld_monto_efectivo']       ?? 0, 'MT');
+    $pld_tf    = price2num($extras['pld_monto_transferencia']  ?? 0, 'MT');
+    $pld_chq   = price2num($extras['pld_monto_cheque']         ?? 0, 'MT');
+    $pld_bco   = $db->escape($extras['pld_banco_destino']      ?? '');
+    $pld_cta   = $db->escape($extras['pld_cuenta_destino']     ?? '');
+    $pld_bchq  = $db->escape($extras['pld_banco_cheque']       ?? '');
+    $pld_nchq  = $db->escape($extras['pld_numero_cheque']      ?? '');
+
+    $sql3 = "INSERT INTO ".MAIN_DB_PREFIX."paiement_extrafields"
+        ."  (fk_object, pld_forma_pago, pld_instrumento_monetario,"
+        ."   pld_moneda, pld_monto_operacion,"
+        ."   pld_monto_efectivo, pld_monto_transferencia, pld_monto_cheque, pld_monto_tarjeta,"
+        ."   pld_banco_destino, pld_cuenta_destino, pld_banco_cheque, pld_numero_cheque)"
+        ." VALUES ("
+        ."  ".(int)$paiement_id.",  '$pld_fp',  '$pld_ins',"
+        ."  '$pld_mon',  '$pld_monto',"
+        ."  $pld_ef, $pld_tf, $pld_chq, 0,"
+        ."  '$pld_bco', '$pld_cta', '$pld_bchq', '$pld_nchq'"
+        .")";
+    if (!$db->query($sql3)) {
+        echo "  [WARN] Extrafields pago #{$paiement_id}: ".$db->lasterror()."\n";
+    }
+
+    $stats['pagos']++;
+    echo "  [OK] Pago #{$paiement_id} — factura #{$factura_id} — forma ".($extras['pld_forma_pago'] ?? '?')."\n";
+    return $paiement_id;
+}
+
+// -----------------------------------------------------------------------
 function crearCliente($db, $user, $data, &$stats)
 {
     // $data: [nombre, ap_paterno, ap_materno, rfc, curp, fecha_nac, sex, estado, tel, cp, municipio, colonia, calle, num_ext, actividad]
@@ -198,10 +382,11 @@ function crearCliente($db, $user, $data, &$stats)
     $soc->array_options['options_pld_municipio']         = strtoupper($municipio);
     $soc->array_options['options_pld_estado']            = strtoupper($estado);
     $soc->array_options['options_pld_pais']              = 'MX';
-    $soc->array_options['options_pld_cliente_identificado'] = 1;
-    $soc->array_options['options_pld_expediente_completo']  = 1;
-    $soc->array_options['options_pld_tiene_beneficiario']   = 0;
-    $soc->array_options['options_pld_es_pep']               = 0;
+    $soc->array_options['options_pld_cliente_identificado']    = 1;
+    $soc->array_options['options_pld_expediente_completo']    = 1;
+    $soc->array_options['options_pld_tiene_beneficiario']     = 0;
+    $soc->array_options['options_pld_es_pep']                 = 0;
+    $soc->array_options['options_pld_es_domicilio_extranjero'] = 0;
     $soc->insertExtraFields();
 
     $stats['clientes']++;
@@ -211,20 +396,60 @@ function crearCliente($db, $user, $data, &$stats)
 
 function crearVehiculo($db, $user, $marca, $modelo, $anio, $vin, $estado_veh, &$stats)
 {
-    // Verificar si ya existe por VIN
+    $ref = 'VEH-'.substr($vin, -8);
+
+    // Verificar si ya existe por VIN (extrafields) o por ref (fallback idempotencia)
     $sql = "SELECT ef.fk_object FROM ".MAIN_DB_PREFIX."product_extrafields ef"
         ." WHERE ef.pld_vin = '".$db->escape($vin)."'";
     $res = $db->query($sql);
+    $prod_id = 0;
     if ($res && $db->num_rows($res) > 0) {
         $row = $db->fetch_object($res);
-        echo "  [SKIP] Vehículo VIN $vin ya existe (product #".$row->fk_object.")\n";
+        $prod_id = (int)$row->fk_object;
+    }
+
+    if (!$prod_id) {
+        // Fallback: buscar por ref (cuando extrafields faltaron en un run previo)
+        $sql2 = "SELECT rowid FROM ".MAIN_DB_PREFIX."product"
+            ." WHERE ref = '".$db->escape($ref)."' LIMIT 1";
+        $res2 = $db->query($sql2);
+        if ($res2 && $db->num_rows($res2) > 0) {
+            $row2 = $db->fetch_object($res2);
+            $prod_id = (int)$row2->rowid;
+        }
+    }
+
+    if ($prod_id) {
         $prod = new Product($db);
-        $prod->fetch($row->fk_object);
+        $prod->fetch($prod_id);
+        // Si extrafields faltan, insertarlos ahora
+        $prod->fetch_optionals();
+        if (empty($prod->array_options['options_pld_vin'])) {
+            $prod->array_options['options_pld_tipo_vehiculo']  = 'terrestre';
+            $prod->array_options['options_pld_marca']          = strtoupper($marca);
+            $prod->array_options['options_pld_modelo']         = strtoupper($modelo);
+            $prod->array_options['options_pld_anio_modelo']    = $anio;
+            $prod->array_options['options_pld_vin']            = strtoupper($vin);
+            $prod->array_options['options_pld_origen']         = 'importado';
+            $prod->array_options['options_pld_estado_vehiculo'] = $estado_veh;
+            $prod->array_options['options_pld_uso_destino']    = 'particular';
+            $prod->array_options['options_pld_nivel_blindaje'] = '0';
+            $prod->array_options['options_pld_valor_comercial'] = 0;
+            $prod->array_options['options_pld_valor_factura']   = 0;
+            $r = $prod->insertExtraFields();
+            if ($r < 0) {
+                echo "  [WARN] Extrafields vehículo #$prod_id ($vin): ".$prod->error."\n";
+            } else {
+                echo "  [FIX] Extrafields vehículo #$prod_id — $vin reparados.\n";
+            }
+        } else {
+            echo "  [SKIP] Vehículo VIN $vin ya existe (product #$prod_id)\n";
+        }
         return $prod;
     }
 
     $prod = new Product($db);
-    $prod->ref     = 'VEH-'.substr($vin, -8);   // ref única basada en últimos 8 chars del VIN
+    $prod->ref     = $ref;
     $prod->label   = strtoupper($marca.' '.$modelo.' '.$anio).' [VIN:'.$vin.']';
     $prod->type    = 0;  // producto físico
     $prod->tosell  = 1;
@@ -237,16 +462,21 @@ function crearVehiculo($db, $user, $marca, $modelo, $anio, $vin, $estado_veh, &$
         return null;
     }
 
-    $prod->array_options['options_pld_tipo_vehiculo']  = 'terrestre';
-    $prod->array_options['options_pld_marca']          = strtoupper($marca);
-    $prod->array_options['options_pld_modelo']         = strtoupper($modelo);
-    $prod->array_options['options_pld_anio_modelo']    = $anio;
-    $prod->array_options['options_pld_vin']            = strtoupper($vin);
-    $prod->array_options['options_pld_origen']         = 'importado';
+    $prod->array_options['options_pld_tipo_vehiculo']   = 'terrestre';
+    $prod->array_options['options_pld_marca']           = strtoupper($marca);
+    $prod->array_options['options_pld_modelo']          = strtoupper($modelo);
+    $prod->array_options['options_pld_anio_modelo']     = $anio;
+    $prod->array_options['options_pld_vin']             = strtoupper($vin);
+    $prod->array_options['options_pld_origen']          = 'importado';
     $prod->array_options['options_pld_estado_vehiculo'] = $estado_veh;
-    $prod->array_options['options_pld_uso_destino']    = 'particular';
-    $prod->array_options['options_pld_nivel_blindaje'] = '0';
-    $prod->insertExtraFields();
+    $prod->array_options['options_pld_uso_destino']     = 'particular';
+    $prod->array_options['options_pld_nivel_blindaje']  = '0';
+    $prod->array_options['options_pld_valor_comercial'] = 0;  // campo obligatorio — rellenar en ficha
+    $prod->array_options['options_pld_valor_factura']   = 0;  // campo obligatorio — rellenar en ficha
+    $r = $prod->insertExtraFields();
+    if ($r < 0) {
+        echo "  [WARN] Extrafields vehículo nuevo #".$prod->id." ($vin): ".$prod->error."\n";
+    }
 
     $stats['vehiculos']++;
     echo "  [OK] Vehículo #".$prod->id." — $vin — ".strtoupper($marca.' '.$modelo.' '.$anio)."\n";
@@ -255,6 +485,20 @@ function crearVehiculo($db, $user, $marca, $modelo, $anio, $vin, $estado_veh, &$
 
 function crearOperacion($db, $user, $societe, $product, $monto, $tipo_veh, $mes, $fecha_op, $grupo, &$stats)
 {
+    // Verificar idempotencia: misma societe + producto + mes
+    $sql_chk = "SELECT rowid FROM ".MAIN_DB_PREFIX."pld_operacion"
+        ." WHERE fk_societe = ".(int)$societe->id
+        ." AND fk_product = ".(int)$product->id
+        ." AND mes_reportado = '".$db->escape($mes)."' LIMIT 1";
+    $res_chk = $db->query($sql_chk);
+    if ($res_chk && $db->num_rows($res_chk) > 0) {
+        $row_chk = $db->fetch_object($res_chk);
+        echo "  [SKIP] Op societe#{$societe->id}+product#{$product->id}+{$mes} ya existe (op #{$row_chk->rowid})\n";
+        $op_exist = new PLDOperacion($db);
+        $op_exist->fetch($row_chk->rowid);
+        return $op_exist;
+    }
+
     $op = new PLDOperacion($db);
     $op->fk_societe              = $societe->id;
     $op->fk_product              = $product->id;
@@ -347,6 +591,106 @@ foreach ($vehiculos_acumulados as $veh) {
 }
 
 // -----------------------------------------------------------------------
+// FACTURAS, PAGOS Y EXTRAFIELDS PLD — Grupo A (mes 202411)
+// Necesario para que fetchFormasPago() retorne datos reales en el XML aviso.
+// -----------------------------------------------------------------------
+echo "\n── FACTURAS Y PAGOS (Grupo A — mes 202411) ─────────────────────\n";
+
+// Asegurar tabla de extrafields de pago
+asegurarTablaExtrasPago($db);
+
+// Tipos de pago variados para los 10 registros del Grupo A
+// Índice corresponde al orden por fecha_operacion ASC (2024-11-04 → 2024-11-28)
+// [fk_paiement_code (llx_c_paiement.id), pld_forma_pago, pld_instrumento, banco, cuenta, banco_chq, num_chq]
+$tipos_pago_a = array(
+    //  op0  Toyota   MORENO      $480K  — Transferencia BBVA
+    array('fk_c'  => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 480000.00, 'pld_monto_efectivo' => 0,
+          'pld_banco_destino' => 'BBVA México', 'pld_cuenta_destino' => '4523',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    //  op1  BMW      SANTOS      $680K  — Transferencia Banorte
+    array('fk_c'  => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 680000.00, 'pld_monto_efectivo' => 0,
+          'pld_banco_destino' => 'Banorte',       'pld_cuenta_destino' => '7891',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    //  op2  Mercedes HERNANDEZ   $750K  — Efectivo (monto alto para prueba)
+    array('fk_c'  => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
+          'pld_monto_efectivo' => 750000.00, 'pld_monto_transferencia' => 0,
+          'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    //  op3  Audi     GARCIA      $695K  — Transferencia HSBC
+    array('fk_c'  => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 695000.00, 'pld_monto_efectivo' => 0,
+          'pld_banco_destino' => 'HSBC México',  'pld_cuenta_destino' => '1234',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    //  op4  Mazda    LOPEZ       $480K  — Cheque Santander
+    array('fk_c'  => 7, 'pld_forma_pago' => '06', 'pld_instrumento_monetario' => '02',
+          'pld_monto_efectivo' => 0, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 480000.00,
+          'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
+          'pld_banco_cheque' => 'Santander', 'pld_numero_cheque' => 'CHQ-2025-00421', 'pld_moneda' => 'MXN'),
+    //  op5  Honda    MARTINEZ    $435K  — Transferencia Citibanamex
+    array('fk_c'  => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 435000.00, 'pld_monto_efectivo' => 0,
+          'pld_banco_destino' => 'Citibanamex', 'pld_cuenta_destino' => '6789',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    //  op6  Chevrolet REYES      $1.2M  — Efectivo
+    array('fk_c'  => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
+          'pld_monto_efectivo' => 1200000.00, 'pld_monto_transferencia' => 0,
+          'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    //  op7  Ford     VARGAS      $550K  — Transferencia Scotiabank
+    array('fk_c'  => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 550000.00, 'pld_monto_efectivo' => 0,
+          'pld_banco_destino' => 'Scotiabank', 'pld_cuenta_destino' => '9012',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    //  op8  Nissan   FLORES      $420K  — Cheque Banorte
+    array('fk_c'  => 7, 'pld_forma_pago' => '06', 'pld_instrumento_monetario' => '02',
+          'pld_monto_efectivo' => 0, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 420000.00,
+          'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
+          'pld_banco_cheque' => 'Banorte', 'pld_numero_cheque' => 'CHQ-2025-00788', 'pld_moneda' => 'MXN'),
+    //  op9  Jeep     TORRES      $510K  — Transferencia BBVA
+    array('fk_c'  => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 510000.00, 'pld_monto_efectivo' => 0,
+          'pld_banco_destino' => 'BBVA México', 'pld_cuenta_destino' => '2567',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+);
+
+// Obtener operaciones Grupo A sin factura asignada aún
+$sql_ops_a = "SELECT o.rowid, o.fk_societe, o.fk_product, o.monto_mxn, o.fecha_operacion"
+    ." FROM ".MAIN_DB_PREFIX."pld_operacion o"
+    ." WHERE o.mes_reportado = '202411'"
+    ." AND o.requiere_aviso = 1"
+    ." AND (o.fk_facture IS NULL OR o.fk_facture = 0)"
+    ." ORDER BY o.fecha_operacion ASC";
+$res_ops_a = $db->query($sql_ops_a);
+if ($res_ops_a) {
+    $idx = 0;
+    while ($row = $db->fetch_object($res_ops_a)) {
+        $op_tmp = new PLDOperacion($db);
+        if ($op_tmp->fetch($row->rowid) <= 0) { $idx++; continue; }
+
+        $soc_tmp = new Societe($db);
+        if ($soc_tmp->fetch($row->fk_societe) <= 0) { $idx++; continue; }
+
+        $prod_tmp = new Product($db);
+        if ($prod_tmp->fetch($row->fk_product) <= 0) { $idx++; continue; }
+
+        // Crear factura para esta operación
+        $factura = crearFactura($db, $user, $op_tmp, $soc_tmp, $prod_tmp, $stats);
+        if (!$factura) { $idx++; continue; }
+
+        // Datos de pago para este índice
+        $extras = isset($tipos_pago_a[$idx]) ? $tipos_pago_a[$idx] : $tipos_pago_a[0];
+        crearPago($db, $user, $factura->id, (float)$row->monto_mxn, $row->fecha_operacion,
+                  (int)$extras['fk_c'], $extras, $stats);
+        $idx++;
+    }
+    $db->free($res_ops_a);
+} else {
+    echo "  [ERROR] Consulta ops Grupo A: ".$db->lasterror()."\n";
+}
+
+// -----------------------------------------------------------------------
 // RESUMEN
 // -----------------------------------------------------------------------
 echo "\n========================================\n";
@@ -357,12 +701,17 @@ echo " Vehículos creados  : ".$stats['vehiculos']."\n";
 echo " Operaciones Grupo A: ".$stats['ops_a']." (superan umbral → requiere_aviso=1)\n";
 echo " Operaciones Grupo B: ".$stats['ops_b']." (bajo umbral → requiere_aviso=0)\n";
 echo " Operaciones Grupo C: ".$stats['ops_c']." (acumuladas → requiere_aviso=0 individual)\n";
+echo " Facturas creadas   : ".$stats['facturas']."\n";
+echo " Pagos creados      : ".$stats['pagos']."\n";
 echo " Errores            : ".$stats['errores']."\n";
 echo "\n NOTA Grupo C: La detección de estructuración/acumulación requiere\n";
 echo " proceso batch del oficial de cumplimiento (pendiente Fase 4).\n";
 echo " Para marcar estas ops como 'requiere_aviso=1' manualmente:\n";
 echo "   UPDATE llx_pld_operacion SET requiere_aviso=1\n";
 echo "   WHERE fk_societe = ".(($cliente_acumulado) ? $cliente_acumulado->id : '?')." AND mes_reportado BETWEEN '202501' AND '202506';\n";
+echo "\n NOTA XML: Para generar el XML del Grupo A ejecutar:\n";
+echo "   php xml_generator.php (mes_reportado=202411) desde la UI, o\n";
+echo "   php scripts/test_xml_generator.php 202411\n";
 echo "\n";
 
 $db->close();
