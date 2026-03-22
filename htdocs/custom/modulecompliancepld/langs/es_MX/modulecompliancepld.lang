@@ -824,3 +824,19 @@ PLDRFCSujetoLabel = RFC del sujeto obligado
 PLDEFirmaCertPath = Ruta del certificado e.firma (.cer)
 PLDEFirmaKeyPath = Ruta de la llave privada e.firma (.key)
 PLDEFirmaPasswordLabel = Contraseña de la llave privada
+
+# aviso/card.php
+PLDAvisoDetalle = Detalle del Aviso
+BtnMarcarEnviado = Marcar como Enviado al SAT
+BtnRegistrarAcuse = Registrar Acuse SAT
+BtnVolverBorrador = Volver a Borrador
+BtnCancelarAviso = Cancelar Aviso
+LblFolioSAT = Folio SAT
+LblFechaAcuse = Fecha acuse
+LblFechaPresentacion = Fecha presentación
+LblPeriodo = Período reportado
+LblXMLGenerado = XML generado
+EstadoActualizado = Estado actualizado correctamente
+AcuseRegistrado = Acuse SAT registrado. Aviso presentado.
+ErrorFolioFechaRequeridos = El folio SAT y la fecha de presentación son obligatorios
+NoXMLGenerado = Sin XML generado

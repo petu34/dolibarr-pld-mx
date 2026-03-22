@@ -46,7 +46,7 @@ llxHeader('', $title, '', '', 0, 0, '', '', '', 'mod-modulecompliancepld page-av
 
 $newbtn = '';
 if ($user->hasRight('modulecompliancepld', 'write')) {
-	$newbtn = dolGetButtonTitle($langs->trans('BtnNuevoAviso'), '', 'fa fa-plus-circle', DOL_URL_ROOT.'/custom/modulecompliancepld/aviso.php?action=create');
+	$newbtn = dolGetButtonTitle($langs->trans('BtnNuevoAviso'), '', 'fa fa-plus-circle', DOL_URL_ROOT.'/custom/modulecompliancepld/aviso/card.php?action=create');
 }
 print load_fiche_titre($title, $newbtn, 'fa-shield');
 
@@ -130,7 +130,7 @@ if ($resql) {
 	while ($i < $num && $i < $limit) {
 		$obj = $db->fetch_object($resql);
 		print '<tr class="oddeven">';
-		print '<td><a href="aviso.php?id='.$obj->rowid.'">'.dol_escape_htmltag($obj->referencia_aviso ?: '#'.$obj->rowid).'</a></td>';
+		print '<td><a href="aviso/card.php?id='.$obj->rowid.'">'.dol_escape_htmltag($obj->referencia_aviso ?: '#'.$obj->rowid).'</a></td>';
 		print '<td>'.dol_escape_htmltag($tipo_labels[$obj->tipo_aviso] ?? $obj->tipo_aviso).'</td>';
 		print '<td>'.dol_escape_htmltag($obj->mes_reportado).'</td>';
 		$ec = $estado_colors[$obj->estado] ?? 'badge-status0';
@@ -139,7 +139,7 @@ if ($resql) {
 		print '<td>'.dol_print_date($db->jdate($obj->fecha_presentacion), 'day').'</td>';
 		print '<td>'.dol_escape_htmltag($obj->folio_sat).'</td>';
 		print '<td class="right">'.((int) $obj->numero_operaciones).'</td>';
-		print '<td class="right nowrap"><a href="aviso.php?id='.$obj->rowid.'">'.img_picto($langs->trans('BtnVerDetalle'), 'view').'</a></td>';
+		print '<td class="right nowrap"><a href="aviso/card.php?id='.$obj->rowid.'">'.img_picto($langs->trans('BtnVerDetalle'), 'view').'</a></td>';
 		print '</tr>';
 		$i++;
 	}
