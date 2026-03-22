@@ -100,6 +100,60 @@ dol_include_once('/modulecompliancepld/core/modules/modModulecompliancepld.class
 $tmpmodule = new modModulecompliancepld($db);
 print $tmpmodule->getDescLong();
 
+// -----------------------------------------------------------------------
+// Sección: e.firma (FIEL SAT)
+// -----------------------------------------------------------------------
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldefirmaintegration.class.php';
+
+$efirma = new PLDEFirmaIntegration($db);
+$cert_path = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH');
+$key_path  = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH');
+$rfc_sujeto = getDolGlobalString('MAIN_INFO_SIREN');
+
+$cert_ok = !empty($cert_path) && file_exists($cert_path);
+$key_ok  = !empty($key_path)  && file_exists($key_path);
+
+print '<br>';
+print load_fiche_titre('e.firma (FIEL SAT) — Estado de configuración', '', 'fa-shield-alt');
+print '<div class="fichecenter">';
+print '<table class="border centpercent tableforfield">';
+print '<tr class="oddeven"><td class="titlefield">'.$langs->trans('PLDRFCSujeto').'</td>';
+print '<td>'.($rfc_sujeto ? '<strong>'.dol_escape_htmltag($rfc_sujeto).'</strong>' : '<span class="error">No configurado</span>').'</td></tr>';
+
+print '<tr class="oddeven"><td>'.$langs->trans('PLDEFirmaCert').'</td><td>';
+if ($cert_ok) {
+    print '<span class="badge badge-status4 badge-status">'.img_picto('', 'check', 'class="pictofixedwidth"').' Archivo encontrado</span>';
+    print ' <small class="opacitymedium">'.dol_escape_htmltag($cert_path).'</small>';
+} elseif (!empty($cert_path)) {
+    print '<span class="badge badge-status8 badge-status">'.img_picto('', 'warning', 'class="pictofixedwidth"').' Archivo no encontrado</span>';
+    print ' <small class="opacitymedium">'.dol_escape_htmltag($cert_path).'</small>';
+} else {
+    print '<span class="badge badge-status8 badge-status">No configurado</span>';
+}
+print '</td></tr>';
+
+print '<tr class="oddeven"><td>'.$langs->trans('PLDEFirmaKey').'</td><td>';
+if ($key_ok) {
+    print '<span class="badge badge-status4 badge-status">'.img_picto('', 'check', 'class="pictofixedwidth"').' Archivo encontrado</span>';
+    print ' <small class="opacitymedium">'.dol_escape_htmltag($key_path).'</small>';
+} elseif (!empty($key_path)) {
+    print '<span class="badge badge-status8 badge-status">'.img_picto('', 'warning', 'class="pictofixedwidth"').' Archivo no encontrado</span>';
+    print ' <small class="opacitymedium">'.dol_escape_htmltag($key_path).'</small>';
+} else {
+    print '<span class="badge badge-status8 badge-status">No configurado</span>';
+}
+print '</td></tr>';
+
+print '</table>';
+print '</div>';
+
+print '<div class="info">';
+print '<strong>Instalación de la e.firma:</strong> Los archivos <code>.cer</code> y <code>.key</code> ';
+print 'deben colocarse manualmente en el servidor, <strong>fuera del docroot</strong>, ';
+print 'y sus rutas configuradas en <a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/admin/setup.php">Ajustes del módulo</a>. ';
+print 'Ver el <code>README.md</code> del módulo para instrucciones completas.';
+print '</div>';
+
 // Page end
 print dol_get_fiche_end();
 llxFooter();

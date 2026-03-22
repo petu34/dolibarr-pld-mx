@@ -1,4 +1,40 @@
-# Plan Fase 3: PLD Vehículos - Generador de XML y Envío Automático
+# Plan Fase 3: Compliance PLD México - Generador de XML y Envío Automático
+
+> **Actualizado:** 2026-03-19
+> **Estado:** 🟡 PARCIALMENTE COMPLETADA — commit `90affe8` en `fase1/extrafields`
+
+## ✅ Implementado (2026-03-19)
+
+| Componente | Archivo | Estado |
+|------------|---------|--------|
+| 4 métodos fetch prerequisito (`fetchCliente`, `fetchVehiculo`, `fetchBeneficiarios`, `fetchFormasPago`) | `class/pldoperacion.class.php` | ✅ |
+| Motor de generación XML (`veh.xsd`) | `class/pldxmlgenerator.class.php` | ✅ |
+| Integración e.firma (firma digital, cadena original, sello) | `class/pldefirmaintegration.class.php` | ✅ |
+| UI generador (mes, firma opcional, preview, historial, descarga) | `xml_generator.php` | ✅ |
+| Constantes configuración e.firma en admin | `admin/setup.php` | ✅ |
+| Panel estado e.firma en about | `admin/about.php` | ✅ |
+| Instrucciones instalación e.firma | `README.md` | ✅ |
+| Cadenas de idioma | `langs/es_MX/modulecompliancepld.lang` | ✅ |
+
+## ⏳ Pendiente
+
+| Componente | Notas |
+|------------|-------|
+| Validador XML contra XSD offline | Requiere descargar XSDs del SAT a `xsd/` |
+| Gestor de catálogos SAT | Sincronización de catálogos (forma_pago, tipo_vehiculo, etc.) |
+| API Cliente SPPLD | Envío automático al portal SAT (requiere credenciales SPPLD) |
+| Sistema de acuses | Almacenar respuesta/folio SAT en `llx_pld_aviso` |
+| Verificación flujo ECM end-to-end | Pendiente de Fase 2 |
+| Soporte multi-actividad (V, XI, XII, XIII, XV) | Pospuesto a **Fase 4** (ver `fase4-multi-actividad-plan.md`) |
+
+## ⚠️ Decisiones técnicas tomadas
+
+- **Scope Fase 3 = solo `veh.xsd` (Fracción VIII)**. Soporte para otras actividades
+  vulnerables requiere refactorización a `PLDXMLGeneratorBase` + subclases.
+  Documentado en `docs/plans/fase4-multi-actividad-plan.md`.
+- **e.firma: instalación manual en servidor** (sin upload desde UI) por seguridad.
+  Instrucciones en `README.md`.
+- `TINYINT(1)` en DDL (no `BOOLEAN`) — consistente con DDL Rules MySQL-first.
 
 ## 🎯 Objetivo de la Fase 3
 
@@ -10,7 +46,15 @@ Desarrollar un **sistema completo de generación, validación y envío** de arch
 
 ### Prerequisites
 ✅ Fase 1 completada (extrafields implementados)
-✅ Fase 2 completada (tablas especializadas creadas)
+✅ Fase 2 tablas y CRUD completados
+✅ Fase 2.1 UI completada (listas, cards, dashboard, tab PLD en factura)
+⏳ Pendiente de Fase 2: métodos `fetchCliente()`, `fetchVehiculo()`, `fetchBeneficiarios()`, `fetchFormasPago()` en `PLDOperacion`
+⏳ Pendiente de Fase 2: verificación flujo ECM end-to-end
+
+### Módulo objetivo
+- **Nombre interno:** `modulecompliancepld`
+- **Ruta:** `htdocs/custom/modulecompliancepld/`
+- **BD:** PostgreSQL (no MySQL)
 
 ### Componentes Principales
 1. **Motor de Generación XML** - Construcción de XML según XSD oficial
@@ -170,6 +214,54 @@ Desarrollar un **sistema completo de generación, validación y envío** de arch
 
 ---
 
+## ⚠️ Notas de Compatibilidad (2026-03-16)
+
+### Módulo correcto
+Todos los `require_once` y referencias a clases deben usar:
+```php
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldoperacion.class.php';
+// NO: '/custom/pldvehiculos/class/...' (nombre incorrecto)
+```
+
+### Constantes de configuración
+Usar prefijo `MODULECOMPLIANCEPLD_*` (definidas en `admin/setup.php`):
+```php
+$conf->global->MODULECOMPLIANCEPLD_RFC_SUJETO   // RFC del sujeto obligado
+$conf->global->MODULECOMPLIANCEPLD_UMA_VALOR     // Valor UMA vigente
+$conf->global->MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE // Fracción Art. 17
+```
+
+### Base de datos PostgreSQL
+- Usar `$db->escape()` para strings, `$db->plimit()` para paginación
+- No usar `DATE_FORMAT()` → usar `dol_print_date()` en PHP
+- No usar `GROUP_CONCAT` → usar `string_agg()` o procesar en PHP
+- No usar `BOOLEAN` en DDL → usar `TINYINT(1)` (sintaxis MySQL-first); interpretar el valor en PHP si es necesario
+
+### Fuente de datos para el XML
+El generador construye cada `<aviso>` combinando:
+
+| Nodo XML | Fuente de datos |
+|----------|----------------|
+| `mes_reportado`, `monto_operacion`, `fecha_operacion` | `llx_pld_operacion` |
+| Datos del cliente (nombre, RFC, CURP, domicilio) | `llx_societe` + `llx_societe_extrafields` (pld_*) |
+| Datos del vehículo (VIN, marca, modelo) | `llx_product` + `llx_product_extrafields` (pld_*) |
+| Beneficiario controlador | `llx_pld_beneficiario` |
+| Forma de pago, banco | `llx_paiement` + `llx_paiement_extrafields` (pld_*) |
+| Referencia aviso, folio SAT | `llx_pld_aviso` |
+
+> **Nota:** `fecha_operacion` se puede poblar automáticamente en `llx_pld_operacion`
+> desde el trigger `PAYMENT_CUSTOMER_CREATE` que ya escribe en el extrafield
+> `pld_fecha_operacion` de la factura (implementado en commit `98d4019`).
+
+### Métodos pendientes en `PLDOperacion`
+Antes de implementar el generador XML, agregar a `pldoperacion.class.php`:
+- `fetchCliente()` — carga `Societe` + extrafields PLD
+- `fetchVehiculo()` — carga `Product` + extrafields PLD
+- `fetchBeneficiarios()` — carga todos los `PLDBeneficiario` de la empresa
+- `fetchFormasPago()` — carga pagos + extrafields PLD de `paiement`
+
+---
+
 ## 💻 PARTE 2: Arquitectura del Sistema
 
 ### Componentes del Sistema
@@ -229,7 +321,7 @@ Desarrollar un **sistema completo de generación, validación y envío** de arch
  */
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
-require_once DOL_DOCUMENT_ROOT.'/custom/pldvehiculos/class/pldoperacion.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldoperacion.class.php';
 
 class PLDXMLGenerator
 {
@@ -253,7 +345,7 @@ class PLDXMLGenerator
         $this->db = $db;
         
         global $conf;
-        $this->rfc_sujeto = $conf->global->PLD_RFC_SUJETO_OBLIGADO;
+        $this->rfc_sujeto = getDolGlobalString('MODULECOMPLIANCEPLD_RFC_SUJETO');
     }
     
     /**

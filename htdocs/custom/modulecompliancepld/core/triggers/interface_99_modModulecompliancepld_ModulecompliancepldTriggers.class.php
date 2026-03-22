@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /* Copyright (C) 2026 SuperAdmin
  * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
  *
@@ -32,6 +34,7 @@
  */
 
 require_once DOL_DOCUMENT_ROOT.'/core/triggers/dolibarrtriggers.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldvalidator.class.php';
 
 
 /**
@@ -47,8 +50,8 @@ class InterfaceModulecompliancepldTriggers extends DolibarrTriggers
 	public function __construct($db)
 	{
 		parent::__construct($db);
-		$this->family = "demo";
-		$this->description = "Modulecompliancepld triggers.";
+		$this->family = "compliance";
+		$this->description = "Validación PLD en contactos y empresas — LFPIORPI Art. 17";
 		$this->version = self::VERSIONS['dev'];
 		$this->picto = 'modulecompliancepld@modulecompliancepld';
 	}
@@ -86,229 +89,205 @@ class InterfaceModulecompliancepldTriggers extends DolibarrTriggers
 			return call_user_func($callback, $action, $object, $user, $langs, $conf);
 		}
 
-		// Or you can execute some code here
 		switch ($action) {
-			// Users
-			//case 'USER_CREATE':
-			//case 'USER_MODIFY':
-			//case 'USER_NEW_PASSWORD':
-			//case 'USER_ENABLEDISABLE':
-			//case 'USER_DELETE':
-
-			// Actions
-			//case 'ACTION_MODIFY':
-			//case 'ACTION_CREATE':
-			//case 'ACTION_DELETE':
-
-			// Groups
-			//case 'USERGROUP_CREATE':
-			//case 'USERGROUP_MODIFY':
-			//case 'USERGROUP_DELETE':
-
-			// Companies
-			//case 'COMPANY_CREATE':
-			//case 'COMPANY_MODIFY':
-			//case 'COMPANY_DELETE':
-
-			// Contacts
-			//case 'CONTACT_CREATE':
-			//case 'CONTACT_MODIFY':
-			//case 'CONTACT_DELETE':
-			//case 'CONTACT_ENABLEDISABLE':
-
-			// Products
-			//case 'PRODUCT_CREATE':
-			//case 'PRODUCT_MODIFY':
-			//case 'PRODUCT_DELETE':
-			//case 'PRODUCT_PRICE_MODIFY':
-			//case 'PRODUCT_SET_MULTILANGS':
-			//case 'PRODUCT_DEL_MULTILANGS':
-
-			//Stock movement
-			//case 'STOCK_MOVEMENT':
-
-			//MYECMDIR
-			//case 'MYECMDIR_CREATE':
-			//case 'MYECMDIR_MODIFY':
-			//case 'MYECMDIR_DELETE':
-
-			// Sales orders
-			//case 'ORDER_CREATE':
-			//case 'ORDER_MODIFY':
-			//case 'ORDER_VALIDATE':
-			//case 'ORDER_DELETE':
-			//case 'ORDER_CANCEL':
-			//case 'ORDER_SENTBYMAIL':
-			//case 'ORDER_CLASSIFY_BILLED':		// TODO Replace it with ORDER_BILLED
-			//case 'ORDER_CLASSIFY_UNBILLED':	// TODO Replace it with ORDER_UNBILLED
-			//case 'ORDER_SETDRAFT':
-			//case 'LINEORDER_INSERT':
-			//case 'LINEORDER_MODIFY':
-			//case 'LINEORDER_DELETE':
-
-			// Supplier orders
-			//case 'ORDER_SUPPLIER_CREATE':
-			//case 'ORDER_SUPPLIER_MODIFY':
-			//case 'ORDER_SUPPLIER_VALIDATE':
-			//case 'ORDER_SUPPLIER_DELETE':
-			//case 'ORDER_SUPPLIER_APPROVE':
-			//case 'ORDER_SUPPLIER_CLASSIFY_BILLED':		// TODO Replace with ORDER_SUPPLIER_BILLED
-			//case 'ORDER_SUPPLIER_CLASSIFY_UNBILLED':		// TODO Replace with ORDER_SUPPLIER_UNBILLED
-			//case 'ORDER_SUPPLIER_REFUSE':
-			//case 'ORDER_SUPPLIER_CANCEL':
-			//case 'ORDER_SUPPLIER_SENTBYMAIL':
-			//case 'ORDER_SUPPLIER_RECEIVE':
-			//case 'LINEORDER_SUPPLIER_DISPATCH':
-			//case 'LINEORDER_SUPPLIER_CREATE':
-			//case 'LINEORDER_SUPPLIER_MODIFY':
-			//case 'LINEORDER_SUPPLIER_DELETE':
-
-			// Proposals
-			//case 'PROPAL_CREATE':
-			//case 'PROPAL_MODIFY':
-			//case 'PROPAL_VALIDATE':
-			//case 'PROPAL_SENTBYMAIL':
-			//case 'PROPAL_CLASSIFY_BILLED':		// TODO Replace it with PROPAL_BILLED
-			//case 'PROPAL_CLASSIFY_UNBILLED':		// TODO Replace it with PROPAL_UNBILLED
-			//case 'PROPAL_CLOSE_SIGNED':
-			//case 'PROPAL_CLOSE_REFUSED':
-			//case 'PROPAL_DELETE':
-			//case 'LINEPROPAL_INSERT':
-			//case 'LINEPROPAL_MODIFY':
-			//case 'LINEPROPAL_DELETE':
-
-			// SupplierProposal
-			//case 'SUPPLIER_PROPOSAL_CREATE':
-			//case 'SUPPLIER_PROPOSAL_MODIFY':
-			//case 'SUPPLIER_PROPOSAL_VALIDATE':
-			//case 'SUPPLIER_PROPOSAL_SENTBYMAIL':
-			//case 'SUPPLIER_PROPOSAL_CLOSE_SIGNED':
-			//case 'SUPPLIER_PROPOSAL_CLOSE_REFUSED':
-			//case 'SUPPLIER_PROPOSAL_DELETE':
-			//case 'LINESUPPLIER_PROPOSAL_INSERT':
-			//case 'LINESUPPLIER_PROPOSAL_MODIFY':
-			//case 'LINESUPPLIER_PROPOSAL_DELETE':
-
-			// Contracts
-			//case 'CONTRACT_CREATE':
-			//case 'CONTRACT_MODIFY':
-			//case 'CONTRACT_ACTIVATE':
-			//case 'CONTRACT_CANCEL':
-			//case 'CONTRACT_CLOSE':
-			//case 'CONTRACT_DELETE':
-			//case 'LINECONTRACT_INSERT':
-			//case 'LINECONTRACT_MODIFY':
-			//case 'LINECONTRACT_DELETE':
-
-			// Bills
-			//case 'BILL_CREATE':
-			//case 'BILL_MODIFY':
-			//case 'BILL_VALIDATE':
-			//case 'BILL_UNVALIDATE':
-			//case 'BILL_SENTBYMAIL':
-			//case 'BILL_CANCEL':
-			//case 'BILL_DELETE':
-			//case 'BILL_PAYED':
-			//case 'LINEBILL_INSERT':
-			//case 'LINEBILL_MODIFY':
-			//case 'LINEBILL_DELETE':
-
-			// Recurring Bills
-			//case 'BILLREC_MODIFY':
-			//case 'BILLREC_DELETE':
-			//case 'BILLREC_AUTOCREATEBILL':
-			//case 'LINEBILLREC_MODIFY':
-			//case 'LINEBILLREC_DELETE':
-
-			//Supplier Bill
-			//case 'BILL_SUPPLIER_CREATE':
-			//case 'BILL_SUPPLIER_MODIFY':
-			//case 'BILL_SUPPLIER_DELETE':
-			//case 'BILL_SUPPLIER_PAYED':
-			//case 'BILL_SUPPLIER_UNPAYED':
-			//case 'BILL_SUPPLIER_VALIDATE':
-			//case 'BILL_SUPPLIER_UNVALIDATE':
-			//case 'LINEBILL_SUPPLIER_CREATE':
-			//case 'LINEBILL_SUPPLIER_MODIFY':
-			//case 'LINEBILL_SUPPLIER_DELETE':
-
-			// Payments
-			//case 'PAYMENT_CUSTOMER_CREATE':
-			//case 'PAYMENT_SUPPLIER_CREATE':
-			//case 'PAYMENT_ADD_TO_BANK':
-			//case 'PAYMENT_DELETE':
-
-			// Online
-			//case 'PAYMENT_PAYBOX_OK':
-			//case 'PAYMENT_PAYPAL_OK':
-			//case 'PAYMENT_STRIPE_OK':
-
-			// Donation
-			//case 'DON_CREATE':
-			//case 'DON_MODIFY':
-			//case 'DON_DELETE':
-
-			// Interventions
-			//case 'FICHINTER_CREATE':
-			//case 'FICHINTER_MODIFY':
-			//case 'FICHINTER_VALIDATE':
-			//case 'FICHINTER_CLASSIFY_BILLED':			// TODO Replace it with FICHINTER_BILLED
-			//case 'FICHINTER_CLASSIFY_UNBILLED':		// TODO Replace it with FICHINTER_UNBILLED
-			//case 'FICHINTER_DELETE':
-			//case 'LINEFICHINTER_CREATE':
-			//case 'LINEFICHINTER_MODIFY':
-			//case 'LINEFICHINTER_DELETE':
-
-			// Members
-			//case 'MEMBER_CREATE':
-			//case 'MEMBER_VALIDATE':
-			//case 'MEMBER_SUBSCRIPTION':
-			//case 'MEMBER_MODIFY':
-			//case 'MEMBER_NEW_PASSWORD':
-			//case 'MEMBER_RESILIATE':
-			//case 'MEMBER_DELETE':
-
-			// Categories
-			//case 'CATEGORY_CREATE':
-			//case 'CATEGORY_MODIFY':
-			//case 'CATEGORY_DELETE':
-			//case 'CATEGORY_SET_MULTILANGS':
-
-			// Projects
-			//case 'PROJECT_CREATE':
-			//case 'PROJECT_MODIFY':
-			//case 'PROJECT_DELETE':
-
-			// Project tasks
-			//case 'TASK_CREATE':
-			//case 'TASK_MODIFY':
-			//case 'TASK_DELETE':
-
-			// Task time spent
-			//case 'TASK_TIMESPENT_CREATE':
-			//case 'TASK_TIMESPENT_MODIFY':
-			//case 'TASK_TIMESPENT_DELETE':
-			//case 'PROJECT_ADD_CONTACT':
-			//case 'PROJECT_DELETE_CONTACT':
-			//case 'PROJECT_DELETE_RESOURCE':
-
-			// Shipping
-			//case 'SHIPPING_CREATE':
-			//case 'SHIPPING_MODIFY':
-			//case 'SHIPPING_VALIDATE':
-			//case 'SHIPPING_SENTBYMAIL':
-			//case 'SHIPPING_BILLED':
-			//case 'SHIPPING_CLOSED':
-			//case 'SHIPPING_REOPEN':
-			//case 'SHIPPING_DELETE':
-
-			// and more...
-
 			default:
 				dol_syslog("Trigger '".$this->name."' for action '".$action."' launched by ".__FILE__.". id=".$object->id);
 				break;
 		}
 
 		return 0;
+	}
+
+	/**
+	 * Validación PLD al crear un contacto
+	 *
+	 * @param string       $action  Acción (CONTACT_CREATE)
+	 * @param CommonObject $object  Objeto Contact
+	 * @param User         $user    Usuario que ejecuta
+	 * @param Translate    $langs   Traducciones
+	 * @param Conf         $conf    Configuración
+	 * @return int -1 si validación falla (rollback), 1 si OK
+	 */
+	public function contactCreate($action, $object, User $user, Translate $langs, Conf $conf): int
+	{
+		return $this->validarCamposPLDContacto($object, $langs);
+	}
+
+	/**
+	 * Validación PLD al modificar un contacto
+	 *
+	 * @param string       $action  Acción (CONTACT_MODIFY)
+	 * @param CommonObject $object  Objeto Contact
+	 * @param User         $user    Usuario que ejecuta
+	 * @param Translate    $langs   Traducciones
+	 * @param Conf         $conf    Configuración
+	 * @return int -1 si validación falla (rollback), 1 si OK
+	 */
+	public function contactModify($action, $object, User $user, Translate $langs, Conf $conf): int
+	{
+		return $this->validarCamposPLDContacto($object, $langs);
+	}
+
+	/**
+	 * Validación PLD al crear una empresa
+	 *
+	 * @param string       $action  Acción (COMPANY_CREATE)
+	 * @param CommonObject $object  Objeto Societe
+	 * @param User         $user    Usuario que ejecuta
+	 * @param Translate    $langs   Traducciones
+	 * @param Conf         $conf    Configuración
+	 * @return int -1 si validación falla (rollback), 1 si OK
+	 */
+	public function companyCreate($action, $object, User $user, Translate $langs, Conf $conf): int
+	{
+		return $this->validarCamposPLDEmpresa($object, $langs);
+	}
+
+	/**
+	 * Validación PLD al modificar una empresa
+	 *
+	 * @param string       $action  Acción (COMPANY_MODIFY)
+	 * @param CommonObject $object  Objeto Societe
+	 * @param User         $user    Usuario que ejecuta
+	 * @param Translate    $langs   Traducciones
+	 * @param Conf         $conf    Configuración
+	 * @return int -1 si validación falla (rollback), 1 si OK
+	 */
+	public function companyModify($action, $object, User $user, Translate $langs, Conf $conf): int
+	{
+		return $this->validarCamposPLDEmpresa($object, $langs);
+	}
+
+	/**
+	 * Al registrar un pago de cliente, copia la fecha de pago al extrafield
+	 * pld_fecha_operacion de cada factura vinculada al pago.
+	 *
+	 * @param string       $action  Acción (PAYMENT_CUSTOMER_CREATE)
+	 * @param CommonObject $object  Objeto Paiement
+	 * @param User         $user    Usuario que ejecuta
+	 * @param Translate    $langs   Traducciones
+	 * @param Conf         $conf    Configuración
+	 * @return int 0 si no hay facturas, 1 si OK, -1 si error
+	 */
+	public function paymentCustomerCreate($action, $object, User $user, Translate $langs, Conf $conf): int
+	{
+		if (empty($object->amounts) || empty($object->datepaye)) {
+			return 0;
+		}
+
+		require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
+		require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+
+		$extrafields = new ExtraFields($this->db);
+		$extrafields->fetch_name_optionals_label('facture');
+
+		$errors = 0;
+		foreach ($object->amounts as $fk_facture => $amount) {
+			$fk_facture = (int) $fk_facture;
+			if ($fk_facture <= 0) {
+				continue;
+			}
+
+			$facture = new Facture($this->db);
+			if ($facture->fetch($fk_facture) <= 0) {
+				dol_syslog("PLD Trigger paymentCustomerCreate: no se pudo cargar factura id=".$fk_facture, LOG_WARNING);
+				$errors++;
+				continue;
+			}
+
+			$facture->fetch_optionals();
+			$facture->array_options['options_pld_fecha_operacion'] = $object->datepaye;
+
+			$ret = $facture->insertExtraFields();
+			if ($ret < 0) {
+				dol_syslog("PLD Trigger paymentCustomerCreate: error al guardar pld_fecha_operacion en factura id=".$fk_facture, LOG_ERR);
+				$errors++;
+			} else {
+				dol_syslog("PLD Trigger paymentCustomerCreate: pld_fecha_operacion actualizada en factura id=".$fk_facture." fecha=".dol_print_date($object->datepaye, 'day'), LOG_INFO);
+			}
+		}
+
+		return ($errors > 0) ? -1 : 1;
+	}
+
+	/**
+	 * Valida campos PLD de un contacto (socpeople)
+	 *
+	 * @param CommonObject $object Contacto con array_options cargado
+	 * @param Translate    $langs  Traducciones
+	 * @return int 1 si válido, -1 si inválido (provoca rollback)
+	 */
+	private function validarCamposPLDContacto($object, Translate $langs): int
+	{
+		$langs->load('modulecompliancepld@modulecompliancepld');
+		$validator = new PLDValidator();
+
+		$curp = $object->array_options['options_pld_curp'] ?? '';
+		if ($curp !== '' && !$validator->validarCURP($curp)) {
+			$this->errors[] = $langs->trans('PLDErrorCURPInvalida');
+			dol_syslog("PLD Trigger: CURP inválida para contacto id=".$object->id." curp=".$curp, LOG_WARNING);
+			return -1;
+		}
+
+		$rfc = $object->array_options['options_pld_rfc'] ?? '';
+		if ($rfc !== '' && !$validator->validarRFC($rfc)) {
+			$this->errors[] = $langs->trans('PLDErrorRFCInvalido');
+			dol_syslog("PLD Trigger: RFC inválido para contacto id=".$object->id." rfc=".$rfc, LOG_WARNING);
+			return -1;
+		}
+
+		$telefono = $object->array_options['options_pld_numero_telefono'] ?? '';
+		if ($telefono !== '' && !$validator->validarTelefono($telefono)) {
+			$this->errors[] = $langs->trans('PLDErrorTelefonoInvalido');
+			dol_syslog("PLD Trigger: Teléfono inválido para contacto id=".$object->id, LOG_WARNING);
+			return -1;
+		}
+
+		$correo = $object->array_options['options_pld_correo_electronico'] ?? '';
+		if ($correo !== '' && !$validator->validarCorreo($correo)) {
+			$this->errors[] = $langs->trans('PLDErrorCorreoInvalido');
+			dol_syslog("PLD Trigger: Correo inválido para contacto id=".$object->id, LOG_WARNING);
+			return -1;
+		}
+
+		dol_syslog("PLD Trigger: Contacto id=".$object->id." validado correctamente", LOG_INFO);
+		return 1;
+	}
+
+	/**
+	 * Valida campos PLD de una empresa (societe/thirdparty)
+	 *
+	 * @param CommonObject $object Empresa con array_options cargado
+	 * @param Translate    $langs  Traducciones
+	 * @return int 1 si válido, -1 si inválido (provoca rollback)
+	 */
+	private function validarCamposPLDEmpresa($object, Translate $langs): int
+	{
+		$langs->load('modulecompliancepld@modulecompliancepld');
+		$validator = new PLDValidator();
+
+		$curp = $object->array_options['options_pld_curp'] ?? '';
+		if ($curp !== '' && !$validator->validarCURP($curp)) {
+			$this->errors[] = $langs->trans('PLDErrorCURPInvalida');
+			dol_syslog("PLD Trigger: CURP inválida para empresa id=".$object->id." curp=".$curp, LOG_WARNING);
+			return -1;
+		}
+
+		$rfc = $object->array_options['options_pld_rfc_validado'] ?? '';
+		if ($rfc !== '' && !$validator->validarRFC($rfc)) {
+			$this->errors[] = $langs->trans('PLDErrorRFCInvalido');
+			dol_syslog("PLD Trigger: RFC inválido para empresa id=".$object->id." rfc=".$rfc, LOG_WARNING);
+			return -1;
+		}
+
+		$cp = $object->array_options['options_pld_codigo_postal'] ?? '';
+		if ($cp !== '' && !$validator->validarCodigoPostal($cp)) {
+			$this->errors[] = $langs->trans('PLDErrorCPInvalido');
+			dol_syslog("PLD Trigger: CP inválido para empresa id=".$object->id." cp=".$cp, LOG_WARNING);
+			return -1;
+		}
+
+		dol_syslog("PLD Trigger: Empresa id=".$object->id." validada correctamente", LOG_INFO);
+		return 1;
 	}
 }

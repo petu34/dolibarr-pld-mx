@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /* Copyright (C) 2026 SuperAdmin
  * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
  *
@@ -17,14 +19,19 @@
  */
 
 /**
- * \file    modulecompliancepld/class/actions_modulecompliancepld.class.php
- * \ingroup modulecompliancepld
- * \brief   Example hook overload.
+ * @file        actions_modulecompliancepld.class.php
+ * @module      CompliancePLD
+ * @description Hooks del módulo PLD: validación de campos en formularios de contacto y empresa
+ * @author      Agente Generador (Sisyphus/Claude Code)
+ * @version     1.0.0
+ * @date        2026-02-27
+ * @compliance  LFPIORPI Art. 17 Fracc. VIII — PLD México
  *
- * Put detailed description here.
+ * @license     GNU/GPL
  */
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonhookactions.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldvalidator.class.php';
 
 /**
  * Class ActionsModulecompliancepld
@@ -104,22 +111,30 @@ class ActionsModulecompliancepld extends CommonHookActions
 	{
 		global $conf, $user, $langs;
 
-		$error = 0; // Error counter
-
-		/* print_r($parameters); print_r($object); echo "action: " . $action; */
-		if (in_array($parameters['currentcontext'], array('somecontext1', 'somecontext2'))) {	    // do something only for the context 'somecontext1' or 'somecontext2'
-			// Do what you want here...
-			// You can for example load and use call global vars like $fieldstosearchall to overwrite them, or update database depending on $action and GETPOST values.
+		if (!isModEnabled('modulecompliancepld')) {
+			return 0;
 		}
 
-		if (!$error) {
-			$this->results = array('myreturn' => 999);
-			$this->resprints = 'A text to show';
-			return 0; // or return 1 to replace standard code
-		} else {
-			$this->errors[] = 'Error message';
+		if (!in_array($action, array('add', 'update'))) {
+			return 0;
+		}
+
+		$langs->load('modulecompliancepld@modulecompliancepld');
+		$context = $parameters['currentcontext'];
+		$error = 0;
+
+		if ($context === 'contactcard') {
+			$error = $this->validarFormularioContacto();
+		} elseif ($context === 'thirdpartycard') {
+			$error = $this->validarFormularioEmpresa();
+		}
+
+		if ($error > 0) {
+			$action = '';
 			return -1;
 		}
+
+		return 0;
 	}
 
 
@@ -134,25 +149,7 @@ class ActionsModulecompliancepld extends CommonHookActions
 	 */
 	public function doMassActions($parameters, &$object, &$action, $hookmanager)
 	{
-		global $conf, $user, $langs;
-
-		$error = 0; // Error counter
-
-		/* print_r($parameters); print_r($object); echo "action: " . $action; */
-		if (in_array($parameters['currentcontext'], array('somecontext1', 'somecontext2'))) {		// do something only for the context 'somecontext1' or 'somecontext2'
-			foreach ($parameters['toselect'] as $objectid) {
-				// Do action on each object id
-			}
-		}
-
-		if (!$error) {
-			$this->results = array('myreturn' => 999);
-			$this->resprints = 'A text to show';
-			return 0; // or return 1 to replace standard code
-		} else {
-			$this->errors[] = 'Error message';
-			return -1;
-		}
+		return 0;
 	}
 
 
@@ -167,22 +164,7 @@ class ActionsModulecompliancepld extends CommonHookActions
 	 */
 	public function addMoreMassActions($parameters, &$object, &$action, $hookmanager)
 	{
-		global $conf, $user, $langs;
-
-		$error = 0; // Error counter
-		$disabled = 1;
-
-		/* print_r($parameters); print_r($object); echo "action: " . $action; */
-		if (in_array($parameters['currentcontext'], array('somecontext1', 'somecontext2'))) {		// do something only for the context 'somecontext1' or 'somecontext2'
-			$this->resprints = '<option value="0"'.($disabled ? ' disabled="disabled"' : '').'>'.$langs->trans("ModulecompliancepldMassAction").'</option>';
-		}
-
-		if (!$error) {
-			return 0; // or return 1 to replace standard code
-		} else {
-			$this->errors[] = 'Error message';
-			return -1;
-		}
+		return 0;
 	}
 
 
@@ -199,20 +181,7 @@ class ActionsModulecompliancepld extends CommonHookActions
 	 */
 	public function beforePDFCreation($parameters, &$object, &$action)
 	{
-		global $conf, $user, $langs;
-		global $hookmanager;
-
-		$outputlangs = $langs;
-
-		$ret = 0;
-		$deltemp = array();
-		dol_syslog(get_class($this).'::executeHooks action='.$action);
-
-		/* print_r($parameters); print_r($object); echo "action: " . $action; */
-		if (in_array($parameters['currentcontext'], array('somecontext1', 'somecontext2'))) {		// do something only for the context 'somecontext1' or 'somecontext2'
-		}
-
-		return $ret;
+		return 0;
 	}
 
 	/**
@@ -227,21 +196,7 @@ class ActionsModulecompliancepld extends CommonHookActions
 	 */
 	public function afterPDFCreation($parameters, &$pdfhandler, &$action)
 	{
-		global $conf, $user, $langs;
-		global $hookmanager;
-
-		$outputlangs = $langs;
-
-		$ret = 0;
-		$deltemp = array();
-		dol_syslog(get_class($this).'::executeHooks action='.$action);
-
-		/* print_r($parameters); print_r($object); echo "action: " . $action; */
-		if (in_array($parameters['currentcontext'], array('somecontext1', 'somecontext2'))) {
-			// do something only for the context 'somecontext1' or 'somecontext2'
-		}
-
-		return $ret;
+		return 0;
 	}
 
 
@@ -266,12 +221,12 @@ class ActionsModulecompliancepld extends CommonHookActions
 		$h = 0;
 
 		if ($parameters['tabfamily'] == 'modulecompliancepld') {
-			$head[$h][0] = dol_buildpath('/module/index.php', 1);
-			$head[$h][1] = $langs->trans("Home");
+			$head[$h][0] = dol_buildpath('/modulecompliancepld/index.php', 1);
+			$head[$h][1] = $langs->trans("PLDDashboard");
 			$head[$h][2] = 'home';
 			$h++;
 
-			$this->results['title'] = $langs->trans("Modulecompliancepld");
+			$this->results['title'] = $langs->trans("PLDMenu");
 			$this->results['picto'] = 'modulecompliancepld@modulecompliancepld';
 		}
 
@@ -281,10 +236,7 @@ class ActionsModulecompliancepld extends CommonHookActions
 
 		$this->results['head'] = $head;
 
-		$arrayoftypes = array();
-		//$arrayoftypes['modulecompliancepld_myobject'] = array('label' => 'MyObject', 'picto'=>'myobject@modulecompliancepld', 'ObjectClassName' => 'MyObject', 'enabled' => isModEnabled('modulecompliancepld'), 'ClassPath' => "/modulecompliancepld/class/myobject.class.php", 'langs'=>'modulecompliancepld@modulecompliancepld')
-
-		$this->results['arrayoftype'] = $arrayoftypes;
+		$this->results['arrayoftype'] = array();
 
 		return 0;
 	}
@@ -305,8 +257,8 @@ class ActionsModulecompliancepld extends CommonHookActions
 	{
 		global $user;
 
-		if ($parameters['features'] == 'myobject') {
-			if ($user->hasRight('modulecompliancepld', 'myobject', 'read')) {
+		if ($parameters['features'] == 'modulecompliancepld') {
+			if ($user->hasRight('modulecompliancepld', 'read')) {
 				$this->results['result'] = 1;
 				return 1;
 			} else {
@@ -341,36 +293,95 @@ class ActionsModulecompliancepld extends CommonHookActions
 			return 0;
 		} elseif ($parameters['mode'] == 'add') {
 			$langs->load('modulecompliancepld@modulecompliancepld');
-			// used when we want to add some tabs
 			$counter = count($parameters['head']);
 			$element = $parameters['object']->element;
 			$id = $parameters['object']->id;
-			// verifier le type d'onglet comme member_stats où ça ne doit pas apparaitre
-			// if (in_array($element, ['societe', 'member', 'contrat', 'fichinter', 'project', 'propal', 'commande', 'facture', 'order_supplier', 'invoice_supplier'])) {
-			if (in_array($element, ['context1', 'context2'])) {
-				$datacount = 0;
 
-				$parameters['head'][$counter][0] = dol_buildpath('/modulecompliancepld/modulecompliancepld_tab.php', 1) . '?id=' . $id . '&amp;module='.$element;
-				$parameters['head'][$counter][1] = $langs->trans('ModulecompliancepldTab');
-				if ($datacount > 0) {
-					$parameters['head'][$counter][1] .= '<span class="badge marginleftonlyshort">' . $datacount . '</span>';
-				}
-				$parameters['head'][$counter][2] = 'modulecompliancepldemails';
+			if (in_array($element, ['societe', 'contact', 'product', 'facture', 'commande'])) {
+				$parameters['head'][$counter][0] = dol_buildpath('/modulecompliancepld/pld_tab.php', 1) . '?id=' . $id . '&amp;element='.$element;
+				$parameters['head'][$counter][1] = $langs->trans('PLDTab');
+				$parameters['head'][$counter][2] = 'plddata';
 				$counter++;
 			}
-			if ($counter > 0 && (int) DOL_VERSION < 14) {
-				$this->results = $parameters['head'];
-				// return 1 to replace standard code
-				return 1;
-			} else {
-				// en V14 et + $parameters['head'] est modifiable par référence
-				return 0;
-			}
+			// Dolibarr 14+ modifica $parameters['head'] por referencia
+			return 0;
 		} else {
 			// Bad value for $parameters['mode']
 			return -1;
 		}
 	}
 
-	/* Add here any other hooked methods... */
+	/**
+	 * Valida campos PLD del formulario de contacto (socpeople)
+	 *
+	 * Campos validados: CURP, RFC, teléfono, correo electrónico
+	 *
+	 * @return int Número de errores encontrados
+	 */
+	private function validarFormularioContacto(): int
+	{
+		global $langs;
+		$validator = new PLDValidator();
+		$error = 0;
+
+		$curp = GETPOST('options_pld_curp', 'alpha');
+		if ($curp !== '' && !$validator->validarCURP($curp)) {
+			setEventMessages($langs->trans('PLDErrorCURPInvalida'), null, 'errors');
+			$error++;
+		}
+
+		$rfc = GETPOST('options_pld_rfc', 'alpha');
+		if ($rfc !== '' && !$validator->validarRFC($rfc)) {
+			setEventMessages($langs->trans('PLDErrorRFCInvalido'), null, 'errors');
+			$error++;
+		}
+
+		$telefono = GETPOST('options_pld_numero_telefono', 'alpha');
+		if ($telefono !== '' && !$validator->validarTelefono($telefono)) {
+			setEventMessages($langs->trans('PLDErrorTelefonoInvalido'), null, 'errors');
+			$error++;
+		}
+
+		$correo = GETPOST('options_pld_correo_electronico', 'alpha');
+		if ($correo !== '' && !$validator->validarCorreo($correo)) {
+			setEventMessages($langs->trans('PLDErrorCorreoInvalido'), null, 'errors');
+			$error++;
+		}
+
+		return $error;
+	}
+
+	/**
+	 * Valida campos PLD del formulario de empresa (thirdparty/societe)
+	 *
+	 * Campos validados: CURP, RFC, código postal
+	 *
+	 * @return int Número de errores encontrados
+	 */
+	private function validarFormularioEmpresa(): int
+	{
+		global $langs;
+		$validator = new PLDValidator();
+		$error = 0;
+
+		$curp = GETPOST('options_pld_curp', 'alpha');
+		if ($curp !== '' && !$validator->validarCURP($curp)) {
+			setEventMessages($langs->trans('PLDErrorCURPInvalida'), null, 'errors');
+			$error++;
+		}
+
+		$rfc = GETPOST('options_pld_rfc_validado', 'alpha');
+		if ($rfc !== '' && !$validator->validarRFC($rfc)) {
+			setEventMessages($langs->trans('PLDErrorRFCInvalido'), null, 'errors');
+			$error++;
+		}
+
+		$cp = GETPOST('options_pld_codigo_postal', 'alpha');
+		if ($cp !== '' && !$validator->validarCodigoPostal($cp)) {
+			setEventMessages($langs->trans('PLDErrorCPInvalido'), null, 'errors');
+			$error++;
+		}
+
+		return $error;
+	}
 }

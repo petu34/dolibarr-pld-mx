@@ -1,0 +1,826 @@
+# Archivo de traducciones — Módulo Compliance PLD México
+# Idioma: Español México (es_MX)
+# Compliance: LFPIORPI Art. 17 Fracc. VIII — PLD México
+# Fecha: 2026-02-20
+
+#
+# Genérico del Módulo
+#
+ModuleModulecompliancepldName = Compliance PLD México
+ModuleModulecompliancepldDesc = Módulo de Prevención de Lavado de Dinero (PLD) para cumplimiento LFPIORPI Art. 17 — México
+
+#
+# Página de administración
+#
+ModulecompliancepldSetup = Configuración PLD
+Settings = Configuración
+ModulecompliancepldSetupPage = Configuración del módulo Compliance PLD
+NewSection = Nueva sección
+MODULECOMPLIANCEPLD_MYPARAM1 = Valor UMA vigente
+MODULECOMPLIANCEPLD_MYPARAM1Tooltip = Valor de la Unidad de Medida y Actualización publicado por INEGI
+MODULECOMPLIANCEPLD_MYPARAM2 = Clave del sujeto obligado
+MODULECOMPLIANCEPLD_MYPARAM2Tooltip = Clave asignada por el SAT al sujeto obligado para el portal SPPLD
+
+#
+# Página Acerca de
+#
+About = Acerca de
+ModulecompliancepldAbout = Acerca del módulo Compliance PLD
+ModulecompliancepldAboutPage = Módulo de cumplimiento PLD conforme a LFPIORPI para operaciones con vehículos en México
+
+#
+# Página principal
+#
+ModulecompliancepldArea = Panel de Control PLD
+MyPageName = Dashboard PLD
+
+#
+# Widget
+#
+MyWidget = Resumen PLD
+MyWidgetDescription = Resumen de operaciones vulnerables y estado de avisos SAT
+
+#
+# Menús
+#
+PLDMenu = PLD Compliance
+PLDDashboard = Panel de Control
+PLDOperaciones = Operaciones Vulnerables
+PLDOperacionesNueva = Nueva Operación
+PLDOperacionesLista = Lista de Operaciones
+PLDAvisos = Avisos SAT
+PLDAvisosGenerar = Generar Aviso
+PLDAvisosHistorial = Historial de Avisos
+PLDAlertas = Alertas
+PLDReportes = Reportes
+PLDGenerarXML = Generar XML SAT
+SeccionSujetoObligado = Sujeto Obligado y e.firma
+PLDConfiguracion = Configuración
+
+#
+# Permisos
+#
+Permission500001 = Consultar datos PLD
+Permission500002 = Capturar y modificar datos PLD
+Permission500003 = Eliminar datos PLD
+Permission500004 = Generar avisos SAT
+Permission500005 = Enviar avisos al portal SPPLD
+
+#
+# Pestañas en objetos Dolibarr
+#
+PLDTabThirdparty = Datos PLD
+PLDTabContact = PLD Contacto
+PLDTabProduct = PLD Vehículo
+PLDTabInvoice = PLD Operación
+PLDTabOrder = PLD Pedido
+PLDTabPayment = PLD Pago
+
+# ============================================================
+# PARTE 1: Extrafields llx_societe (~33 campos)
+# Compliance: LFPIORPI Art. 17 Fracc. VIII
+# XSD: persona_aviso -> tipo_persona
+# ============================================================
+
+# 1.1 Identificación Básica del Cliente
+ExtrafieldsModulecompliancepld_pld_tipo_persona = Tipo de Persona (PLD)
+ExtrafieldsModulecompliancepld_pld_tipo_persona_help = Clasificación según LFPIORPI: Persona Física, Persona Moral o Fideicomiso
+ExtrafieldsModulecompliancepld_pld_curp_societe = CURP (PLD)
+ExtrafieldsModulecompliancepld_pld_curp_societe_help = Clave Única de Registro de Población. Obligatorio para personas físicas mexicanas
+ExtrafieldsModulecompliancepld_pld_rfc_validado = RFC Validado (PLD)
+ExtrafieldsModulecompliancepld_pld_rfc_validado_help = RFC validado contra formato SAT. 13 caracteres persona física, 12 persona moral
+ExtrafieldsModulecompliancepld_pld_fecha_nacimiento_societe = Fecha de Nacimiento (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_nacimiento_societe_help = Fecha de nacimiento para personas físicas
+ExtrafieldsModulecompliancepld_pld_fecha_constitucion = Fecha de Constitución (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_constitucion_help = Fecha de constitución para personas morales
+ExtrafieldsModulecompliancepld_pld_nacionalidad_societe = Nacionalidad (PLD)
+ExtrafieldsModulecompliancepld_pld_nacionalidad_societe_help = Código de país ISO alpha-2 (ej: MX, US, ES)
+ExtrafieldsModulecompliancepld_pld_pais_nacimiento = País de Nacimiento (PLD)
+ExtrafieldsModulecompliancepld_pld_pais_nacimiento_help = País de nacimiento ISO alpha-2. Obligatorio para personas físicas
+ExtrafieldsModulecompliancepld_pld_estado_nacimiento = Estado de Nacimiento (PLD)
+ExtrafieldsModulecompliancepld_pld_estado_nacimiento_help = Entidad federativa de nacimiento
+
+# 1.2 Domicilio Fiscal Detallado
+ExtrafieldsModulecompliancepld_pld_calle = Calle (PLD)
+ExtrafieldsModulecompliancepld_pld_calle_help = Nombre de la calle del domicilio fiscal
+ExtrafieldsModulecompliancepld_pld_numero_exterior = Número Exterior (PLD)
+ExtrafieldsModulecompliancepld_pld_numero_exterior_help = Número exterior del domicilio
+ExtrafieldsModulecompliancepld_pld_numero_interior = Número Interior (PLD)
+ExtrafieldsModulecompliancepld_pld_numero_interior_help = Número interior (opcional)
+ExtrafieldsModulecompliancepld_pld_colonia = Colonia (PLD)
+ExtrafieldsModulecompliancepld_pld_colonia_help = Colonia del domicilio fiscal
+ExtrafieldsModulecompliancepld_pld_codigo_postal = Código Postal (PLD)
+ExtrafieldsModulecompliancepld_pld_codigo_postal_help = Código postal de 5 dígitos
+ExtrafieldsModulecompliancepld_pld_municipio = Municipio / Alcaldía (PLD)
+ExtrafieldsModulecompliancepld_pld_municipio_help = Municipio o alcaldía del domicilio
+ExtrafieldsModulecompliancepld_pld_estado = Entidad Federativa (PLD)
+ExtrafieldsModulecompliancepld_pld_estado_help = Estado de la república del domicilio fiscal
+ExtrafieldsModulecompliancepld_pld_pais = País (PLD)
+ExtrafieldsModulecompliancepld_pld_pais_help = País del domicilio ISO alpha-2. Default: MX
+ExtrafieldsModulecompliancepld_pld_es_domicilio_extranjero = ¿Domicilio Extranjero? (PLD)
+ExtrafieldsModulecompliancepld_pld_es_domicilio_extranjero_help = Indica si el domicilio es en el extranjero
+ExtrafieldsModulecompliancepld_pld_estado_provincia_ext = Estado/Provincia Extranjero (PLD)
+ExtrafieldsModulecompliancepld_pld_estado_provincia_ext_help = Estado o provincia para domicilios extranjeros
+ExtrafieldsModulecompliancepld_pld_ciudad_poblacion_ext = Ciudad/Población Extranjero (PLD)
+ExtrafieldsModulecompliancepld_pld_ciudad_poblacion_ext_help = Ciudad o población para domicilios extranjeros
+
+# 1.3 Actividad Económica
+ExtrafieldsModulecompliancepld_pld_actividad_economica_societe = Actividad Económica SCIAN (PLD)
+ExtrafieldsModulecompliancepld_pld_actividad_economica_societe_help = Clave de actividad económica SCIAN de 7 dígitos
+ExtrafieldsModulecompliancepld_pld_giro_mercantil = Giro Mercantil (PLD)
+ExtrafieldsModulecompliancepld_pld_giro_mercantil_help = Giro mercantil SCIAN 7 dígitos. Obligatorio para personas morales
+ExtrafieldsModulecompliancepld_pld_ocupacion = Ocupación / Profesión (PLD)
+ExtrafieldsModulecompliancepld_pld_ocupacion_help = Profesión u ocupación principal. Obligatorio para personas físicas
+
+# 1.4 Datos Constitutivos (Personas Morales)
+ExtrafieldsModulecompliancepld_pld_denominacion_razon = Denominación o Razón Social (PLD)
+ExtrafieldsModulecompliancepld_pld_denominacion_razon_help = Razón social formal para el XML del SAT (hasta 254 caracteres)
+ExtrafieldsModulecompliancepld_pld_numero_escritura = Número de Escritura (PLD)
+ExtrafieldsModulecompliancepld_pld_numero_escritura_help = Número de escritura constitutiva
+ExtrafieldsModulecompliancepld_pld_fecha_escritura = Fecha de Escritura (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_escritura_help = Fecha de la escritura constitutiva
+ExtrafieldsModulecompliancepld_pld_notario_numero = Número de Notario (PLD)
+ExtrafieldsModulecompliancepld_pld_notario_numero_help = Número del notario que protocolizó
+ExtrafieldsModulecompliancepld_pld_notario_nombre = Nombre del Notario (PLD)
+ExtrafieldsModulecompliancepld_pld_notario_nombre_help = Nombre completo del notario
+ExtrafieldsModulecompliancepld_pld_notario_estado = Estado del Notario (PLD)
+ExtrafieldsModulecompliancepld_pld_notario_estado_help = Entidad federativa del notario
+ExtrafieldsModulecompliancepld_pld_folio_mercantil = Folio Mercantil (PLD)
+ExtrafieldsModulecompliancepld_pld_folio_mercantil_help = Folio del Registro Público de la Propiedad
+
+# 1.5 Datos de Fideicomiso
+ExtrafieldsModulecompliancepld_pld_identificador_fideicomiso = Identificador del Fideicomiso (PLD)
+ExtrafieldsModulecompliancepld_pld_identificador_fideicomiso_help = Identificador único del fideicomiso (hasta 40 caracteres)
+
+# 1.6 Control PLD
+ExtrafieldsModulecompliancepld_pld_cliente_identificado = ¿Cliente Identificado? (PLD)
+ExtrafieldsModulecompliancepld_pld_cliente_identificado_help = Indica si se completó el proceso de identificación del cliente
+ExtrafieldsModulecompliancepld_pld_fecha_identificacion = Fecha de Identificación (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_identificacion_help = Fecha en que se completó la identificación
+ExtrafieldsModulecompliancepld_pld_expediente_completo = ¿Expediente Completo? (PLD)
+ExtrafieldsModulecompliancepld_pld_expediente_completo_help = Indica si el expediente PLD está completo
+ExtrafieldsModulecompliancepld_pld_es_pep = ¿Persona Expuesta Políticamente? (PLD)
+ExtrafieldsModulecompliancepld_pld_es_pep_help = Persona Expuesta Políticamente (PEP) o familiar de PEP
+ExtrafieldsModulecompliancepld_pld_relacion_pep = Relación con PEP (PLD)
+ExtrafieldsModulecompliancepld_pld_relacion_pep_help = Descripción del parentesco o relación con persona políticamente expuesta
+ExtrafieldsModulecompliancepld_pld_tiene_beneficiario = ¿Tiene Beneficiario Controlador? (PLD)
+ExtrafieldsModulecompliancepld_pld_tiene_beneficiario_help = Indica si existe un dueño beneficiario o controlador de la operación
+ExtrafieldsModulecompliancepld_pld_observaciones_societe = Observaciones PLD
+ExtrafieldsModulecompliancepld_pld_observaciones_societe_help = Observaciones generales de compliance
+
+# ============================================================
+# PARTE 2: Extrafields llx_socpeople (~22 campos)
+# Compliance: LFPIORPI Art. 17 Fracc. VIII
+# XSD: persona_fisica, representante_apoderado
+# ============================================================
+
+# 2.1 Datos Personales Completos
+ExtrafieldsModulecompliancepld_pld_apellido_paterno = Apellido Paterno (PLD)
+ExtrafieldsModulecompliancepld_pld_apellido_paterno_help = Apellido paterno conforme a identificación oficial
+ExtrafieldsModulecompliancepld_pld_apellido_materno = Apellido Materno (PLD)
+ExtrafieldsModulecompliancepld_pld_apellido_materno_help = Apellido materno conforme a identificación oficial
+ExtrafieldsModulecompliancepld_pld_nombre_completo = Nombre(s) Completo(s) (PLD)
+ExtrafieldsModulecompliancepld_pld_nombre_completo_help = Nombre(s) de pila conforme a identificación oficial
+ExtrafieldsModulecompliancepld_pld_curp = CURP (PLD)
+ExtrafieldsModulecompliancepld_pld_curp_help = Clave Única de Registro de Población (18 caracteres)
+ExtrafieldsModulecompliancepld_pld_rfc = RFC (PLD)
+ExtrafieldsModulecompliancepld_pld_rfc_help = Registro Federal de Contribuyentes del contacto
+ExtrafieldsModulecompliancepld_pld_fecha_nacimiento = Fecha de Nacimiento (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_nacimiento_help = Fecha de nacimiento del contacto
+ExtrafieldsModulecompliancepld_pld_nacionalidad = Nacionalidad (PLD)
+ExtrafieldsModulecompliancepld_pld_nacionalidad_help = Código de país ISO alpha-2
+ExtrafieldsModulecompliancepld_pld_actividad_economica = Actividad Económica SCIAN (PLD)
+ExtrafieldsModulecompliancepld_pld_actividad_economica_help = Clave de actividad económica SCIAN de 7 dígitos
+
+# 2.2 Identificación Oficial
+ExtrafieldsModulecompliancepld_pld_tipo_identificacion = Tipo de Identificación (PLD)
+ExtrafieldsModulecompliancepld_pld_tipo_identificacion_help = Tipo de identificación oficial presentada
+ExtrafieldsModulecompliancepld_pld_numero_identificacion = Número de Identificación (PLD)
+ExtrafieldsModulecompliancepld_pld_numero_identificacion_help = Número o folio de la identificación oficial
+ExtrafieldsModulecompliancepld_pld_vigencia_identificacion = Vigencia de Identificación (PLD)
+ExtrafieldsModulecompliancepld_pld_vigencia_identificacion_help = Fecha de vencimiento de la identificación
+ExtrafieldsModulecompliancepld_pld_autoridad_emite = Autoridad Emisora (PLD)
+ExtrafieldsModulecompliancepld_pld_autoridad_emite_help = Autoridad que emitió la identificación
+ExtrafieldsModulecompliancepld_pld_clave_elector = Clave de Elector (PLD)
+ExtrafieldsModulecompliancepld_pld_clave_elector_help = Clave de elector de la credencial INE/IFE (18 caracteres)
+
+# 2.3 Representación Legal
+ExtrafieldsModulecompliancepld_pld_es_representante_legal = ¿Es Representante Legal? (PLD)
+ExtrafieldsModulecompliancepld_pld_es_representante_legal_help = Indica si este contacto actúa como representante legal o apoderado
+ExtrafieldsModulecompliancepld_pld_tipo_representacion = Tipo de Representación (PLD)
+ExtrafieldsModulecompliancepld_pld_tipo_representacion_help = Tipo de poder otorgado al representante
+ExtrafieldsModulecompliancepld_pld_escritura_poder = Escritura del Poder (PLD)
+ExtrafieldsModulecompliancepld_pld_escritura_poder_help = Número de escritura pública del poder
+ExtrafieldsModulecompliancepld_pld_fecha_poder = Fecha del Poder (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_poder_help = Fecha de otorgamiento del poder
+ExtrafieldsModulecompliancepld_pld_notario_poder = Notario del Poder (PLD)
+ExtrafieldsModulecompliancepld_pld_notario_poder_help = Nombre del notario que protocolizó el poder
+
+# 2.4 Teléfono y Contacto
+ExtrafieldsModulecompliancepld_pld_clave_pais_telefono = Clave País Teléfono (PLD)
+ExtrafieldsModulecompliancepld_pld_clave_pais_telefono_help = Código de país ISO alpha-2 para teléfono
+ExtrafieldsModulecompliancepld_pld_numero_telefono = Número de Teléfono (PLD)
+ExtrafieldsModulecompliancepld_pld_numero_telefono_help = Número de teléfono (10-12 dígitos)
+ExtrafieldsModulecompliancepld_pld_correo_electronico = Correo Electrónico (PLD)
+ExtrafieldsModulecompliancepld_pld_correo_electronico_help = Correo electrónico del contacto (máx 60 caracteres)
+
+# ============================================================
+# PARTE 3: Extrafields llx_product (~24 campos) — Específico VEH
+# Compliance: LFPIORPI Art. 17 Fracc. VIII
+# XSD: veh.xsd tipo_vehiculo
+# ============================================================
+
+# 3.1 Identificación del Vehículo
+ExtrafieldsModulecompliancepld_pld_tipo_vehiculo = Tipo de Vehículo (PLD)
+ExtrafieldsModulecompliancepld_pld_tipo_vehiculo_help = Clasificación según veh.xsd: Terrestre, Marítimo o Aéreo
+ExtrafieldsModulecompliancepld_pld_marca = Marca del Fabricante (PLD)
+ExtrafieldsModulecompliancepld_pld_marca_help = Marca del fabricante del vehículo (hasta 40 caracteres)
+ExtrafieldsModulecompliancepld_pld_modelo = Modelo (PLD)
+ExtrafieldsModulecompliancepld_pld_modelo_help = Modelo del vehículo (hasta 40 caracteres)
+ExtrafieldsModulecompliancepld_pld_anio_modelo = Año Modelo (PLD)
+ExtrafieldsModulecompliancepld_pld_anio_modelo_help = Año modelo del vehículo (4 dígitos)
+
+# 3.2 Números de Serie e Identificadores
+ExtrafieldsModulecompliancepld_pld_vin = VIN (PLD)
+ExtrafieldsModulecompliancepld_pld_vin_help = Vehicle Identification Number (exactamente 17 caracteres). Obligatorio para terrestres
+ExtrafieldsModulecompliancepld_pld_repuve = Clave REPUVE (PLD)
+ExtrafieldsModulecompliancepld_pld_repuve_help = Clave del Registro Público Vehicular (8 caracteres)
+ExtrafieldsModulecompliancepld_pld_placas = Placas (PLD)
+ExtrafieldsModulecompliancepld_pld_placas_help = Número de placas (1-12 caracteres)
+ExtrafieldsModulecompliancepld_pld_nivel_blindaje = Nivel de Blindaje (PLD)
+ExtrafieldsModulecompliancepld_pld_nivel_blindaje_help = Nivel de blindaje del vehículo (1 dígito, 0 si no aplica)
+ExtrafieldsModulecompliancepld_pld_numero_serie = Número de Serie (PLD)
+ExtrafieldsModulecompliancepld_pld_numero_serie_help = Número de serie para vehículos marítimos/aéreos (hasta 20 caracteres)
+ExtrafieldsModulecompliancepld_pld_bandera = País de Bandera (PLD)
+ExtrafieldsModulecompliancepld_pld_bandera_help = País de bandera ISO alpha-2 para vehículos marítimos/aéreos
+ExtrafieldsModulecompliancepld_pld_matricula = Matrícula (PLD)
+ExtrafieldsModulecompliancepld_pld_matricula_help = Matrícula para vehículos aéreos/marítimos (hasta 12 caracteres)
+
+# 3.3 Origen y Estado
+ExtrafieldsModulecompliancepld_pld_origen = Origen del Vehículo (PLD)
+ExtrafieldsModulecompliancepld_pld_origen_help = Nacional o Importado
+ExtrafieldsModulecompliancepld_pld_pais_origen = País de Fabricación (PLD)
+ExtrafieldsModulecompliancepld_pld_pais_origen_help = País de fabricación ISO alpha-2. Obligatorio si es importado
+ExtrafieldsModulecompliancepld_pld_estado_vehiculo = Estado del Vehículo (PLD)
+ExtrafieldsModulecompliancepld_pld_estado_vehiculo_help = Nuevo, Usado o Seminuevo
+ExtrafieldsModulecompliancepld_pld_kilometraje = Kilometraje (PLD)
+ExtrafieldsModulecompliancepld_pld_kilometraje_help = Kilometraje actual del vehículo. Obligatorio si es usado
+ExtrafieldsModulecompliancepld_pld_uso_destino = Uso / Destino (PLD)
+ExtrafieldsModulecompliancepld_pld_uso_destino_help = Uso previsto: Particular, Comercial o Transporte público
+
+# 3.4 Documentación Legal (vehículos usados)
+ExtrafieldsModulecompliancepld_pld_numero_factura_original = Número Factura Original (PLD)
+ExtrafieldsModulecompliancepld_pld_numero_factura_original_help = Número de factura original del vehículo
+ExtrafieldsModulecompliancepld_pld_fecha_factura_original = Fecha Factura Original (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_factura_original_help = Fecha de la factura original
+ExtrafieldsModulecompliancepld_pld_propietario_anterior = Propietario Anterior (PLD)
+ExtrafieldsModulecompliancepld_pld_propietario_anterior_help = Nombre del propietario anterior del vehículo
+ExtrafieldsModulecompliancepld_pld_tarjeta_circulacion = Tarjeta de Circulación (PLD)
+ExtrafieldsModulecompliancepld_pld_tarjeta_circulacion_help = Número de tarjeta de circulación
+ExtrafieldsModulecompliancepld_pld_numero_pedimento = Número de Pedimento (PLD)
+ExtrafieldsModulecompliancepld_pld_numero_pedimento_help = Pedimento aduanal. Obligatorio si es importado
+
+# 3.5 Valores
+ExtrafieldsModulecompliancepld_pld_valor_factura = Valor de Factura (PLD)
+ExtrafieldsModulecompliancepld_pld_valor_factura_help = Valor facturado del vehículo en MXN
+ExtrafieldsModulecompliancepld_pld_valor_comercial = Valor Comercial (PLD)
+ExtrafieldsModulecompliancepld_pld_valor_comercial_help = Valor comercial o de avalúo en MXN
+ExtrafieldsModulecompliancepld_pld_valor_libro_azul = Valor Libro Azul (PLD)
+ExtrafieldsModulecompliancepld_pld_valor_libro_azul_help = Valor según Libro Azul en MXN (referencia)
+
+# ============================================================
+# PARTE 4: Extrafields llx_facture (~31 campos)
+# Compliance: LFPIORPI Art. 17 Fracc. VIII
+# XSD: datos_operacion, referencia_aviso, alerta, modificatorio
+# ============================================================
+
+# 4.1 Control PLD de la Operación
+ExtrafieldsModulecompliancepld_pld_es_actividad_vulnerable = ¿Es Actividad Vulnerable? (PLD)
+ExtrafieldsModulecompliancepld_pld_es_actividad_vulnerable_help = Indica si esta factura corresponde a una actividad vulnerable
+ExtrafieldsModulecompliancepld_pld_clave_actividad = Clave de Actividad Vulnerable (PLD)
+ExtrafieldsModulecompliancepld_pld_clave_actividad_help = Clave del catálogo SAT (ej: 808 para vehículos)
+ExtrafieldsModulecompliancepld_pld_tipo_operacion = Tipo de Operación (PLD)
+ExtrafieldsModulecompliancepld_pld_tipo_operacion_help = Código del tipo de operación según catálogo SAT
+ExtrafieldsModulecompliancepld_pld_supera_umbral_id = ¿Supera Umbral de Identificación? (PLD)
+ExtrafieldsModulecompliancepld_pld_supera_umbral_id_help = La operación supera el umbral de identificación (3,220 UMAs)
+ExtrafieldsModulecompliancepld_pld_supera_umbral_aviso = ¿Supera Umbral de Aviso? (PLD)
+ExtrafieldsModulecompliancepld_pld_supera_umbral_aviso_help = La operación supera el umbral que requiere aviso al SAT
+ExtrafieldsModulecompliancepld_pld_requiere_aviso = ¿Requiere Aviso SAT? (PLD)
+ExtrafieldsModulecompliancepld_pld_requiere_aviso_help = Indica si se debe presentar aviso ante el portal SPPLD
+ExtrafieldsModulecompliancepld_pld_tipo_aviso = Tipo de Aviso (PLD)
+ExtrafieldsModulecompliancepld_pld_tipo_aviso_help = Mensual, 24 horas o por acumulación
+
+# 4.2 Datos de la Operación
+ExtrafieldsModulecompliancepld_pld_fecha_operacion = Fecha de Operación (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_operacion_help = Fecha real en que se realizó la operación
+ExtrafieldsModulecompliancepld_pld_codigo_postal_operacion = Código Postal de la Operación (PLD)
+ExtrafieldsModulecompliancepld_pld_codigo_postal_operacion_help = CP donde se realizó la operación (5 dígitos)
+ExtrafieldsModulecompliancepld_pld_descripcion_operacion = Descripción de la Operación (PLD)
+ExtrafieldsModulecompliancepld_pld_descripcion_operacion_help = Descripción detallada de la operación vulnerable
+ExtrafieldsModulecompliancepld_pld_razon_operacion = Razón / Justificación (PLD)
+ExtrafieldsModulecompliancepld_pld_razon_operacion_help = Justificación o motivo de la operación
+ExtrafieldsModulecompliancepld_pld_monto_moneda_nacional = Monto en Moneda Nacional (PLD)
+ExtrafieldsModulecompliancepld_pld_monto_moneda_nacional_help = Monto total de la operación convertido a pesos mexicanos
+ExtrafieldsModulecompliancepld_pld_tipo_cambio_aplicado = Tipo de Cambio Aplicado (PLD)
+ExtrafieldsModulecompliancepld_pld_tipo_cambio_aplicado_help = Tipo de cambio aplicado si la operación fue en moneda extranjera
+
+# 4.3 Referencia del Aviso
+ExtrafieldsModulecompliancepld_pld_referencia_aviso = Referencia del Aviso (PLD)
+ExtrafieldsModulecompliancepld_pld_referencia_aviso_help = Referencia interna del aviso (hasta 14 caracteres alfanuméricos)
+ExtrafieldsModulecompliancepld_pld_prioridad = Prioridad del Aviso (PLD)
+ExtrafieldsModulecompliancepld_pld_prioridad_help = 1=Normal (mensual), 2=Prioritario (24 horas)
+
+# 4.4 Alerta
+ExtrafieldsModulecompliancepld_pld_tipo_alerta = Tipo de Alerta (PLD)
+ExtrafieldsModulecompliancepld_pld_tipo_alerta_help = Código de alerta según catálogo SAT (3-4 dígitos)
+ExtrafieldsModulecompliancepld_pld_descripcion_alerta = Descripción de la Alerta (PLD)
+ExtrafieldsModulecompliancepld_pld_descripcion_alerta_help = Texto descriptivo de la alerta (hasta 3000 caracteres)
+
+# 4.5 Acumulación de Operaciones
+ExtrafieldsModulecompliancepld_pld_es_operacion_acumulada = ¿Operación Acumulada? (PLD)
+ExtrafieldsModulecompliancepld_pld_es_operacion_acumulada_help = Esta operación forma parte de una acumulación de 6 meses
+ExtrafieldsModulecompliancepld_pld_fecha_inicio_acumulacion = Fecha Inicio Acumulación (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_inicio_acumulacion_help = Fecha de inicio del período de acumulación
+ExtrafieldsModulecompliancepld_pld_fecha_fin_acumulacion = Fecha Fin Acumulación (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_fin_acumulacion_help = Fecha de fin del período de acumulación
+ExtrafieldsModulecompliancepld_pld_monto_acumulado_total = Monto Acumulado Total (PLD)
+ExtrafieldsModulecompliancepld_pld_monto_acumulado_total_help = Monto total acumulado en el período de 6 meses
+
+# 4.6 Control de Avisos
+ExtrafieldsModulecompliancepld_pld_aviso_presentado = ¿Aviso Presentado? (PLD)
+ExtrafieldsModulecompliancepld_pld_aviso_presentado_help = Indica si ya se presentó el aviso al SAT
+ExtrafieldsModulecompliancepld_pld_fecha_presentacion = Fecha de Presentación (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_presentacion_help = Fecha de presentación del aviso al SAT
+ExtrafieldsModulecompliancepld_pld_folio_aviso = Folio del Aviso SAT (PLD)
+ExtrafieldsModulecompliancepld_pld_folio_aviso_help = Folio asignado por el SAT al aviso (14 caracteres)
+ExtrafieldsModulecompliancepld_pld_mes_reportado = Mes Reportado (PLD)
+ExtrafieldsModulecompliancepld_pld_mes_reportado_help = Mes y año del período reportado (formato YYYYMM)
+ExtrafieldsModulecompliancepld_pld_acuse_sat = Acuse SAT (PLD)
+ExtrafieldsModulecompliancepld_pld_acuse_sat_help = Acuse digital de recepción del SAT
+
+# 4.7 Modificatorio
+ExtrafieldsModulecompliancepld_pld_es_modificatorio = ¿Es Aviso Modificatorio? (PLD)
+ExtrafieldsModulecompliancepld_pld_es_modificatorio_help = Indica si este aviso corrige uno previo
+ExtrafieldsModulecompliancepld_pld_folio_modificacion = Folio del Aviso a Modificar (PLD)
+ExtrafieldsModulecompliancepld_pld_folio_modificacion_help = Folio del aviso original que se modifica (14 caracteres)
+ExtrafieldsModulecompliancepld_pld_descripcion_modificacion = Descripción de la Modificación (PLD)
+ExtrafieldsModulecompliancepld_pld_descripcion_modificacion_help = Razón y descripción de la modificación al aviso previo
+
+# 4.8 Alertas y Aviso 24 horas
+ExtrafieldsModulecompliancepld_pld_genera_alerta = ¿Genera Alerta Interna? (PLD)
+ExtrafieldsModulecompliancepld_pld_genera_alerta_help = Indica si la operación genera una alerta interna
+ExtrafieldsModulecompliancepld_pld_requiere_aviso_24hrs = ¿Requiere Aviso 24 Horas? (PLD)
+ExtrafieldsModulecompliancepld_pld_requiere_aviso_24hrs_help = Operación preocupante que debe reportarse en 24 horas
+ExtrafieldsModulecompliancepld_pld_razon_24hrs = Razón del Aviso 24 Horas (PLD)
+ExtrafieldsModulecompliancepld_pld_razon_24hrs_help = Justificación del aviso urgente de 24 horas
+
+# ============================================================
+# PARTE 5: Extrafields llx_paiement (~29 campos)
+# Compliance: LFPIORPI Art. 17 Fracc. VIII
+# XSD: datos_liquidacion
+# ============================================================
+
+# 5.1 Datos de Liquidación (estructura XSD)
+ExtrafieldsModulecompliancepld_pld_fecha_pago = Fecha de Pago (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_pago_help = Fecha del pago en formato YYYYMMDD
+ExtrafieldsModulecompliancepld_pld_forma_pago = Forma de Pago SAT (PLD)
+ExtrafieldsModulecompliancepld_pld_forma_pago_help = Catálogo SAT: 1=Efectivo, 2=Cheque, 3=Transferencia, 4=TC, 5=TD, 6=Monedero, 7=Otros
+ExtrafieldsModulecompliancepld_pld_instrumento_monetario = Instrumento Monetario (PLD)
+ExtrafieldsModulecompliancepld_pld_instrumento_monetario_help = Catálogo de instrumento monetario SAT (1-2 dígitos)
+ExtrafieldsModulecompliancepld_pld_moneda = Moneda (PLD)
+ExtrafieldsModulecompliancepld_pld_moneda_help = Código de moneda SAT (1-3 dígitos)
+ExtrafieldsModulecompliancepld_pld_monto_operacion = Monto de la Operación (PLD)
+ExtrafieldsModulecompliancepld_pld_monto_operacion_help = Monto del pago formato SAT (hasta 14 enteros + 2 decimales)
+
+# 5.2 Desglose por Forma de Pago
+ExtrafieldsModulecompliancepld_pld_monto_efectivo = Monto en Efectivo (PLD)
+ExtrafieldsModulecompliancepld_pld_monto_efectivo_help = Monto pagado en efectivo
+ExtrafieldsModulecompliancepld_pld_monto_transferencia = Monto por Transferencia (PLD)
+ExtrafieldsModulecompliancepld_pld_monto_transferencia_help = Monto pagado por transferencia bancaria
+ExtrafieldsModulecompliancepld_pld_monto_cheque = Monto por Cheque (PLD)
+ExtrafieldsModulecompliancepld_pld_monto_cheque_help = Monto pagado mediante cheque
+ExtrafieldsModulecompliancepld_pld_monto_tarjeta = Monto por Tarjeta (PLD)
+ExtrafieldsModulecompliancepld_pld_monto_tarjeta_help = Monto pagado con tarjeta de crédito o débito
+ExtrafieldsModulecompliancepld_pld_monto_otros = Monto por Otros Medios (PLD)
+ExtrafieldsModulecompliancepld_pld_monto_otros_help = Monto pagado por otros medios
+
+# 5.3 Datos Bancarios (Transferencia)
+ExtrafieldsModulecompliancepld_pld_banco_origen = Banco Origen (PLD)
+ExtrafieldsModulecompliancepld_pld_banco_origen_help = Institución financiera de origen de la transferencia
+ExtrafieldsModulecompliancepld_pld_cuenta_origen = Cuenta Origen (últ. 4 dígitos) (PLD)
+ExtrafieldsModulecompliancepld_pld_cuenta_origen_help = Últimos 4 dígitos de la cuenta de origen
+ExtrafieldsModulecompliancepld_pld_clabe_origen = CLABE Origen (PLD)
+ExtrafieldsModulecompliancepld_pld_clabe_origen_help = CLABE interbancaria de origen (18 dígitos)
+ExtrafieldsModulecompliancepld_pld_banco_destino = Banco Destino (PLD)
+ExtrafieldsModulecompliancepld_pld_banco_destino_help = Institución financiera destino de la transferencia
+ExtrafieldsModulecompliancepld_pld_cuenta_destino = Cuenta Destino (últ. 4 dígitos) (PLD)
+ExtrafieldsModulecompliancepld_pld_cuenta_destino_help = Últimos 4 dígitos de la cuenta destino
+ExtrafieldsModulecompliancepld_pld_numero_autorizacion = Número de Autorización (PLD)
+ExtrafieldsModulecompliancepld_pld_numero_autorizacion_help = Número de autorización de la transferencia
+ExtrafieldsModulecompliancepld_pld_fecha_transferencia = Fecha de Transferencia (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_transferencia_help = Fecha de la transferencia bancaria
+
+# 5.4 Datos del Cheque
+ExtrafieldsModulecompliancepld_pld_banco_cheque = Banco Emisor del Cheque (PLD)
+ExtrafieldsModulecompliancepld_pld_banco_cheque_help = Banco emisor del cheque
+ExtrafieldsModulecompliancepld_pld_numero_cheque = Número de Cheque (PLD)
+ExtrafieldsModulecompliancepld_pld_numero_cheque_help = Número del cheque
+ExtrafieldsModulecompliancepld_pld_cuenta_cheque = Cuenta del Cheque (últ. 4 dígitos) (PLD)
+ExtrafieldsModulecompliancepld_pld_cuenta_cheque_help = Últimos 4 dígitos de la cuenta del cheque
+ExtrafieldsModulecompliancepld_pld_fecha_cheque = Fecha del Cheque (PLD)
+ExtrafieldsModulecompliancepld_pld_fecha_cheque_help = Fecha del cheque
+ExtrafieldsModulecompliancepld_pld_librador_cheque = Librador del Cheque (PLD)
+ExtrafieldsModulecompliancepld_pld_librador_cheque_help = Nombre del librador del cheque
+
+# 5.5 Datos de Tarjeta
+ExtrafieldsModulecompliancepld_pld_tipo_tarjeta = Tipo de Tarjeta (PLD)
+ExtrafieldsModulecompliancepld_pld_tipo_tarjeta_help = Débito o Crédito
+ExtrafieldsModulecompliancepld_pld_emisor_tarjeta = Emisor de la Tarjeta (PLD)
+ExtrafieldsModulecompliancepld_pld_emisor_tarjeta_help = Banco emisor de la tarjeta
+ExtrafieldsModulecompliancepld_pld_ultimos_digitos = Últimos 4 Dígitos Tarjeta (PLD)
+ExtrafieldsModulecompliancepld_pld_ultimos_digitos_help = Últimos 4 dígitos de la tarjeta
+ExtrafieldsModulecompliancepld_pld_numero_autorizacion_tarjeta = Número Autorización Tarjeta (PLD)
+ExtrafieldsModulecompliancepld_pld_numero_autorizacion_tarjeta_help = Número de autorización de la compra con tarjeta
+
+# 5.6 Control de Efectivo
+ExtrafieldsModulecompliancepld_pld_supera_limite_efectivo = ¿Supera Límite de Efectivo? (PLD)
+ExtrafieldsModulecompliancepld_pld_supera_limite_efectivo_help = El pago en efectivo supera el límite de 3,100 UMAs
+ExtrafieldsModulecompliancepld_pld_alerta_efectivo = Alerta por Efectivo (PLD)
+ExtrafieldsModulecompliancepld_pld_alerta_efectivo_help = Se generó alerta por uso de efectivo
+ExtrafieldsModulecompliancepld_pld_justificacion_efectivo = Justificación Uso de Efectivo (PLD)
+ExtrafieldsModulecompliancepld_pld_justificacion_efectivo_help = Justificación documentada del uso de efectivo
+
+# ============================================================
+# PARTE 6: Extrafields llx_commande (4 campos)
+# Pre-validación PLD en pedidos
+# ============================================================
+
+ExtrafieldsModulecompliancepld_pld_preventa_identificada = ¿Preventa Identificada? (PLD)
+ExtrafieldsModulecompliancepld_pld_preventa_identificada_help = Indica si el cliente fue identificado en la etapa de preventa
+ExtrafieldsModulecompliancepld_pld_anticipo_estimado = Anticipo Estimado (PLD)
+ExtrafieldsModulecompliancepld_pld_anticipo_estimado_help = Monto estimado del anticipo
+ExtrafieldsModulecompliancepld_pld_forma_pago_planeada = Forma de Pago Planeada (PLD)
+ExtrafieldsModulecompliancepld_pld_forma_pago_planeada_help = Forma de pago esperada para la operación
+ExtrafieldsModulecompliancepld_pld_alerta_previa = ¿Alerta Previa? (PLD)
+ExtrafieldsModulecompliancepld_pld_alerta_previa_help = Indica si se detectó una alerta en la etapa de cotización
+
+# ============================================================
+# Opciones de campos Select
+# ============================================================
+
+# Tipo de persona
+PLDTipoPersonaPF = Persona Física
+PLDTipoPersonaPM = Persona Moral
+PLDTipoPersonaFI = Fideicomiso
+
+# Tipo de vehículo
+PLDTipoVehiculoT = Terrestre
+PLDTipoVehiculoM = Marítimo
+PLDTipoVehiculoA = Aéreo
+
+# Tipo de identificación
+PLDTipoIdINE = Credencial INE/IFE
+PLDTipoIdPasaporte = Pasaporte
+PLDTipoIdFM3 = Forma Migratoria (FM3)
+PLDTipoIdCedula = Cédula Profesional
+PLDTipoIdOtra = Otra identificación oficial
+
+# Tipo de representación
+PLDRepresentacionGeneral = Poder General
+PLDRepresentacionEspecial = Poder Especial
+PLDRepresentacionAmbos = General y Especial
+
+# Origen del vehículo
+PLDOrigenNacional = Nacional
+PLDOrigenImportado = Importado
+
+# Estado del vehículo
+PLDEstadoNuevo = Nuevo
+PLDEstadoUsado = Usado
+PLDEstadoSeminuevo = Seminuevo
+
+# Uso/destino del vehículo
+PLDUsoParticular = Particular
+PLDUsoComercial = Comercial
+PLDUsoTransporte = Transporte público
+
+# Tipo de aviso
+PLDTipoAvisoMensual = Mensual
+PLDTipoAviso24hrs = 24 horas (urgente)
+PLDTipoAvisoAcumulado = Por acumulación
+
+# Prioridad del aviso
+PLDPrioridadNormal = 1 - Normal
+PLDPrioridadPrioritario = 2 - Prioritario (24 horas)
+
+# Forma de pago SAT
+PLDFormaPagoEfectivo = Efectivo
+PLDFormaPagoCheque = Cheque
+PLDFormaPagoTransferencia = Transferencia bancaria
+PLDFormaPagoTarjetaCredito = Tarjeta de crédito
+PLDFormaPagoTarjetaDebito = Tarjeta de débito
+PLDFormaPagoMonedero = Monedero electrónico
+PLDFormaPagoOtros = Otros medios
+
+# Tipo de tarjeta
+PLDTarjetaDebito = Débito
+PLDTarjetaCredito = Crédito
+
+# Forma de pago planeada (pedidos)
+PLDPagoPlaneadoEfectivo = Efectivo
+PLDPagoPlaneadoFinanciamiento = Financiamiento
+PLDPagoPlaneadoTransferencia = Transferencia
+PLDPagoPlaneadoMixto = Mixto
+
+# Entidades federativas (para select de estado)
+PLDEstadoAGS = Aguascalientes
+PLDEstadoBC = Baja California
+PLDEstadoBCS = Baja California Sur
+PLDEstadoCAM = Campeche
+PLDEstadoCOA = Coahuila
+PLDEstadoCOL = Colima
+PLDEstadoCHIS = Chiapas
+PLDEstadoCHIH = Chihuahua
+PLDEstadoCDMX = Ciudad de México
+PLDEstadoDGO = Durango
+PLDEstadoGTO = Guanajuato
+PLDEstadoGRO = Guerrero
+PLDEstadoHGO = Hidalgo
+PLDEstadoJAL = Jalisco
+PLDEstadoMEX = Estado de México
+PLDEstadoMICH = Michoacán
+PLDEstadoMOR = Morelos
+PLDEstadoNAY = Nayarit
+PLDEstadoNL = Nuevo León
+PLDEstadoOAX = Oaxaca
+PLDEstadoPUE = Puebla
+PLDEstadoQRO = Querétaro
+PLDEstadoQROO = Quintana Roo
+PLDEstadoSLP = San Luis Potosí
+PLDEstadoSIN = Sinaloa
+PLDEstadoSON = Sonora
+PLDEstadoTAB = Tabasco
+PLDEstadoTAM = Tamaulipas
+PLDEstadoTLAX = Tlaxcala
+PLDEstadoVER = Veracruz
+PLDEstadoYUC = Yucatán
+PLDEstadoZAC = Zacatecas
+
+# ============================================================
+# Mensajes de Error
+# ============================================================
+
+PLDErrorCURPInvalida = La CURP ingresada no tiene un formato válido (18 caracteres, conforme al estándar RENAPO)
+PLDErrorRFCInvalido = El RFC ingresado no tiene un formato válido
+PLDErrorVINInvalido = El VIN debe tener exactamente 17 caracteres alfanuméricos
+PLDErrorCPInvalido = El código postal debe tener exactamente 5 dígitos
+PLDErrorPaisInvalido = El código de país debe ser ISO alpha-2 (2 letras mayúsculas)
+PLDErrorMontoInvalido = El monto debe tener el formato correcto (hasta 14 enteros y 2 decimales)
+PLDErrorFechaInvalida = La fecha no tiene un formato válido (YYYYMMDD con fecha real)
+PLDErrorCLABEInvalida = La CLABE interbancaria debe tener exactamente 18 dígitos
+PLDErrorExpedienteIncompleto = El expediente del cliente no está completo. Campos faltantes: %s
+PLDErrorUmbralSuperado = La operación supera el umbral de %s MXN. Se requiere aviso al SAT
+PLDErrorEfectivoSuperado = El pago en efectivo supera el límite de %s MXN (Art. 32 LFPIORPI)
+PLDErrorAvisoRequerido = Esta operación requiere la presentación de un aviso al SAT
+PLDErrorIdentificacionVencida = La identificación oficial presentada está vencida
+
+# Mensajes de validación — formularios PLD (hook doActions)
+PLDErrorTelefonoInvalido = El número de teléfono PLD debe tener entre 10 y 12 dígitos
+PLDErrorCorreoInvalido = El correo electrónico PLD no tiene un formato válido (máximo 60 caracteres)
+
+# Mensajes de log — triggers PLD
+PLDTriggerContactoValidado = Contacto %s validado correctamente por módulo PLD
+PLDTriggerContactoError = Error de validación PLD en contacto %s: %s
+PLDTriggerEmpresaValidada = Empresa %s validada correctamente por módulo PLD
+PLDTriggerEmpresaError = Error de validación PLD en empresa %s: %s
+
+# Mensajes de validación — JavaScript (client-side)
+PLDJSErrorCURPFormato = Formato CURP inválido: debe ser 18 caracteres (letra, vocal, 2 letras, fecha, sexo, entidad, 3 consonantes, dígito verificador)
+PLDJSErrorRFCFormato = Formato RFC inválido: persona física 13 caracteres, persona moral 12 caracteres
+PLDJSErrorCPFormato = Formato de código postal inválido: debe ser exactamente 5 dígitos
+PLDJSErrorTelefonoFormato = Formato de teléfono inválido: debe tener entre 10 y 12 dígitos
+PLDJSErrorCorreoFormato = Formato de correo electrónico inválido
+PLDJSCampoValido = Formato válido
+
+# ============================================================
+# Mensajes Informativos
+# ============================================================
+
+PLDInfoOperacionRegistrada = Operación vulnerable registrada correctamente
+PLDInfoAvisoGenerado = Aviso SAT generado con referencia: %s
+PLDInfoAvisoPresentado = Aviso presentado exitosamente al portal SPPLD. Folio: %s
+PLDInfoClienteIdentificado = Cliente identificado correctamente conforme a LFPIORPI
+PLDInfoExpedienteCompleto = Expediente PLD del cliente completo
+PLDInfoSinAlerta = No se detectaron alertas en esta operación
+PLDInfoUmbralNoSuperado = La operación no supera el umbral de aviso
+
+# ============================================================
+# Mensajes de Alerta
+#  ============================================================
+
+PLDAlertaOperacionInusual = Operación clasificada como INUSUAL — requiere revisión del oficial de cumplimiento
+PLDAlertaOperacionPreocupante = Operación clasificada como PREOCUPANTE — requiere aviso en 24 horas
+PLDAlertaEfectivoAlto = Monto alto en efectivo detectado. Revisar justificación del cliente
+PLDAlertaAcumulado = Se detectó acumulación de operaciones con el mismo cliente que supera el umbral
+PLDAlertaPEP = El cliente es o está relacionado con una Persona Expuesta Políticamente
+PLDAlertaIdentificacionProximaVencer = La identificación del cliente está próxima a vencer
+
+# ============================================================
+# PARTE 7: Formularios UI Fase 2
+# Operaciones PLD, Beneficiarios, Documentos
+# ============================================================
+
+# Operación PLD (operacion.php)
+PLDOperacion = Operación PLD
+NuevaOperacionPLD = Nueva Operación PLD
+TipoOperacion = Tipo de Operación
+TipoVehiculo = Tipo de Vehículo
+ActividadVulnerable = Actividad Vulnerable
+FechaOperacion = Fecha de Operación
+MontoMXN = Monto en MXN
+OperacionPLD = Operación PLD
+Folio = Folio
+SuperaUmbral = Supera Umbral
+RequiereAviso = Requiere Aviso
+
+# Beneficiario PLD (beneficiario.php)
+PLDBeneficiario = Beneficiario PLD
+NuevoBeneficiarioPLD = Nuevo Beneficiario PLD
+TipoBeneficiario = Tipo de Beneficiario
+Nombre = Nombre
+ApellidoPaterno = Apellido Paterno
+ApellidoMaterno = Apellido Materno
+CURP = CURP
+RFC = RFC
+Nacionalidad = Nacionalidad
+PorcentajeParticipacion = Porcentaje de Participación
+EsPEP = ¿Es Persona Expuesta Políticamente?
+BeneficiarioPLD = Beneficiario PLD
+NombreCompleto = Nombre Completo
+Verificado = Verificado
+
+# Documento PLD (documento.php)
+PLDDocumento = Documento PLD
+SubirDocumentoPLD = Subir Documento PLD
+TipoDocumento = Tipo de Documento
+NumeroDocumento = Número de Documento
+FechaEmision = Fecha de Emisión
+FechaVencimiento = Fecha de Vencimiento
+AutoridadEmite = Autoridad Emisora
+Archivo = Archivo
+Subir = Subir
+DocumentoPLD = Documento PLD
+DocumentoVencido = ⚠️ Este documento está vencido
+VerificarDocumento = Verificar Documento
+DocumentoSubidoCorrectamente = Documento subido correctamente
+DocumentoVerificado = Documento verificado correctamente
+NoSeSeleccionoArchivo = No se seleccionó ningún archivo
+
+# Botones y acciones comunes
+Crear = Crear
+Empresa = Empresa
+Factura = Factura
+Estado = Estado
+
+# ============================================================
+# PARTE 8: Fase 2.1 - Páginas de Lista y Dashboard
+# ============================================================
+
+# Títulos de páginas de lista
+ListaOperaciones = Lista de Operaciones Vulnerables
+ListaAvisos = Lista de Avisos SAT
+ListaAlertas = Lista de Alertas
+ListaBeneficiarios = Lista de Beneficiarios Controladores
+ListaDocumentos = Lista de Documentos PLD
+
+# Encabezados de columnas
+ColFolioInterno = Folio Interno
+ColEmpresa = Empresa
+ColTipoOperacion = Tipo de Operación
+ColFecha = Fecha
+ColMonto = Monto MXN
+ColSuperaUmbral = Supera Umbral
+ColEstado = Estado
+ColReferenciaAviso = Referencia
+ColTipoAviso = Tipo de Aviso
+ColMesReportado = Mes Reportado
+ColFechaPresentacion = Fecha Presentación
+ColFolioSAT = Folio SAT
+ColTipoAlerta = Tipo de Alerta
+ColNivelRiesgo = Nivel de Riesgo
+ColDescripcion = Descripción
+ColFechaAlerta = Fecha de Alerta
+ColNombreCompleto = Nombre Completo
+ColCURP = CURP
+ColRFC = RFC
+ColTipoBeneficiario = Tipo
+ColPorcentaje = % Participación
+ColEsPEP = PEP
+ColContacto = Contacto
+ColTipoDocumento = Tipo Documento
+ColNumeroDocumento = Número
+ColFechaEmision = Fecha Emisión
+ColVerificado = Verificado
+
+# Botones de acción
+BtnNuevaOperacion = Nueva Operación
+BtnNuevoAviso = Nuevo Aviso
+BtnNuevaAlerta = Nueva Alerta
+BtnNuevoBeneficiario = Nuevo Beneficiario
+BtnNuevoDocumento = Nuevo Documento
+BtnEditar = Editar
+BtnEliminar = Eliminar
+BtnVolver = Volver a la lista
+BtnVerDetalle = Ver detalle
+
+# Filtros
+FiltroTodos = Todos
+FiltroEmpresa = Empresa
+FiltroTipoOperacion = Tipo de Operación
+FiltroEstado = Estado
+FiltroFechaDesde = Fecha desde
+FiltroFechaHasta = Fecha hasta
+FiltroNivelRiesgo = Nivel de Riesgo
+FiltroTipoAlerta = Tipo de Alerta
+FiltroTipoAviso = Tipo de Aviso
+FiltroEsPEP = Solo PEP
+FiltroVerificado = Solo Verificados
+
+# Estados de operación
+EstadoBorrador = Borrador
+EstadoPendiente = Pendiente
+EstadoCompletado = Completado
+EstadoCancelado = Cancelado
+EstadoAbierta = Abierta
+EstadoResuelta = Resuelta
+EstadoPresentado = Presentado
+
+# Dashboard
+DashPanelControl = Panel de Control PLD
+DashOperacionesMes = Operaciones del Mes
+DashAvisosEspera = Avisos Pendientes
+DashAlertasAbiertas = Alertas Abiertas
+DashDocumentosVencidos = Documentos Vencidos
+DashUltimasOperaciones = Últimas Operaciones Vulnerables
+DashAlertasSinResolver = Alertas Sin Resolver
+DashAvisosSATEspera = Avisos SAT Pendientes de Envío
+DashSinRegistros = Sin registros
+
+# Tipos de operación
+TipoOpVentaVehiculo = Venta de Vehículo
+TipoOpArrendamiento = Arrendamiento
+TipoOpPermuta = Permuta
+TipoOpConsignacion = Consignación
+
+# Niveles de riesgo
+NivelRiesgoAlto = Alto
+NivelRiesgoMedio = Medio
+NivelRiesgoBajo = Bajo
+
+# Configuración admin
+AdminSetupPLD = Configuración PLD
+AdminSetupDesc = Configure los parámetros del módulo de Prevención de Lavado de Dinero
+SeccionUMA = Valores UMA y Umbrales
+SeccionAlertas = Configuración de Alertas
+SeccionGeneral = Configuración General
+UMAValor = Valor UMA Vigente (MXN)
+UMAAnio = Año del Valor UMA
+UmbralVehNuevo = Umbral Vehículo Nuevo (MXN)
+UmbralVehUsado = Umbral Vehículo Usado (MXN)
+DiasAlertaID = Días para alertar vencimiento de ID
+OficialCumplimiento = Oficial de Cumplimiento (ID usuario)
+PeriodoConservacion = Período de Conservación (años)
+ActividadVulnerable = Fracción Art. 17 aplicable
+
+# Reportes
+ReportesPLD = Reportes PLD
+ReporteResumenMensual = Resumen Mensual
+ReporteOperacionesPorCliente = Operaciones por Cliente
+ReporteEstadoAvisos = Estado de Avisos
+ReporteAlertasPorTipo = Alertas por Tipo
+SeleccionarReporte = Seleccionar tipo de reporte
+ParametroMes = Mes
+ParametroAnio = Año
+GenerarReporte = Generar Reporte
+TotalOperaciones = Total Operaciones
+TotalMonto = Monto Total
+AvisosPresen = Avisos Presentados
+AvisosPend = Avisos Pendientes
+
+# Generador de XML / e.firma
+PLDMesReportado = Mes a reportar (YYYYMM)
+PLDFirmarXML = Firmar con e.firma
+PLDBtnGenerarXML = Generar XML
+PLDXMLGenerado = XML generado
+PLDDescargarXML = Descargar XML
+PLDHistorialXML = Historial de XMLs generados
+PLDArchivoXML = Archivo
+PLDEFirmaEstado = Estado e.firma
+PLDRFCSujeto = RFC sujeto obligado
+PLDEFirmaCert = Certificado (.cer)
+PLDEFirmaKey = Llave privada (.key)
+AdminSetupPLD = Configuración PLD
+PLDRFCSujetoLabel = RFC del sujeto obligado
+PLDEFirmaCertPath = Ruta del certificado e.firma (.cer)
+PLDEFirmaKeyPath = Ruta de la llave privada e.firma (.key)
+PLDEFirmaPasswordLabel = Contraseña de la llave privada
