@@ -197,7 +197,7 @@ print '</tr>';
 
 print '<tr class="oddeven">';
 print '<td>RFC Sujeto Obligado</td>';
-print '<td><strong>'.dol_escape_htmltag($mysoc->profid1 ?: '—').'</strong> &nbsp; <a href="'.DOL_URL_ROOT.'/admin/company.php">'.$langs->trans("Modify").'</a></td>';
+print '<td><strong>'.dol_escape_htmltag(getDolGlobalString('MAIN_INFO_SIREN') ?: '—').'</strong> &nbsp; <a href="'.DOL_URL_ROOT.'/admin/company.php">'.$langs->trans("Modify").'</a></td>';
 print '<td class="opacitymedium">RFC de la empresa (campo R.F.C. en <em>Configuración &rsaquo; Empresa</em>)</td>';
 print '</tr>';
 

@@ -375,7 +375,8 @@ class PLDOperacion extends CommonObject
         } else {
             // PF: firstname=nombre, name=apellidos (puede ser "Pat Mat")
             $this->cliente->nombre = $societe->firstname ?: $societe->name;
-            $apellidos = trim(str_replace($societe->firstname, '', $societe->name));
+            // TODO: revertir cast (string) una vez que se garantice que firstname nunca sea null en llx_societe
+            $apellidos = trim(str_replace((string)$societe->firstname, '', (string)$societe->name));
             $partes = preg_split('/\s+/', trim($societe->name), 2);
             $this->cliente->apellido_paterno = $partes[0] ?? '';
             $this->cliente->apellido_materno = $partes[1] ?? '';

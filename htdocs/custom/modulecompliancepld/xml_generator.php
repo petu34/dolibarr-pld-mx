@@ -80,6 +80,67 @@ if ($action == 'generar' && $mes_input) {
 			} else {
 				$xml_filepath = $filepath;
 				$msgs_ok[] = "XML generado: ".basename($filepath);
+
+				// Registrar o actualizar el aviso en llx_pld_aviso
+				$sql_stats = "SELECT COUNT(rowid) as num, SUM(monto_mxn) as total"
+					." FROM ".MAIN_DB_PREFIX."pld_operacion"
+					." WHERE mes_reportado = '".$db->escape($mes_reportado)."'"
+					." AND requiere_aviso = 1 AND aviso_presentado = 0 AND estado != 'cancelada'";
+				$res_stats = $db->query($sql_stats);
+				$num_ops = 0; $monto_total = 0;
+				if ($res_stats) {
+					$st = $db->fetch_object($res_stats);
+					$num_ops     = (int) $st->num;
+					$monto_total = (float) $st->total;
+				}
+
+				$xml_hash  = hash('sha256', $xml_content);
+				$fecha_ini = substr($mes_reportado, 0, 4).'-'.substr($mes_reportado, 4, 2).'-01';
+				$fecha_fin = date('Y-m-t', strtotime($fecha_ini));
+
+				// ¿Ya existe un aviso MEN para este mes?
+				$sql_exist = "SELECT rowid FROM ".MAIN_DB_PREFIX."pld_aviso"
+					." WHERE tipo_aviso = 'MEN' AND mes_reportado = '".$db->escape($mes_reportado)."'"
+					." AND entity = ".(int) $conf->entity." LIMIT 1";
+				$res_exist = $db->query($sql_exist);
+				$aviso_id  = 0;
+				if ($res_exist && $db->num_rows($res_exist) > 0) {
+					$aviso_id = (int) $db->fetch_object($res_exist)->rowid;
+				}
+
+				if ($aviso_id > 0) {
+					// UPDATE — regeneración del XML para el mismo mes
+					$sql_upd = "UPDATE ".MAIN_DB_PREFIX."pld_aviso SET"
+						." archivo_xml_ruta = '".$db->escape($filepath)."',"
+						." archivo_xml_hash = '".$db->escape($xml_hash)."',"
+						." fecha_generacion_xml = '".$db->idate(dol_now())."',"
+						." numero_operaciones = ".(int) $num_ops.","
+						." monto_total_operaciones = ".(float) $monto_total.","
+						." fk_user_modif = ".(int) $user->id
+						." WHERE rowid = ".$aviso_id;
+					$db->query($sql_upd);
+					$msgs_ok[] = "Aviso mensual actualizado (id #".$aviso_id.").";
+				} else {
+					// CREATE — primer aviso de este mes
+					$aviso = new PLDAviso($db);
+					$aviso->tipo_aviso              = 'MEN';
+					$aviso->mes_reportado           = $mes_reportado;
+					$aviso->fecha_inicio_periodo    = $fecha_ini;
+					$aviso->fecha_fin_periodo       = $fecha_fin;
+					$aviso->numero_operaciones      = $num_ops;
+					$aviso->monto_total_operaciones = $monto_total;
+					$aviso->archivo_xml_ruta        = $filepath;
+					$aviso->archivo_xml_hash        = $xml_hash;
+					$aviso->fecha_generacion_xml    = $db->idate(dol_now());
+					$aviso->estado                  = 'borrador';
+					$aviso->entity                  = $conf->entity;
+					$res_create = $aviso->create($user);
+					if ($res_create > 0) {
+						$msgs_ok[] = "Aviso mensual registrado (id #".$res_create.").";
+					} else {
+						$msgs_err[] = "XML generado pero no se pudo registrar el aviso: ".implode(', ', $aviso->errors);
+					}
+				}
 			}
 
 			$xml_resultado = $xml_content;
@@ -121,7 +182,7 @@ foreach ($msgs_err as $m) { setEventMessages($m, null, 'errors'); }
 // Estado de e.firma
 $cert_path  = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH');
 $key_path   = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH');
-$rfc_sujeto = $mysoc->profid1;
+$rfc_sujeto = getDolGlobalString('MAIN_INFO_SIREN');
 $efirma_ok  = !empty($cert_path) && file_exists($cert_path)
            && !empty($key_path)  && file_exists($key_path);
 

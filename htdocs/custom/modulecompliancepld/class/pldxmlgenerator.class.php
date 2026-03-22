@@ -28,8 +28,7 @@ class PLDXMLGenerator
     public function __construct($db)
     {
         $this->db = $db;
-        global $mysoc;
-        $this->rfc_sujeto = $mysoc->profid1;
+        $this->rfc_sujeto = getDolGlobalString('MAIN_INFO_SIREN');
         $this->clave_actividad = getDolGlobalString('MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE') ?: 'VIII';
     }
 

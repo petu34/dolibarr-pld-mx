@@ -1,8 +1,8 @@
 # Plan Fase 3.1: Habilitar Generador XML desde la UI de Dolibarr
 
 > **Creado:** 2026-03-19
-> **Actualizado:** 2026-03-20
-> **Estado:** ✅ IMPLEMENTADO — pendiente de commit/push
+> **Actualizado:** 2026-03-21
+> **Estado:** ✅ IMPLEMENTADO Y VERIFICADO — pendiente de commit/push
 
 ---
 
@@ -23,10 +23,13 @@ El script `xml_generator.php` ya existe y es funcional, y los datos de prueba (G
 | `PLDXMLGenerator` class | ✅ Completa — fetchCliente/Vehiculo/FormasPago |
 | Datos de prueba (202411) | ✅ 10 ops + facturas + pagos con extrafields PLD |
 | `llx_paiement_extrafields` | ✅ Creada y poblada (VIR/LIQ/CHQ) |
-| RFC Sujeto Obligado | ✅ Leído de `$mysoc->profid1` (company.php → campo R.F.C.) — no se duplica en constantes |
+| RFC Sujeto Obligado | ✅ Leído de `getDolGlobalString('MAIN_INFO_SIREN')` — constante nativa Dolibarr |
 | Sección e.firma en setup.php | ✅ 3 campos: ruta .cer, ruta .key, contraseña |
 | Menú → xml_generator.php | ✅ Entrada "Generar XML SAT" añadida al módulo |
 | Claves de idioma | ✅ `PLDGenerarXML` y `SeccionSujetoObligado` en es_MX |
+| Registro en `llx_pld_aviso` | ✅ xml_generator.php crea/actualiza aviso MEN tras generar el XML |
+| `pldoperacion.class.php` L378 | ✅ Fix `str_replace(null)` con cast `(string)` — TODO revertir cuando firstname sea no-null garantizado |
+| Verificado en UI (202411) | ✅ 10 avisos generados, XML descargable, aviso visible en avisos_list.php |
 | e.firma (firma digital) | ⚠️ Opcional — sin certs el XML se genera sin firma |
 | Commit / Push | ❌ Pendiente |
 
@@ -115,9 +118,10 @@ docker cp htdocs/custom/modulecompliancepld/. doli20:/var/www/html/custom/module
 ```
 
 Luego en UI:
-- `Admin > PLD > Configurar` → sección "Sujeto Obligado y e.firma" con RFC en solo lectura (tomado de `profid1`)
+- `Admin > PLD > Configurar` → sección "Sujeto Obligado y e.firma" con RFC en solo lectura (tomado de `MAIN_INFO_SIREN`)
 - Menú lateral → "Generar XML SAT" → formulario accesible
 - Mes 202411 → Generar → descargar XML → validar estructura
+- `avisos_list.php?filtro_mes=202411` → aviso MEN aparece con estado "Borrador"
 
 ---
 
@@ -127,17 +131,20 @@ Luego en UI:
 git add htdocs/custom/modulecompliancepld/admin/setup.php \
         htdocs/custom/modulecompliancepld/admin/about.php \
         htdocs/custom/modulecompliancepld/class/pldxmlgenerator.class.php \
+        htdocs/custom/modulecompliancepld/class/pldoperacion.class.php \
         htdocs/custom/modulecompliancepld/xml_generator.php \
         htdocs/custom/modulecompliancepld/core/modules/modModulecompliancepld.class.php \
         htdocs/custom/modulecompliancepld/langs/es_MX/modulecompliancepld.lang \
         docs/plans/plan-fase3.1-AvisoFix.md
 
-git commit -m "feat(fase3.1): habilitar generador XML SAT desde UI
+git commit -m "feat(fase3.1): generador XML SAT funcional + registro en llx_pld_aviso
 
-- setup.php: sección e.firma (cert, key, password); RFC leído de mysoc->profid1
-- about.php + xml_generator.php + pldxmlgenerator.class.php: RFC desde profid1
-- modModulecompliancepld: entrada de menú 'Generar XML SAT'
-- langs: PLDGenerarXML y SeccionSujetoObligado"
+- RFC leído de MAIN_INFO_SIREN en setup.php, about.php, xml_generator.php, pldxmlgenerator
+- xml_generator.php: crea/actualiza registro MEN en llx_pld_aviso al generar XML
+- pldoperacion.class.php: fix str_replace con firstname null (cast string, TODO revertir)
+- modModulecompliancepld: entrada de menú Generar XML SAT
+- langs: PLDGenerarXML y SeccionSujetoObligado
+- Verificado: mes 202411, 10 avisos, visible en avisos_list.php"
 
 git push origin fase1/extrafields
 ```
