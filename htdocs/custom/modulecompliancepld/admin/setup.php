@@ -49,10 +49,9 @@ if ($action == 'update') {
 		'MODULECOMPLIANCEPLD_OFICIAL_CUMPLIMIENTO' => array('type' => 'int',    'default' => 0),
 		'MODULECOMPLIANCEPLD_PERIODO_CONSERVACION' => array('type' => 'int',    'default' => 5),
 		'MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE' => array('type' => 'chaine', 'default' => 'VIII'),
-		// Sujeto obligado y e.firma
+		// Sujeto obligado y e.firma (la contraseña se maneja por separado, cifrada)
 		'MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH'     => array('type' => 'chaine', 'default' => ''),
 		'MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH'      => array('type' => 'chaine', 'default' => ''),
-		'MODULECOMPLIANCEPLD_EFIRMA_PASSWORD'      => array('type' => 'chaine', 'default' => ''),
 	);
 
 	foreach ($params as $constname => $info) {
@@ -63,6 +62,15 @@ if ($action == 'update') {
 			$val = (int) $val;
 		}
 		$resset = dolibarr_set_const($db, $constname, $val, $info['type'], 0, '', $conf->entity);
+		if ($resset <= 0) {
+			$error++;
+		}
+	}
+
+	// Contraseña e.firma — cifrada con dolEncrypt(); solo se guarda si se envía un nuevo valor
+	$efirma_pass_new = GETPOST('MODULECOMPLIANCEPLD_EFIRMA_PASSWORD', 'nohtml');
+	if (!empty($efirma_pass_new)) {
+		$resset = dolibarr_set_const($db, 'MODULECOMPLIANCEPLD_EFIRMA_PASSWORD', dolEncrypt($efirma_pass_new), 'chaine', 0, '', $conf->entity);
 		if ($resset <= 0) {
 			$error++;
 		}
@@ -215,11 +223,12 @@ print '<td><input type="text" id="MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH" name="MOD
 print '<td class="opacitymedium">Ruta absoluta al archivo .key de la e.firma (fuera del docroot)</td>';
 print '</tr>';
 
-$efirmaPass = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_PASSWORD', '');
+$efirmaPassStored = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_PASSWORD', '');
 print '<tr class="oddeven">';
 print '<td><label for="MODULECOMPLIANCEPLD_EFIRMA_PASSWORD">Contraseña e.firma</label></td>';
-print '<td><input type="password" id="MODULECOMPLIANCEPLD_EFIRMA_PASSWORD" name="MODULECOMPLIANCEPLD_EFIRMA_PASSWORD" class="flat minwidth200" value="'.dol_escape_htmltag($efirmaPass).'"></td>';
-print '<td class="opacitymedium">Contraseña de la llave privada de la e.firma</td>';
+print '<td><input type="password" id="MODULECOMPLIANCEPLD_EFIRMA_PASSWORD" name="MODULECOMPLIANCEPLD_EFIRMA_PASSWORD" class="flat minwidth200" value="" autocomplete="new-password" placeholder="'.($efirmaPassStored ? '(configurada — dejar vacío para no cambiar)' : '').'">';
+print '</td>';
+print '<td class="opacitymedium">Contraseña de la llave privada de la e.firma (se almacena cifrada)</td>';
 print '</tr>';
 
 print '</table><br>';

@@ -148,9 +148,9 @@ if ($action == 'generar' && $mes_input) {
 	}
 }
 
-if ($action == 'descargar' && GETPOST('filepath', 'alpha')) {
+if ($action == 'descargar' && GETPOST('filepath', 'nohtml')) {
 	// Descarga segura del XML generado
-	$filepath = GETPOST('filepath', 'alpha');
+	$filepath = GETPOST('filepath', 'nohtml');
 	// Validar que el path esté dentro del directorio permitido
 	$dir_allowed = DOL_DATA_ROOT.'/modulecompliancepld/xml';
 	$real = realpath($filepath);

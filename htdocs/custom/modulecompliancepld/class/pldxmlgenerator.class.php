@@ -252,16 +252,18 @@ class PLDXMLGenerator
             $ext->appendChild($dom->createElement('pais', $cliente->pais ?: 'MX'));
             $tipo_domicilio->appendChild($ext);
         } else {
+            // TODO: reemplazar ?? '' por validación explícita con Exception cuando campo requerido sea null
+            // ej: if (empty($cliente->colonia)) { throw new Exception("Campo 'colonia' es obligatorio según veh.xsd"); }
             $nac = $dom->createElement('nacional');
-            $nac->appendChild($dom->createElement('colonia', $this->cleanXML($cliente->colonia)));
-            $nac->appendChild($dom->createElement('calle', $this->cleanXML($cliente->calle)));
-            $nac->appendChild($dom->createElement('numero_exterior', $this->cleanXML($cliente->numero_exterior)));
+            $nac->appendChild($dom->createElement('colonia', $this->cleanXML($cliente->colonia ?? '')));
+            $nac->appendChild($dom->createElement('calle', $this->cleanXML($cliente->calle ?? '')));
+            $nac->appendChild($dom->createElement('numero_exterior', $this->cleanXML($cliente->numero_exterior ?? '')));
             if (!empty($cliente->numero_interior)) {
-                $nac->appendChild($dom->createElement('numero_interior', $this->cleanXML($cliente->numero_interior)));
+                $nac->appendChild($dom->createElement('numero_interior', $this->cleanXML($cliente->numero_interior ?? '')));
             }
-            $nac->appendChild($dom->createElement('codigo_postal', $cliente->codigo_postal));
-            $nac->appendChild($dom->createElement('municipio', $this->cleanXML($cliente->municipio)));
-            $nac->appendChild($dom->createElement('entidad_federativa', $this->cleanXML($cliente->estado)));
+            $nac->appendChild($dom->createElement('codigo_postal', $cliente->codigo_postal ?? ''));
+            $nac->appendChild($dom->createElement('municipio', $this->cleanXML($cliente->municipio ?? '')));
+            $nac->appendChild($dom->createElement('entidad_federativa', $this->cleanXML($cliente->estado ?? '')));
             $tipo_domicilio->appendChild($nac);
         }
 

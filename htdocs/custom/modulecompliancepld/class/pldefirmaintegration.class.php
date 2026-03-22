@@ -24,7 +24,7 @@ class PLDEFirmaIntegration
         $this->db = $db;
         $this->cert_path = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH');
         $this->key_path  = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH');
-        $this->password  = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_PASSWORD');
+        $this->password  = dolDecrypt(getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_PASSWORD'));
     }
 
     /**
