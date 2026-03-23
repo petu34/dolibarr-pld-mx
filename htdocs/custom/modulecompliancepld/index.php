@@ -72,45 +72,55 @@ llxHeader('', $langs->trans("DashPanelControl"), '', '', 0, 0, '', '', '', 'mod-
 
 print load_fiche_titre($langs->trans("DashPanelControl"), '', 'fa-shield');
 
-// ---- TARJETAS RESUMEN ----
-print '<div class="info-box-wrap">';
+// ---- CONTADORES (estilo boxstat Dolibarr) ----
+print '<div class="fichecenter" style="margin-bottom:12px">';
+print '<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">';
 
-// Operaciones del mes
-print '<div class="info-box">';
-print '<span class="info-box-icon bg-infobox-action"><i class="fa fa-exchange-alt fa-2x"></i></span>';
-print '<div class="info-box-content">';
-print '<span class="info-box-text">'.$langs->trans('DashOperacionesMes').'</span>';
-print '<span class="info-box-number"><a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/operaciones_list.php">'.$cnt_ops_mes.'</a></span>';
-print '</div></div>';
+$counters = array(
+	array(
+		'label' => $langs->trans('DashOperacionesMes'),
+		'count' => $cnt_ops_mes,
+		'icon'  => 'fa-exchange-alt',
+		'color' => 'bg-infobox-action',
+		'url'   => DOL_URL_ROOT.'/custom/modulecompliancepld/operaciones_list.php',
+	),
+	array(
+		'label' => $langs->trans('DashAvisosEspera'),
+		'count' => $cnt_avisos,
+		'icon'  => 'fa-paper-plane',
+		'color' => $cnt_avisos > 0 ? 'bg-infobox-project' : 'bg-infobox-contract',
+		'url'   => DOL_URL_ROOT.'/custom/modulecompliancepld/avisos_list.php?filtro_estado=pendiente',
+	),
+	array(
+		'label' => $langs->trans('DashAlertasAbiertas'),
+		'count' => $cnt_alertas,
+		'icon'  => 'fa-exclamation-triangle',
+		'color' => $cnt_alertas > 0 ? 'bg-infobox-bank' : 'bg-infobox-action',
+		'url'   => DOL_URL_ROOT.'/custom/modulecompliancepld/alertas_list.php?filtro_estado=abierta',
+	),
+	array(
+		'label' => $langs->trans('DashDocumentosVencidos'),
+		'count' => $cnt_docs_venc,
+		'icon'  => 'fa-file-alt',
+		'color' => $cnt_docs_venc > 0 ? 'bg-infobox-bank' : 'bg-infobox-action',
+		'url'   => DOL_URL_ROOT.'/custom/modulecompliancepld/documentos_list.php',
+	),
+);
 
-// Avisos pendientes
-$cls_avisos = $cnt_avisos > 0 ? 'bg-infobox-project' : 'bg-infobox-action';
-print '<div class="info-box">';
-print '<span class="info-box-icon '.$cls_avisos.'"><i class="fa fa-paper-plane fa-2x"></i></span>';
-print '<div class="info-box-content">';
-print '<span class="info-box-text">'.$langs->trans('DashAvisosEspera').'</span>';
-print '<span class="info-box-number"><a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/avisos_list.php?filtro_estado=pendiente">'.$cnt_avisos.'</a></span>';
-print '</div></div>';
+foreach ($counters as $c) {
+	print '<div class="boxstat" style="min-width:160px;max-width:200px;flex:1">';
+	print '<div class="boxstatcontent">';
+	print '<span class="boxstatnum"><a href="'.dol_escape_htmltag($c['url']).'">'.$c['count'].'</a></span><br>';
+	print '<span class="boxstatdesc opacitymedium">'.dol_escape_htmltag($c['label']).'</span>';
+	print '</div>';
+	print '<div class="boxstaticonarea '.$c['color'].'" style="text-align:center;display:flex;align-items:center;justify-content:center">';
+	print '<span class="fa '.$c['icon'].'" style="font-size:1.1rem"></span>';
+	print '</div>';
+	print '</div>';
+}
 
-// Alertas abiertas
-$cls_alert = $cnt_alertas > 0 ? 'bg-infobox-bank' : 'bg-infobox-action';
-print '<div class="info-box">';
-print '<span class="info-box-icon '.$cls_alert.'"><i class="fa fa-exclamation-triangle fa-2x"></i></span>';
-print '<div class="info-box-content">';
-print '<span class="info-box-text">'.$langs->trans('DashAlertasAbiertas').'</span>';
-print '<span class="info-box-number"><a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/alertas_list.php?filtro_estado=abierta">'.$cnt_alertas.'</a></span>';
-print '</div></div>';
-
-// Documentos vencidos
-$cls_docs = $cnt_docs_venc > 0 ? 'bg-infobox-bank' : 'bg-infobox-action';
-print '<div class="info-box">';
-print '<span class="info-box-icon '.$cls_docs.'"><i class="fa fa-file-alt fa-2x"></i></span>';
-print '<div class="info-box-content">';
-print '<span class="info-box-text">'.$langs->trans('DashDocumentosVencidos').'</span>';
-print '<span class="info-box-number"><a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/documentos_list.php">'.$cnt_docs_venc.'</a></span>';
-print '</div></div>';
-
-print '</div>'; // info-box-wrap
+print '</div>'; // flex wrapper
+print '</div>'; // fichecenter
 print '<br>';
 
 // ---- DOS COLUMNAS ----
@@ -127,6 +137,7 @@ $sql_last_ops .= $db->plimit(10, 0);
 $res_last_ops  = $db->query($sql_last_ops);
 $num_last_ops  = ($res_last_ops ? $db->num_rows($res_last_ops) : 0);
 
+print '<div style="background:#f6f6f6;border-radius:4px;padding:4px 8px 8px 8px;margin-bottom:10px">';
 print '<table class="noborder centpercent">';
 print '<tr class="liste_titre">';
 print '<th colspan="4">';
@@ -149,7 +160,8 @@ if ($num_last_ops == 0) {
 		print '</tr>';
 	}
 }
-print '</table><br>';
+print '</table>';
+print '</div>'; // gray bg operaciones
 
 // Alertas sin resolver
 $sql_open_alerts  = "SELECT al.rowid, al.tipo_alerta, al.nivel_riesgo, al.datec as fecha_alerta, s.nom as empresa_nom";
@@ -162,6 +174,7 @@ $sql_open_alerts .= $db->plimit(10, 0);
 $res_open_alerts  = $db->query($sql_open_alerts);
 $num_open_alerts  = ($res_open_alerts ? $db->num_rows($res_open_alerts) : 0);
 
+print '<div style="background:#f6f6f6;border-radius:4px;padding:4px 8px 8px 8px;margin-bottom:10px">';
 print '<table class="noborder centpercent">';
 print '<tr class="liste_titre">';
 print '<th colspan="4">';
@@ -185,7 +198,8 @@ if ($num_open_alerts == 0) {
 		print '</tr>';
 	}
 }
-print '</table><br>';
+print '</table>';
+print '</div>'; // gray bg alertas
 
 print '</div><div class="fichetwothirdright">';
 
@@ -199,6 +213,7 @@ $sql_pending_avisos .= $db->plimit(10, 0);
 $res_pending  = $db->query($sql_pending_avisos);
 $num_pending  = ($res_pending ? $db->num_rows($res_pending) : 0);
 
+print '<div style="background:#f6f6f6;border-radius:4px;padding:4px 8px 8px 8px;margin-bottom:10px">';
 print '<table class="noborder centpercent">';
 print '<tr class="liste_titre">';
 print '<th colspan="5">';
@@ -213,7 +228,7 @@ if ($num_pending == 0) {
 	$tipo_labels = array('MEN' => $langs->trans('PLDTipoAvisoMensual'), '24H' => $langs->trans('PLDTipoAviso24hrs'), 'ACU' => $langs->trans('PLDTipoAvisoAcumulado'));
 	while ($obj = $db->fetch_object($res_pending)) {
 		print '<tr class="oddeven">';
-		print '<td><a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/aviso.php?id='.$obj->rowid.'">'.dol_escape_htmltag($obj->referencia_aviso ?: '#'.$obj->rowid).'</a></td>';
+		print '<td><a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/aviso/card.php?id='.$obj->rowid.'">'.dol_escape_htmltag($obj->referencia_aviso ?: '#'.$obj->rowid).'</a></td>';
 		print '<td>'.dol_escape_htmltag($tipo_labels[$obj->tipo_aviso] ?? $obj->tipo_aviso).'</td>';
 		print '<td>'.dol_escape_htmltag($obj->mes_reportado).'</td>';
 		print '<td class="right">'.((int) $obj->numero_operaciones).' ops.</td>';
@@ -221,7 +236,8 @@ if ($num_pending == 0) {
 		print '</tr>';
 	}
 }
-print '</table><br>';
+print '</table>';
+print '</div>'; // gray bg avisos
 
 print '</div></div>';
 
