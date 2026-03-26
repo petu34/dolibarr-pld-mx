@@ -103,9 +103,6 @@ print $tmpmodule->getDescLong();
 // -----------------------------------------------------------------------
 // Sección: e.firma (FIEL SAT)
 // -----------------------------------------------------------------------
-require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldefirmaintegration.class.php';
-
-$efirma = new PLDEFirmaIntegration($db);
 $cert_path = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH');
 $key_path  = getDolGlobalString('MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH');
 $rfc_sujeto = getDolGlobalString('MAIN_INFO_SIREN');

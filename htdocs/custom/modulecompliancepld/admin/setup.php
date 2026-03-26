@@ -99,7 +99,7 @@ print dol_get_fiche_head($head, 'settings', $title, -1, 'fa-shield@modulecomplia
 
 echo '<p class="opacitymedium">'.$langs->trans("AdminSetupDesc").'</p>';
 
-print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
+print '<form method="POST" action="'.dol_escape_htmltag($_SERVER["PHP_SELF"]).'">';
 print '<input type="hidden" name="token" value="'.newToken().'">';
 print '<input type="hidden" name="action" value="update">';
 
