@@ -322,15 +322,21 @@ class PLDOperacion extends CommonObject
         $prefix = 'PLD';
         $year = date('Y');
         $month = date('m');
+        $mes = $this->db->escape($year.$month);
 
-        $sql = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX.$this->table_element;
-        $sql .= " WHERE mes_reportado = '".$year.$month."'";
+        $this->db->begin();
+
+        $sql = "SELECT MAX(CAST(".$this->db->ifsql("folio_interno LIKE 'PLD-{$year}-{$month}-%'", "SUBSTRING_INDEX(folio_interno, '-', -1)", "0")." AS UNSIGNED)) as ultimo";
+        $sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
+        $sql .= " WHERE mes_reportado = '".$mes."'";
 
         $resql = $this->db->query($sql);
         $obj = $this->db->fetch_object($resql);
-        $consecutivo = $obj->total + 1;
+        $consecutivo = (int) ($obj->ultimo ?? 0) + 1;
 
         $this->folio_interno = sprintf('%s-%s-%s-%04d', $prefix, $year, $month, $consecutivo);
+
+        $this->db->commit();
 
         return $this->folio_interno;
     }

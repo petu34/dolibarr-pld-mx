@@ -149,6 +149,9 @@ if ($action == 'generar' && $mes_input) {
 }
 
 if ($action == 'descargar' && GETPOST('filepath', 'nohtml')) {
+	if (!checkToken()) {
+		accessforbidden('Invalid token');
+	}
 	// Descarga segura del XML generado
 	$filepath = GETPOST('filepath', 'nohtml');
 	// Validar que el path esté dentro del directorio permitido
@@ -202,7 +205,7 @@ print '</td></tr>';
 print '</table></div><br>';
 
 // ---- Formulario de generación ----
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'">';
 print '<input type="hidden" name="token" value="'.newToken().'">';
 print '<input type="hidden" name="action" value="generar">';
 
@@ -236,7 +239,7 @@ if ($xml_resultado) {
 
 	// Botón de descarga
 	if ($xml_filepath) {
-		print '<p><a class="butAction" href="'.$_SERVER['PHP_SELF'].'?action=descargar&filepath='.urlencode($xml_filepath).'&token='.newToken().'">';
+		print '<p><a class="butAction" href="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'?action=descargar&filepath='.urlencode($xml_filepath).'&token='.newToken().'">';
 		print img_picto('', 'download', 'class="pictofixedwidth"').' '.$langs->trans('PLDDescargarXML').'</a></p>';
 	}
 

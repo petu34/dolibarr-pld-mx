@@ -70,10 +70,18 @@ class PLDXMLGenerator
         $informe->appendChild($this->crearSujetoObligado($dom));
 
         foreach ($operaciones as $operacion) {
-            $aviso = $this->crearAviso($dom, $operacion);
-            if ($aviso) {
-                $informe->appendChild($aviso);
+            try {
+                $aviso = $this->crearAviso($dom, $operacion);
+                if ($aviso) {
+                    $informe->appendChild($aviso);
+                }
+            } catch (Exception $e) {
+                $this->errors[] = "Operación ID {$operacion->id}: ".$e->getMessage();
             }
+        }
+
+        if (!empty($this->errors)) {
+            return false;
         }
 
         return $dom->saveXML();
@@ -252,18 +260,22 @@ class PLDXMLGenerator
             $ext->appendChild($dom->createElement('pais', $cliente->pais ?: 'MX'));
             $tipo_domicilio->appendChild($ext);
         } else {
-            // TODO: reemplazar ?? '' por validación explícita con Exception cuando campo requerido sea null
-            // ej: if (empty($cliente->colonia)) { throw new Exception("Campo 'colonia' es obligatorio según veh.xsd"); }
-            $nac = $dom->createElement('nacional');
-            $nac->appendChild($dom->createElement('colonia', $this->cleanXML($cliente->colonia ?? '')));
-            $nac->appendChild($dom->createElement('calle', $this->cleanXML($cliente->calle ?? '')));
-            $nac->appendChild($dom->createElement('numero_exterior', $this->cleanXML($cliente->numero_exterior ?? '')));
-            if (!empty($cliente->numero_interior)) {
-                $nac->appendChild($dom->createElement('numero_interior', $this->cleanXML($cliente->numero_interior ?? '')));
+            $required = ['colonia', 'calle', 'numero_exterior', 'codigo_postal', 'municipio', 'estado'];
+            foreach ($required as $field) {
+                if (empty($cliente->$field)) {
+                    throw new Exception("Campo '$field' es obligatorio según veh.xsd para domicilio nacional (tercero ID: {$cliente->rowid})");
+                }
             }
-            $nac->appendChild($dom->createElement('codigo_postal', $cliente->codigo_postal ?? ''));
-            $nac->appendChild($dom->createElement('municipio', $this->cleanXML($cliente->municipio ?? '')));
-            $nac->appendChild($dom->createElement('entidad_federativa', $this->cleanXML($cliente->estado ?? '')));
+            $nac = $dom->createElement('nacional');
+            $nac->appendChild($dom->createElement('colonia', $this->cleanXML($cliente->colonia)));
+            $nac->appendChild($dom->createElement('calle', $this->cleanXML($cliente->calle)));
+            $nac->appendChild($dom->createElement('numero_exterior', $this->cleanXML($cliente->numero_exterior)));
+            if (!empty($cliente->numero_interior)) {
+                $nac->appendChild($dom->createElement('numero_interior', $this->cleanXML($cliente->numero_interior)));
+            }
+            $nac->appendChild($dom->createElement('codigo_postal', $cliente->codigo_postal));
+            $nac->appendChild($dom->createElement('municipio', $this->cleanXML($cliente->municipio)));
+            $nac->appendChild($dom->createElement('entidad_federativa', $this->cleanXML($cliente->estado)));
             $tipo_domicilio->appendChild($nac);
         }
 
