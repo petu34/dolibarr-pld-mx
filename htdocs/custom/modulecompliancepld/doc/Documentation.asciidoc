@@ -1,81 +1,416 @@
-= MODULECOMPLIANCEPLD =
-:subtitle: MODULECOMPLIANCEPLD DOCUMENTATION
-:source-highlighter: rouge
+= Módulo CompliancePLD
+:subtitle: Prevención de Lavado de Dinero — Dolibarr ERP México
+:author: Ouroboros
 :companyname: Ouroboros
 :corpname: Ouroboros
 :orgname: Ouroboros
-:creator: SuperAdmin
-:title: Documentation of module Modulecompliancepld
-:subject: This document is the document of module Modulecompliancepld.
-:keywords: Modulecompliancepld
-// Date du document :
-:docdate: 2026-02-21
-:toc: manual
-:toc-placement: preamble
+:revnumber: 0.1
+:revdate: 2026-03-25
+:revremark: Versión inicial — documentación general del módulo
+:docdate: 2026-03-25
+:source-highlighter: rouge
+:toc: left
+:toc-title: Contenido
+:toclevels: 3
+:icons: font
+:lang: es
+:keywords: PLD, LFPIORPI, SAT, SPPLD, avisos, actividades vulnerables, Dolibarr, México
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Log de versiones del documento
+// ─────────────────────────────────────────────────────────────────────────────
 
-== TOPIC OF DOCUMENT
+*Historial del documento*
 
-This is the documentation of module Modulecompliancepld
-
-
-*Log of versions of document*
-
-[options="header",format="csv"]
-|=== 
-Author, Date, Version
---- SuperAdmin   ---, 2026-02-21, Version 1.0
+[options="header",cols="1,1,1,3"]
 |===
-
+|Autor |Fecha |Versión |Descripción
+|Ouroboros |2026-03-25 |0.1 |Versión inicial — documentación general del módulo
+|===
 
 [NOTE]
-==============
-This document was generated using Dolibarr ERP CRM process
-==============
+====
+Este documento describe la versión 0.1 del módulo `modulecompliancepld` para Dolibarr ERP.
+La documentación evolucionará junto con el módulo.
+====
 
 
-:toc: manual
-:toc-placement: preamble
+== Introducción
 
+El módulo *CompliancePLD* (`modulecompliancepld`) extiende Dolibarr ERP con funcionalidad
+de cumplimiento normativo en materia de *Prevención de Lavado de Dinero (PLD)* conforme
+a la legislación mexicana.
 
+Su objetivo es apoyar a los *sujetos obligados* en el cumplimiento de los deberes de
+identificación, resguardo y presentación de avisos ante la Unidad de Inteligencia
+Financiera (UIF) del Servicio de Administración Tributaria (SAT) a través del portal
+*SPPLD* (Sistema de Portal para la Presentación y Llenado de Declaraciones).
 
-== INTRODUCTION
+=== Marco legal
 
-//include::README.md[]
-__README__
+El módulo implementa las obligaciones establecidas en:
 
-== DATA SPECIFICATIONS
+* **Ley Federal para la Prevención e Identificación de Operaciones con Recursos de
+  Procedencia Ilícita (LFPIORPI)**, publicada en el DOF el 17 de octubre de 2012.
+* **Reglamento de la LFPIORPI** y sus disposiciones de carácter general (Resolución SAT).
+* Artículo 17, fracciones cubiertas:
 
-__DATA_SPECIFICATION__
-
-
-== MATRIX OF PERMISSIONS
-
-[options='header',grid=rows,width=60%,caption=Organisation]
+[cols="1,3,1",options="header"]
 |===
-|Objects|Permission
-|*Read objects of Modulecompliancepld*| 1 , 
-|*// In php code, permission will be checked by test if ($user->hasRight('modulecompliancepld',myobject',read'))
-		1*|myobject , 
-|*myobject*|Create/Update objects of Modulecompliancepld , 
-|*Delete objects of Modulecompliancepld*|// In php code, permission will be checked by test if ($user->hasRight('modulecompliancepld',myobject',write'))
-		1 , 
-|*// In php code, permission will be checked by test if ($user->hasRight('modulecompliancepld',myobject',delete'))
-		1*|myobject , 
-
+|Fracción |Actividad vulnerable |Estado en módulo
+|VIII |Compraventa de vehículos (terrestres, aéreos, marítimos) |Implementado
+|XI |Fe Pública — actos notariales y fedatarios públicos |Implementado
+|V, XII, XIII, XV |Otras actividades vulnerables |Planeado (fases futuras)
 |===
 
 
+== Alcance y actividades vulnerables cubiertas
 
-== OTHER
+=== Fracción VIII — Compraventa de vehículos
 
-__API_DOC__
+El módulo registra operaciones de compraventa de vehículos que superen los umbrales
+definidos por el SAT. Para cada operación se capturan:
+
+* Datos del vendedor y comprador (persona física o moral)
+* Identificación del vehículo (tipo, clase, marca, modelo, número de serie/NIV)
+* Forma de pago e importe
+* Datos del beneficiario (cuando aplica)
+* Indicadores de alerta
+
+Las operaciones que cumplen los criterios de reporte se agrupan por mes y se exportan
+en formato XML conforme al esquema `veh.xsd` del SAT para su presentación en el SPPLD.
+
+=== Fracción XI — Fe Pública (Notarios y fedatarios)
+
+El módulo registra instrumentos públicos celebrados ante notario o fedatario que
+impliquen los actos jurídicos enumerados en la Fracción XI.
+En la versión actual (MVP) se cubren:
+
+[cols="1,3",options="header"]
+|===
+|Tipo de actividad |Descripción
+|`otorgamiento_poder` |Escrituras de poder notarial (poderdante + apoderado)
+|`constitucion_personas_morales` |Constitución de SA, SRL, SC u otras
+|`compra_venta_acciones` |Compraventa de paquetes accionarios
+|===
+
+Los tipos restantes definidos en `fep.xsd` (modificación patrimonial, fusión, escisión,
+fideicomiso, cesión de derechos, mutuo/crédito, avalúo) están reservados para
+versiones futuras del módulo.
+
+Para cada instrumento se registran:
+
+* Número de instrumento y fecha de operación
+* Tipo de actividad
+* Notario / fedatario asociado (vía tercero de Dolibarr)
+* Participantes con su rol (poderdante, apoderado, accionista, vendedor, comprador, etc.)
+* Detalle específico por tipo de actividad
+* Indicador de persona aviso y tipo de alerta
 
 
-== CHANGELOG
+== Arquitectura del módulo
+
+=== Estructura de directorios
+
+[source]
+----
+htdocs/custom/modulecompliancepld/
+├── admin/
+│   └── setup.php                   # Configuración del módulo
+├── class/
+│   ├── pldxmlgeneratorbase.class.php   # Generador XML abstracto (base)
+│   ├── pldxmlgeneratorveh.class.php    # Generador VEH (Fracción VIII)
+│   ├── pldxmlgeneratorfep.class.php    # Generador FEP (Fracción XI)
+│   ├── pldxmlgeneratorfactory.class.php # Factory de generadores
+│   ├── pldxmlgenerator.class.php       # Alias retrocompatible → VEH
+│   ├── pldoperacion.class.php          # CRUD operaciones VEH
+│   ├── pldaviso.class.php              # CRUD avisos PLD
+│   ├── pldxmlgenerator.class.php       # Generador XML (Fracción VIII)
+│   ├── pldefirmaintegration.class.php  # Integración e.firma SAT
+│   ├── pldfepinstrumento.class.php     # CRUD instrumentos FEP
+│   └── pldfepparticipante.class.php    # CRUD participantes FEP
+├── css/
+│   └── modulecompliancepld.css.php     # Estilos del módulo
+├── doc/
+│   └── Documentation.asciidoc         # Este documento
+├── langs/
+│   └── es_MX/
+│       └── modulecompliancepld.lang   # Cadenas de traducción
+├── sql/
+│   ├── llx_pld_operacion.sql          # Tabla operaciones VEH
+│   ├── llx_pld_aviso.sql              # Tabla avisos
+│   ├── llx_pld_beneficiario.sql       # Tabla beneficiarios
+│   ├── llx_pld_alerta.sql             # Tabla alertas
+│   ├── llx_pld_documento.sql          # Tabla documentos
+│   ├── llx_pld_fep_instrumento.sql    # Tabla instrumentos FEP
+│   ├── llx_pld_fep_participante.sql   # Tabla participantes FEP
+│   └── llx_pld_fep_detalle.sql        # Tabla detalle FEP
+├── index.php                          # Dashboard del módulo
+├── operaciones.php                    # Lista de operaciones VEH
+├── operacion.php                      # Ficha de operación VEH
+├── xml_generator.php                  # Generador XML VEH
+├── fep_instrumentos_list.php          # Lista de instrumentos FEP
+├── fep_instrumento.php                # Ficha de instrumento FEP
+├── fep_xml_generator.php              # Generador XML FEP
+└── modulecompliancepld.php            # Descriptor del módulo
+----
+
+=== Modelo de datos principal
+
+==== Operaciones VEH (`llx_pld_operacion`)
+
+Almacena cada operación de compraventa de vehículo con sus datos de identificación,
+montos, formas de pago y referencias al cliente en Dolibarr.
+
+==== Instrumentos FEP (`llx_pld_fep_instrumento`)
+
+Cabecera del instrumento público. Contiene el número de instrumento, tipo de actividad,
+mes reportado y referencias al notario y cliente en el sistema de terceros de Dolibarr.
+
+==== Participantes FEP (`llx_pld_fep_participante`)
+
+Personas que intervienen en el instrumento público (poderdantes, apoderados, accionistas,
+vendedores, compradores, etc.). Soporta tres tipos: persona física, persona moral y
+fideicomiso, almacenados en tabla única con campos discriminados.
+
+==== Detalle FEP (`llx_pld_fep_detalle`)
+
+Campos específicos por tipo de actividad (capital social, número de acciones, montos,
+datos del avalúo, etc.). Relación 1:1 con el instrumento.
+
+==== Avisos (`llx_pld_aviso`)
+
+Registro del aviso mensual presentado al SAT. Almacena el archivo XML generado,
+su hash SHA-256, la fecha de generación y el estado del trámite.
+
+=== Generadores XML
+
+El módulo implementa el patrón *Template Method* para la generación de XML:
+
+[source]
+----
+PLDXMLGeneratorBase (abstracta)
+  ├── PLDXMLGeneratorVeh  — veh.xsd  (Fracción VIII)
+  └── PLDXMLGeneratorFEP  — fep.xsd  (Fracción XI)
+----
+
+`PLDXMLGeneratorFactory` instancia el generador correcto según la fracción configurada:
+
+[source,php]
+----
+$generator = PLDXMLGeneratorFactory::build('VIII', $db); // VEH
+$generator = PLDXMLGeneratorFactory::build('FEP', $db);  // Fe Pública
+----
+
+Nuevas fracciones se registran con:
+
+[source,php]
+----
+PLDXMLGeneratorFactory::register('V', 'PLDXMLGeneratorInmu');
+----
 
 
-# CHANGELOG MODULECOMPLIANCEPLD FOR [DOLIBARR ERP CRM](https://www.dolibarr.org)
- 1.0
-Initial version
+== Permisos
 
+El módulo define tres niveles de permiso:
+
+[cols="1,2,2",options="header"]
+|===
+|Permiso |Código PHP |Descripción
+|Lectura |`$user->hasRight('modulecompliancepld', 'read')` |Ver listas, fichas y XML generados
+|Escritura |`$user->hasRight('modulecompliancepld', 'write')` |Crear y modificar operaciones e instrumentos; generar XML
+|Eliminación |`$user->hasRight('modulecompliancepld', 'delete')` |Eliminar registros (no aplicable a avisos ya presentados)
+|===
+
+[IMPORTANT]
+====
+Los avisos con estado `presentado` no pueden eliminarse desde el módulo.
+Cualquier rectificación ante el SAT debe tramitarse directamente en el portal SPPLD.
+====
+
+
+== Configuración
+
+La configuración del módulo se administra en *Configuración → Módulos → CompliancePLD → Configurar*.
+
+=== Parámetros generales
+
+[cols="2,3,1",options="header"]
+|===
+|Parámetro |Descripción |Valor por defecto
+|`MAIN_INFO_SIREN` |RFC del sujeto obligado (campo estándar Dolibarr) |—
+|`MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE` |Fracción activa (`VIII` o `FEP`) |`VIII`
+|`MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH` |Ruta al certificado `.cer` de e.firma |—
+|`MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH` |Ruta a la llave privada `.key` de e.firma |—
+|===
+
+=== Parámetros Fe Pública (Fracción XI)
+
+[cols="2,3,1",options="header"]
+|===
+|Parámetro |Descripción |Valor por defecto
+|`MODULECOMPLIANCEPLD_FEP_ACTIVO` |Habilita sección FEP en el dashboard |`0`
+|`MODULECOMPLIANCEPLD_FEP_CLAVE_ENTIDAD_COLEGIADA` |Clave de colegio notarial (opcional) |—
+|`MODULECOMPLIANCEPLD_FEP_TIPOS_ACTIVOS` |Tipos de actividad que generan aviso |`otorgamiento_poder,constitucion_personas_morales,compra_venta_acciones`
+|`MODULECOMPLIANCEPLD_FEP_DIAS_REPORTE` |Días hábiles para presentar el aviso mensual |`17`
+|===
+
+=== e.firma
+
+Para firmar digitalmente el XML antes de enviarlo al SPPLD se requiere configurar
+la e.firma del sujeto obligado:
+
+1. Obtener los archivos `.cer` y `.key` del SAT.
+2. Copiarlos a una ruta segura en el servidor (fuera del directorio web).
+3. Registrar las rutas en los parámetros `MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH` y
+   `MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH`.
+
+Si la e.firma no está configurada, el módulo generará el XML sin firma; el usuario
+puede firmar manualmente antes de la presentación en el portal SPPLD.
+
+
+== Flujo de trabajo
+
+=== Fracción VIII — Compraventa de vehículos
+
+[source]
+----
+[Operación de venta]
+       │
+       ▼
+Captura en Dolibarr (operacion.php)
+  • Datos del vehículo
+  • Comprador / vendedor
+  • Forma de pago
+  • Indicadores de alerta
+       │
+       ▼
+Revisión y aprobación
+  (estado: borrador → completado)
+       │
+       ▼
+Generación XML mensual (xml_generator.php)
+  • Seleccionar mes YYYYMM
+  • Firmar con e.firma (opcional)
+  • Descargar PLD_VEH_YYYYMM_*.xml
+       │
+       ▼
+Presentación en portal SPPLD (manual)
+       │
+       ▼
+Marcar aviso como presentado
+----
+
+=== Fracción XI — Fe Pública
+
+[source]
+----
+[Instrumento notarial]
+       │
+       ▼
+Captura cabecera (fep_instrumento.php)
+  • Número de instrumento
+  • Tipo de actividad
+  • Notario / cliente
+       │
+       ▼
+Agregar participantes
+  • Rol (poderdante, apoderado, accionista…)
+  • Tipo persona (física / moral / fideicomiso)
+  • Marcar persona_aviso si aplica
+       │
+       ▼
+Cambio de estado: borrador → completado
+       │
+       ▼
+Generación XML mensual (fep_xml_generator.php)
+  • Seleccionar mes YYYYMM
+  • Firmar con e.firma (opcional)
+  • Descargar PLD_FEP_YYYYMM_*.xml
+       │
+       ▼
+Presentación en portal SPPLD (manual)
+       │
+       ▼
+Marcar aviso como presentado
+----
+
+=== Estados de un instrumento / operación
+
+[cols="1,3",options="header"]
+|===
+|Estado |Significado
+|`borrador` |En captura; puede editarse y eliminarse
+|`completado` |Datos validados; listo para incluir en el XML del mes
+|`presentado` |Incluido en un aviso presentado ante el SAT; no modificable
+|`cancelado` |Operación anulada; excluida de futuros reportes
+|===
+
+
+== Generación y formato del XML
+
+Los archivos XML se almacenan en:
+
+[source]
+----
+{DOL_DATA_ROOT}/modulecompliancepld/xml/
+  PLD_VEH_YYYYMM_YYYYMMDDHHmmss.xml   ← Fracción VIII
+  PLD_FEP_YYYYMM_YYYYMMDDHHmmss.xml   ← Fracción XI
+----
+
+Cada archivo cumple con:
+
+* Codificación UTF-8
+* Namespace y ubicación XSD del portal SPPLD del SAT
+* Estructura `<archivo> → <informe> → <aviso>` conforme al esquema correspondiente
+* Hash SHA-256 registrado en la tabla `llx_pld_aviso` para trazabilidad
+
+Los XML se pueden descargar directamente desde las páginas de generación
+(`xml_generator.php`, `fep_xml_generator.php`) y del historial de archivos.
+
+
+== Dashboard
+
+La página de inicio del módulo (`index.php`) muestra indicadores del mes actual:
+
+=== Widgets Fracción VIII
+* Total de operaciones del mes
+* Operaciones que requieren aviso
+* Avisos ya presentados
+
+=== Widgets Fracción XI (requiere `MODULECOMPLIANCEPLD_FEP_ACTIVO = 1`)
+* Instrumentos del mes
+* Instrumentos que requieren aviso
+* Avisos presentados
+
+Los widgets están implementados como *boxstats* de Dolibarr para mantener
+consistencia visual con el resto del ERP.
+
+
+== Integración con Dolibarr
+
+El módulo se integra con las siguientes entidades nativas de Dolibarr:
+
+[cols="2,3",options="header"]
+|===
+|Entidad Dolibarr |Uso en CompliancePLD
+|`llx_societe` (Terceros) |Referencia a notarios, clientes, compradores y vendedores
+|`llx_const` (Constantes) |Almacenamiento de configuración del módulo
+|`llx_user` (Usuarios) |Auditoría (`fk_user_creat`, `fk_user_modif`) y permisos
+|Triggers Dolibarr |Hooks en crear/modificar/eliminar para extensibilidad
+|===
+
+
+== Changelog
+
+[cols="1,1,3",options="header"]
+|===
+|Versión módulo |Fecha |Cambios
+|0.1 |2026-03-25 |
+Implementación inicial. +
+Fracción VIII (VEH): captura de operaciones y generación XML veh.xsd. +
+Fracción XI (FEP): captura de instrumentos y participantes, generación XML fep.xsd (MVP: otorgamiento_poder, constitución PM, compra-venta acciones). +
+Refactoring generadores a patrón Base+Subclase+Factory. +
+Dashboard con widgets por fracción. +
+Integración e.firma para firma digital del XML.
+|===
