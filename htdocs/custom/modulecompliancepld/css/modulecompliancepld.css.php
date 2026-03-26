@@ -104,6 +104,27 @@ div.mainmenu.modulecompliancepld {
 	background-image: none;
 }
 
+.boxstat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+
+.boxstatcontent,
+.boxstat .boxstatnum {
+	text-align: center;
+}
+
+.boxstat .boxstatnum {
+	display: block;
+	width: 100%;
+}
+
+.boxstat .boxstaticonarea {
+	margin-bottom: 0.35rem;
+}
+
 .myclasscss {
 	/* ... */
 }
