@@ -109,12 +109,12 @@ $counters = array(
 
 foreach ($counters as $c) {
 	print '<div class="boxstat" style="min-width:160px;max-width:200px;flex:1">';
+	print '<div class="boxstaticonarea '.$c['color'].'" style="text-align:center;display:flex;align-items:center;justify-content:center;margin-bottom:0.35rem">';
+	print '<span class="fa '.$c['icon'].'" style="font-size:1.1rem"></span>';
+	print '</div>';
 	print '<div class="boxstatcontent">';
 	print '<span class="boxstatnum"><a href="'.dol_escape_htmltag($c['url']).'">'.$c['count'].'</a></span><br>';
 	print '<span class="boxstatdesc opacitymedium">'.dol_escape_htmltag($c['label']).'</span>';
-	print '</div>';
-	print '<div class="boxstaticonarea '.$c['color'].'" style="text-align:center;display:flex;align-items:center;justify-content:center">';
-	print '<span class="fa '.$c['icon'].'" style="font-size:1.1rem"></span>';
 	print '</div>';
 	print '</div>';
 }
