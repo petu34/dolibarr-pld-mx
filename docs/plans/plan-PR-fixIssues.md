@@ -1,7 +1,7 @@
 # Plan Fase 3.2: Issues de Seguridad y Calidad — Pendientes post-PR
 
 > **Creado:** 2026-03-22
-> **Estado:** 🔲 PENDIENTE — issues importantes identificados en code review del PR fase1/extrafields → develop
+> **Estado:** ✅ COMPLETADO — todos los issues resueltos en commit `af64abb` (2026-03-25)
 
 ---
 
@@ -14,7 +14,7 @@ Los **3 críticos** ya fueron corregidos y committeados. Este plan registra los 
 
 ## Issues importantes — Checklist
 
-### [ ] 1. XSS: `$_SERVER['PHP_SELF']` sin escapar en `action=` del form
+### [x] 1. XSS: `$_SERVER['PHP_SELF']` sin escapar en `action=` del form
 
 **Archivos:** `xml_generator.php:205`, `admin/setup.php:94`
 
@@ -33,7 +33,7 @@ Aplica también en `admin/setup.php:94`.
 
 ---
 
-### [ ] 2. CSRF token no validado en `action=descargar` (GET)
+### [x] 2. CSRF token no validado en `action=descargar` (GET)
 
 **Archivo:** `xml_generator.php:151`
 
@@ -51,7 +51,7 @@ if ($action == 'descargar' && GETPOST('filepath', 'nohtml')) {
 
 ---
 
-### [ ] 3. Race condition en `generarFolioInterno()` — folios duplicados bajo concurrencia
+### [x] 3. Race condition en `generarFolioInterno()` — folios duplicados bajo concurrencia
 
 **Archivo:** `pldoperacion.class.php:320–336`
 
@@ -69,7 +69,7 @@ También considerar envolver en transacción con `$db->begin()` / `$db->commit()
 
 ---
 
-### [ ] 4. Falta `$db->escape()` en `generarFolioInterno()`
+### [x] 4. Falta `$db->escape()` en `generarFolioInterno()`
 
 **Archivo:** `pldoperacion.class.php:326`
 
@@ -85,7 +85,7 @@ Aunque `$year` y `$month` vienen de `date()` en el flujo normal, el patrón viol
 
 ---
 
-### [ ] 5. Instancia sin usar en `about.php:108`
+### [x] 5. Instancia sin usar en `about.php:108`
 
 **Archivo:** `admin/about.php:108`
 
@@ -97,7 +97,7 @@ Eliminar la línea y el `require_once` de `pldefirmaintegration.class.php` en `a
 
 ---
 
-### [ ] 6. Validación explícita de campos obligatorios veh.xsd en `pldxmlgenerator.class.php`
+### [x] 6. Validación explícita de campos obligatorios veh.xsd en `pldxmlgenerator.class.php`
 
 **Archivo:** `class/pldxmlgenerator.class.php` — método `crearDomicilio()`
 
