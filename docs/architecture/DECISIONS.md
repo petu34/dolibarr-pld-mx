@@ -126,6 +126,30 @@
 
 ---
 
+## ADR-007: Tabla dedicada para historial de verificaciones PEP
+
+**Fecha:** 2026-03-29
+**Estado:** Aprobada
+**Contexto:** Arts. 45 Bis–Quinquies Reglamento LFPIORPI (DOF 27/03/2026) exigen verificar si el cliente es Persona Expuesta Políticamente (PEP) ante la UIF y conservar evidencia de la consulta. La verificación puede repetirse periódicamente y debe quedar auditable.
+
+**Decisión:** Crear tabla `llx_pld_pep_verificacion` para el historial de consultas, y añadir 3 extrafields en `thirdparty` (`pld_fecha_verificacion_pep`, `pld_resultado_pep`, `pld_nivel_riesgo`) como cache del estado vigente del cliente.
+
+**Justificación:**
+- Los extrafields sólo guardan el estado *actual* del cliente; el historial de consultas requiere múltiples filas por cliente.
+- La tabla auditora permite cumplir el Art. 18 LFPIORPI (conservación 10 años) sin contaminar `llx_societe_extrafields`.
+- El extrafield `pld_nivel_riesgo` permite al resto del módulo leer el riesgo sin consultar el historial en cada operación.
+
+**Alternativas evaluadas:**
+1. *Solo extrafields:* No soporta múltiples registros por cliente — descartada.
+2. *Solo tabla histórica:* Obliga a query adicional en cada operación para leer el riesgo — descartada.
+
+**Consecuencias:**
+- (+) Trazabilidad completa de verificaciones PEP por cliente
+- (+) `clasificarRiesgo()` en `PLDPEPVerificacion` centraliza la lógica de nivel de riesgo
+- (-) Requiere sincronizar manualmente el extrafield `pld_nivel_riesgo` tras cada verificación
+
+---
+
 ## Plantilla para nuevas decisiones
 
 ```markdown

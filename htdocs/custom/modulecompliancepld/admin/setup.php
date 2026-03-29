@@ -47,11 +47,15 @@ if ($action == 'update') {
 		'MODULECOMPLIANCEPLD_UMBRAL_VEH_USADO'     => array('type' => 'float',  'default' => 117310.00),
 		'MODULECOMPLIANCEPLD_DIAS_ALERTA_ID'       => array('type' => 'int',    'default' => 30),
 		'MODULECOMPLIANCEPLD_OFICIAL_CUMPLIMIENTO' => array('type' => 'int',    'default' => 0),
-		'MODULECOMPLIANCEPLD_PERIODO_CONSERVACION' => array('type' => 'int',    'default' => 5),
+		'MODULECOMPLIANCEPLD_PERIODO_CONSERVACION' => array('type' => 'int',    'default' => 10),
 		'MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE' => array('type' => 'chaine', 'default' => 'VIII'),
 		// Sujeto obligado y e.firma (la contraseña se maneja por separado, cifrada)
-		'MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH'     => array('type' => 'chaine', 'default' => ''),
-		'MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH'      => array('type' => 'chaine', 'default' => ''),
+		'MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH'             => array('type' => 'chaine', 'default' => ''),
+		'MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH'              => array('type' => 'chaine', 'default' => ''),
+		// Art. 6 DOF 27/03/2026: tasa IVA por defecto para separar monto sin impuestos
+		'MODULECOMPLIANCEPLD_IVA_DEFAULT'                  => array('type' => 'float',  'default' => 0.16),
+		// Art. 7 Bis DOF 27/03/2026: avisos de operaciones intentadas (activar tras XSD SAT revisado)
+		'MODULECOMPLIANCEPLD_AVISOS_INTENTADAS_ACTIVO'     => array('type' => 'int',    'default' => 0),
 	);
 
 	foreach ($params as $constname => $info) {
@@ -178,11 +182,11 @@ print '</td>';
 print '<td class="opacitymedium">Usuario designado como Oficial de Cumplimiento PLD (recibe notificaciones)</td>';
 print '</tr>';
 
-$periodo = getDolGlobalInt('MODULECOMPLIANCEPLD_PERIODO_CONSERVACION', 5);
+$periodo = getDolGlobalInt('MODULECOMPLIANCEPLD_PERIODO_CONSERVACION', 10);
 print '<tr class="oddeven">';
 print '<td><label for="MODULECOMPLIANCEPLD_PERIODO_CONSERVACION">'.$langs->trans("PeriodoConservacion").'</label></td>';
 print '<td><input type="number" id="MODULECOMPLIANCEPLD_PERIODO_CONSERVACION" name="MODULECOMPLIANCEPLD_PERIODO_CONSERVACION" class="flat minwidth100" value="'.$periodo.'"></td>';
-print '<td class="opacitymedium">Años de conservacion de expedientes PLD (Art. 18 LFPIORPI). Minimo legal: 5 años</td>';
+print '<td class="opacitymedium">Años de conservacion de expedientes PLD (Art. 20 LFPIORPI DOF 27/03/2026). Minimo legal: 10 años</td>';
 print '</tr>';
 
 $actividad = getDolGlobalString('MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE', 'VIII');
@@ -192,7 +196,32 @@ print '<td><input type="text" id="MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE" name
 print '<td class="opacitymedium">Fraccion del Art. 17 LFPIORPI aplicable. Para vehiculos: VIII</td>';
 print '</tr>';
 
+$iva_default = getDolGlobalString('MODULECOMPLIANCEPLD_IVA_DEFAULT', '0.16');
+print '<tr class="oddeven">';
+print '<td><label for="MODULECOMPLIANCEPLD_IVA_DEFAULT">Tasa IVA por defecto</label></td>';
+print '<td><input type="number" step="0.01" min="0" max="1" id="MODULECOMPLIANCEPLD_IVA_DEFAULT" name="MODULECOMPLIANCEPLD_IVA_DEFAULT" class="flat minwidth100" value="'.dol_escape_htmltag($iva_default).'"></td>';
+print '<td class="opacitymedium">Art. 6 DOF 27/03/2026. Tasa decimal para calcular monto sin impuestos (umbral UMA). Ej.: 0.16 = 16 % IVA</td>';
+print '</tr>';
+
+$avisos_intentadas = getDolGlobalInt('MODULECOMPLIANCEPLD_AVISOS_INTENTADAS_ACTIVO', 0);
+print '<tr class="oddeven">';
+print '<td><label for="MODULECOMPLIANCEPLD_AVISOS_INTENTADAS_ACTIVO">Activar avisos de operaciones intentadas</label></td>';
+print '<td><input type="checkbox" id="MODULECOMPLIANCEPLD_AVISOS_INTENTADAS_ACTIVO" name="MODULECOMPLIANCEPLD_AVISOS_INTENTADAS_ACTIVO" value="1"'.($avisos_intentadas ? ' checked' : '').'></td>';
+print '<td class="opacitymedium">Art. 7 Bis DOF 27/03/2026. Activar sólo cuando el SAT publique el XSD actualizado para operaciones intentadas</td>';
+print '</tr>';
+
 print '</table><br>';
+
+// ======= NOTA INFORMATIVA: TRANSITORIO 3° DOF 27/03/2026 =======
+print load_fiche_titre('Transitorio 3&#176; &mdash; DOF 27/03/2026', '', '');
+print '<div class="info">';
+print '<p><strong>Plazo de adecuación (Art. Transitorio 3°):</strong> Los sujetos obligados que ya presentaban avisos tienen hasta el <strong>27 de septiembre de 2026</strong> (180 días naturales) para adaptar sus sistemas al nuevo formato exigido por el decreto DOF 27/03/2026.</p>';
+print '<ul>';
+print '<li>El módulo ya incorpora los campos requeridos por Arts. 6, 7, 7 Bis, 15, 20 y 45 Bis&ndash;Quinquies.</li>';
+print '<li>Los avisos generados antes de esa fecha pueden seguir usando el formato anterior hasta agotar el plazo.</li>';
+print '<li>Recomendación: activar el nuevo formato en entorno de pruebas antes del 2026-07-01 para validar con el XSD SAT.</li>';
+print '</ul>';
+print '</div><br>';
 
 // ======= SECCIÓN SUJETO OBLIGADO Y E.FIRMA =======
 print load_fiche_titre($langs->trans("SeccionSujetoObligado"), '', '');
