@@ -508,6 +508,12 @@ class modModulecompliancepld extends DolibarrModules
 		$extrafields->addExtraField('pld_tiene_beneficiario', '¿Tiene Beneficiario Controlador? (PLD)', 'boolean', 135, '', 'thirdparty', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_observaciones', 'Observaciones PLD', 'text', 136, '', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
+		// Arts. 45 Bis–Quinquies DOF 27/03/2026: verificación PEP ante UIF
+		$optNivelRiesgo = array('bajo' => 'Bajo', 'medio' => 'Medio', 'alto' => 'Alto', 'muy_alto' => 'Muy alto');
+		$extrafields->addExtraField('pld_fecha_verificacion_pep', 'Última Verificación PEP (PLD)', 'date', 150, '', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_resultado_pep', 'Resultado UIF-PEP (PLD)', 'varchar', 151, '20', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_nivel_riesgo', 'Nivel de Riesgo (PLD)', 'select', 152, '', 'thirdparty', 0, 1, 'medio', $optNivelRiesgo, 1, '',1, '', '', '', $l, $e);
+
 		// =====================================================================
 		// SOCPEOPLE (llx_socpeople_extrafields) — 22 campos
 		// LFPIORPI Art. 17 Fracc. VIII: Representantes y contactos
