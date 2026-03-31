@@ -478,7 +478,7 @@ class modModulecompliancepld extends DolibarrModules
 		$extrafields->addExtraField('pld_municipio', 'Municipio / Alcaldía (PLD)', 'varchar', 113, '100', 'thirdparty', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_estado', 'Entidad Federativa (PLD)', 'select', 114, '', 'thirdparty', 0, 1, '', $optEstados, 1, '',0, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_pais', 'País (PLD)', 'varchar', 115, '2', 'thirdparty', 0, 1, 'MX', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_es_domicilio_extranjero', '¿Domicilio Extranjero? (PLD)', 'boolean', 116, '', 'thirdparty', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_es_domicilio_extranjero', '¿Domicilio Extranjero? (PLD)', 'boolean', 116, '', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_estado_provincia_ext', 'Estado/Provincia Extranjero (PLD)', 'varchar', 117, '100', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_ciudad_poblacion_ext', 'Ciudad/Población Extranjero (PLD)', 'varchar', 118, '100', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
@@ -503,13 +503,13 @@ class modModulecompliancepld extends DolibarrModules
 		$extrafields->addExtraField('pld_cliente_identificado', '¿Cliente Identificado? (PLD)', 'boolean', 130, '', 'thirdparty', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_fecha_identificacion', 'Fecha de Identificación (PLD)', 'date', 131, '', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_expediente_completo', '¿Expediente Completo? (PLD)', 'boolean', 132, '', 'thirdparty', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_es_pep', '¿Persona Expuesta Políticamente? (PLD)', 'boolean', 133, '', 'thirdparty', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_es_pep', '¿Persona Expuesta Políticamente? (PLD)', 'boolean', 133, '', 'thirdparty', 0, 0, '', '', 1, '',1, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_relacion_pep', 'Relación con PEP (PLD)', 'varchar', 134, '200', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_tiene_beneficiario', '¿Tiene Beneficiario Controlador? (PLD)', 'boolean', 135, '', 'thirdparty', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_tiene_beneficiario', '¿Tiene Beneficiario Controlador? (PLD)', 'boolean', 135, '', 'thirdparty', 0, 0, '', '', 1, '',1, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_observaciones', 'Observaciones PLD', 'text', 136, '', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// Arts. 45 Bis–Quinquies DOF 27/03/2026: verificación PEP ante UIF
-		$optNivelRiesgo = array('bajo' => 'Bajo', 'medio' => 'Medio', 'alto' => 'Alto', 'muy_alto' => 'Muy alto');
+		$optNivelRiesgo = array('options' => array('bajo' => 'Bajo', 'medio' => 'Medio', 'alto' => 'Alto', 'muy_alto' => 'Muy alto'));
 		$extrafields->addExtraField('pld_fecha_verificacion_pep', 'Última Verificación PEP (PLD)', 'date', 150, '', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_resultado_pep', 'Resultado UIF-PEP (PLD)', 'varchar', 151, '20', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_nivel_riesgo', 'Nivel de Riesgo (PLD)', 'select', 152, '', 'thirdparty', 0, 1, 'medio', $optNivelRiesgo, 1, '',1, '', '', '', $l, $e);
