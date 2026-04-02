@@ -489,5 +489,25 @@ print dolGetButtonAction('', $langs->trans('BackToList'), 'default', DOL_URL_ROO
 
 print '</div>';
 
+// ── Preview XML ───────────────────────────────────────────────────────────────
+if (!empty($aviso->archivo_xml_ruta)) {
+	$dir_allowed = DOL_DATA_ROOT.'/modulecompliancepld/xml';
+	$real        = realpath($aviso->archivo_xml_ruta);
+	if ($real && strpos($real, realpath($dir_allowed)) === 0 && file_exists($real)) {
+		$xml_content = file_get_contents($real);
+		if ($xml_content !== false) {
+			print '<br>';
+			print load_fiche_titre($langs->trans('PLDXMLGenerado'), '', 'fa-code');
+			$preview_lines = array_slice(explode("\n", htmlspecialchars($xml_content, ENT_QUOTES, 'UTF-8')), 0, 80);
+			print '<pre style="background:#f8f8f8;border:1px solid #ddd;padding:12px;font-size:11px;max-height:400px;overflow:auto">';
+			print implode("\n", $preview_lines);
+			if (substr_count($xml_content, "\n") > 80) {
+				print "\n<em>... (truncado para visualización)</em>";
+			}
+			print '</pre>';
+		}
+	}
+}
+
 llxFooter();
 $db->close();
