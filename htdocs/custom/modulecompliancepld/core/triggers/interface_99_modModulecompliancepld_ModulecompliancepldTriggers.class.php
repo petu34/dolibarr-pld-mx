@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 require_once DOL_DOCUMENT_ROOT.'/core/triggers/dolibarrtriggers.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldvalidator.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldoperacion.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldalerta.class.php';
 
 
 /**
@@ -159,8 +161,10 @@ class InterfaceModulecompliancepldTriggers extends DolibarrTriggers
 	}
 
 	/**
-	 * Al registrar un pago de cliente, copia la fecha de pago al extrafield
-	 * pld_fecha_operacion de cada factura vinculada al pago.
+	 * Al registrar un pago de cliente:
+	 * 1. Copia la fecha de pago al extrafield pld_fecha_operacion de la factura.
+	 * 2. Crea PLDOperacion si no existe para esa factura.
+	 * 3. Evalúa umbral y genera PLDAlerta si corresponde.
 	 *
 	 * @param string       $action  Acción (PAYMENT_CUSTOMER_CREATE)
 	 * @param CommonObject $object  Objeto Paiement
@@ -177,17 +181,17 @@ class InterfaceModulecompliancepldTriggers extends DolibarrTriggers
 
 		require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 		require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
-
-		$extrafields = new ExtraFields($this->db);
-		$extrafields->fetch_name_optionals_label('facture');
+		require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 
 		$errors = 0;
+
 		foreach ($object->amounts as $fk_facture => $amount) {
 			$fk_facture = (int) $fk_facture;
 			if ($fk_facture <= 0) {
 				continue;
 			}
 
+			// --- Cargar factura ---
 			$facture = new Facture($this->db);
 			if ($facture->fetch($fk_facture) <= 0) {
 				dol_syslog("PLD Trigger paymentCustomerCreate: no se pudo cargar factura id=".$fk_facture, LOG_WARNING);
@@ -195,15 +199,99 @@ class InterfaceModulecompliancepldTriggers extends DolibarrTriggers
 				continue;
 			}
 
+			// --- Actualizar extrafield pld_fecha_operacion en la factura ---
 			$facture->fetch_optionals();
 			$facture->array_options['options_pld_fecha_operacion'] = $object->datepaye;
-
-			$ret = $facture->insertExtraFields();
-			if ($ret < 0) {
+			if ($facture->insertExtraFields() < 0) {
 				dol_syslog("PLD Trigger paymentCustomerCreate: error al guardar pld_fecha_operacion en factura id=".$fk_facture, LOG_ERR);
 				$errors++;
 			} else {
-				dol_syslog("PLD Trigger paymentCustomerCreate: pld_fecha_operacion actualizada en factura id=".$fk_facture." fecha=".dol_print_date($object->datepaye, 'day'), LOG_INFO);
+				dol_syslog("PLD Trigger paymentCustomerCreate: pld_fecha_operacion actualizada en factura id=".$fk_facture, LOG_INFO);
+			}
+
+			// --- Anti-duplicado: verificar si ya existe PLDOperacion para esta factura ---
+			$operacion = new PLDOperacion($this->db);
+			$operacion->entity = (int) $facture->entity;
+			if ($operacion->existeOperacionPorFactura($fk_facture)) {
+				dol_syslog("PLD Trigger paymentCustomerCreate: PLDOperacion ya existe para factura id=".$fk_facture.", se omite creación", LOG_INFO);
+				continue;
+			}
+
+			// --- Obtener fk_product y tipo_vehiculo desde líneas de la factura ---
+			$fk_product = 0;
+			$tipo_vehiculo = 'nuevo';
+
+			$facture->fetch_lines();
+			foreach ($facture->lines as $line) {
+				if (!empty($line->fk_product) && $line->fk_product > 0) {
+					$fk_product = (int) $line->fk_product;
+					break;
+				}
+			}
+
+			if ($fk_product > 0) {
+				$product = new Product($this->db);
+				if ($product->fetch($fk_product) > 0) {
+					$product->fetch_optionals();
+					$estado_vehiculo = $product->array_options['options_pld_estado_vehiculo'] ?? 'nuevo';
+					$tipo_vehiculo = ($estado_vehiculo === 'usado') ? 'usado' : 'nuevo';
+					dol_syslog("PLD Trigger paymentCustomerCreate: tipo_vehiculo=".$tipo_vehiculo." desde product id=".$fk_product, LOG_INFO);
+				}
+			}
+
+			// --- Calcular monto sin impuestos (Art. 6 DOF 27/03/2026) ---
+			$monto_total = (float) $amount;
+			$monto_sin_impuestos = round($monto_total / 1.16, 2);
+
+			// --- Poblar y crear PLDOperacion ---
+			$operacion->fk_facture               = $fk_facture;
+			$operacion->fk_societe               = (int) $facture->socid;
+			$operacion->fk_product               = $fk_product > 0 ? $fk_product : null;
+			$operacion->tipo_operacion           = 'venta_vehiculo';
+			$operacion->tipo_actividad_vulnerable = '808';
+			$operacion->fecha_operacion          = date('Y-m-d', $object->datepaye);
+			$operacion->monto_mxn                = $monto_total;
+			$operacion->monto_sin_impuestos      = $monto_sin_impuestos;
+			$operacion->estado_operacion         = 'completada';
+			$operacion->estado                   = 'confirmada';
+			$operacion->fecha_inicio_custodia    = date('Y-m-d', $object->datepaye);
+
+			$operacion->generarFolioInterno();
+
+			$result = $operacion->create($user);
+			if ($result <= 0) {
+				dol_syslog("PLD Trigger paymentCustomerCreate: error creando PLDOperacion para factura id=".$fk_facture.": ".implode(', ', $operacion->errors), LOG_ERR);
+				$errors++;
+				continue;
+			}
+
+			dol_syslog("PLD Trigger paymentCustomerCreate: PLDOperacion id=".$operacion->id." creada para factura id=".$fk_facture, LOG_INFO);
+
+			// --- Evaluar umbral (incluye acumulación 6 meses) ---
+			$operacion->evaluarUmbral($tipo_vehiculo);
+
+			if ($operacion->requiere_aviso) {
+				// --- Crear PLDAlerta ---
+				$alerta = new PLDAlerta($this->db);
+				$alerta->entity            = $operacion->entity;
+				$alerta->fk_pld_operacion  = $operacion->id;
+				$alerta->fk_societe        = $operacion->fk_societe;
+				$alerta->tipo_alerta       = 'umbral_superado';
+				$alerta->nivel_riesgo      = 'alto';
+				$alerta->titulo            = 'Umbral PLD superado — Art. 17 Fracc. VIII';
+				$alerta->descripcion       = 'Operación '.$operacion->folio_interno.' supera umbral regulatorio. Monto sin impuestos: '.$monto_sin_impuestos.' MXN.';
+				$alerta->requiere_analisis = 1;
+
+				$alerta_result = $alerta->create($user);
+				if ($alerta_result > 0) {
+					$operacion->genera_alerta = 1;
+					$operacion->fk_pld_alerta = $alerta->id;
+					$operacion->update($user, 1);
+					dol_syslog("PLD Trigger paymentCustomerCreate: PLDAlerta id=".$alerta->id." creada para operacion id=".$operacion->id, LOG_INFO);
+				} else {
+					dol_syslog("PLD Trigger paymentCustomerCreate: error creando PLDAlerta para operacion id=".$operacion->id.": ".implode(', ', $alerta->errors), LOG_ERR);
+					$errors++;
+				}
 			}
 		}
 

@@ -717,4 +717,34 @@ class PLDOperacion extends CommonObject
 
         return 1;
     }
+
+    /**
+     * Verifica si ya existe una PLDOperacion para la factura dada.
+     * Usado por el trigger paymentCustomerCreate para evitar duplicados.
+     *
+     * @param int $fk_facture ID de la factura
+     * @return bool true si ya existe, false si no
+     */
+    public function existeOperacionPorFactura(int $fk_facture): bool
+    {
+        if ($fk_facture <= 0) {
+            return false;
+        }
+
+        $sql  = "SELECT rowid FROM ".MAIN_DB_PREFIX.$this->table_element;
+        $sql .= " WHERE fk_facture = ".(int)$fk_facture;
+        $sql .= " AND entity = ".(int)$this->entity;
+        $sql .= " LIMIT 1";
+
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            dol_syslog("PLDOperacion::existeOperacionPorFactura error: ".$this->db->lasterror(), LOG_ERR);
+            return false;
+        }
+
+        $existe = ($this->db->num_rows($resql) > 0);
+        $this->db->free($resql);
+
+        return $existe;
+    }
 }

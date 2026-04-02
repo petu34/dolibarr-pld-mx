@@ -40,3 +40,4 @@ MyPageName = My page name
 #
 MyWidget = My widget
 MyWidgetDescription = My widget description
+PLDOperacionSoloAutomatica = PLD operations are created automatically when a payment is registered. Manual creation is not allowed.

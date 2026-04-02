@@ -840,3 +840,4 @@ EstadoActualizado = Estado actualizado correctamente
 AcuseRegistrado = Acuse SAT registrado. Aviso presentado.
 ErrorFolioFechaRequeridos = El folio SAT y la fecha de presentación son obligatorios
 NoXMLGenerado = Sin XML generado
+PLDOperacionSoloAutomatica = Las operaciones PLD se crean automáticamente al registrar un pago. La creación manual no está permitida.
