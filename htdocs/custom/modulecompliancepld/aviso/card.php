@@ -51,7 +51,7 @@ if ($action == 'setpendiente' && $user->hasRight('modulecompliancepld', 'write')
 	} else {
 		setEventMessages($aviso->error, $aviso->errors, 'errors');
 	}
-	header("Location: ".$_SERVER["PHP_SELF"]."?id=".$id);
+	header("Location: ".dol_escape_htmltag($_SERVER["PHP_SELF"])."?id=".$id);
 	exit;
 }
 
@@ -63,7 +63,7 @@ if ($action == 'setborrador' && $user->hasRight('modulecompliancepld', 'write') 
 	} else {
 		setEventMessages($aviso->error, $aviso->errors, 'errors');
 	}
-	header("Location: ".$_SERVER["PHP_SELF"]."?id=".$id);
+	header("Location: ".dol_escape_htmltag($_SERVER["PHP_SELF"])."?id=".$id);
 	exit;
 }
 
@@ -85,7 +85,7 @@ if ($action == 'setpresentado' && $user->hasRight('modulecompliancepld', 'write'
 			setEventMessages($aviso->error, $aviso->errors, 'errors');
 		}
 	}
-	header("Location: ".$_SERVER["PHP_SELF"]."?id=".$id);
+	header("Location: ".dol_escape_htmltag($_SERVER["PHP_SELF"])."?id=".$id);
 	exit;
 }
 
@@ -101,7 +101,7 @@ if ($action == 'setcancelado' && $user->hasRight('modulecompliancepld', 'write')
 	} else {
 		setEventMessages($aviso->error, $aviso->errors, 'errors');
 	}
-	header("Location: ".$_SERVER["PHP_SELF"]."?id=".$id);
+	header("Location: ".dol_escape_htmltag($_SERVER["PHP_SELF"])."?id=".$id);
 	exit;
 }
 
@@ -123,7 +123,7 @@ if ($action == 'update' && $user->hasRight('modulecompliancepld', 'write') && $i
 	} else {
 		setEventMessages($aviso->error, $aviso->errors, 'errors');
 	}
-	header("Location: ".$_SERVER["PHP_SELF"]."?id=".$id);
+	header("Location: ".dol_escape_htmltag($_SERVER["PHP_SELF"])."?id=".$id);
 	exit;
 }
 
@@ -227,7 +227,7 @@ print '<td>';
 if (!empty($aviso->archivo_xml_ruta)) {
 	$fecha_xml = $aviso->fecha_generacion_xml ? dol_print_date($db->jdate($aviso->fecha_generacion_xml), 'dayhour') : '';
 	print dol_escape_htmltag($fecha_xml);
-	print ' <a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/xml_generator.php?action=descargar&filepath='.urlencode($aviso->archivo_xml_ruta).'" class="button smallpaddingimp">'.img_picto($langs->trans('Download'), 'download').' XML</a>';
+	print ' <a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/xml_generator.php?action=descargar&filepath='.urlencode($aviso->archivo_xml_ruta).'&token='.newToken().'" class="button smallpaddingimp">'.img_picto($langs->trans('Download'), 'download').' XML</a>';
 } else {
 	print '<span class="opacitymedium">'.$langs->trans('NoXMLGenerado').'</span>';
 }
@@ -271,7 +271,7 @@ print '</div>'; // fichecenter
 // Observaciones
 print '<div class="clearboth"></div>';
 print '<br>';
-print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'?id='.$aviso->id.'">';
+print '<form method="POST" action="'.dol_escape_htmltag($_SERVER["PHP_SELF"]).'?id='.$aviso->id.'">';
 print '<input type="hidden" name="token" value="'.newToken().'">';
 print '<input type="hidden" name="action" value="update">';
 print '<table class="border centpercent tableforfield">';
@@ -290,7 +290,7 @@ if ($aviso->estado == 'pendiente' && $user->hasRight('modulecompliancepld', 'wri
 	print '<br>';
 	print '<div id="form-acuse" style="border:1px solid #ccc;padding:12px;max-width:480px;background:#f9f9f9;">';
 	print '<h3 style="margin-top:0">'.$langs->trans('BtnRegistrarAcuse').'</h3>';
-	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'?id='.$aviso->id.'">';
+	print '<form method="POST" action="'.dol_escape_htmltag($_SERVER["PHP_SELF"]).'?id='.$aviso->id.'">';
 	print '<input type="hidden" name="token" value="'.newToken().'">';
 	print '<input type="hidden" name="action" value="setpresentado">';
 	print '<table class="noborder">';
@@ -300,7 +300,7 @@ if ($aviso->estado == 'pendiente' && $user->hasRight('modulecompliancepld', 'wri
 	print '<td>'.$form->selectDate('', 'fecha_presentacion', 0, 0, 0, 'formacuse', 1, 1).'</td></tr>';
 	print '</table>';
 	print '<br><input type="submit" class="button" value="'.$langs->trans('BtnRegistrarAcuse').'">';
-	print ' <a class="button button-cancel" href="'.$_SERVER["PHP_SELF"].'?id='.$aviso->id.'">'.$langs->trans('Cancel').'</a>';
+	print ' <a class="button button-cancel" href="'.dol_escape_htmltag($_SERVER["PHP_SELF"]).'?id='.$aviso->id.'">'.$langs->trans('Cancel').'</a>';
 	print '</form>';
 	print '</div>';
 }
@@ -310,13 +310,13 @@ print '<div class="tabsAction">';
 
 if ($user->hasRight('modulecompliancepld', 'write')) {
 	if ($aviso->estado == 'borrador') {
-		print dolGetButtonAction('', $langs->trans('BtnMarcarEnviado'), 'default', $_SERVER["PHP_SELF"].'?id='.$aviso->id.'&action=setpendiente&token='.newToken(), '', true);
-		print dolGetButtonAction('', $langs->trans('BtnCancelarAviso'), 'delete', $_SERVER["PHP_SELF"].'?id='.$aviso->id.'&action=setcancelado&token='.newToken(), '', true);
+		print dolGetButtonAction('', $langs->trans('BtnMarcarEnviado'), 'default', dol_escape_htmltag($_SERVER["PHP_SELF"]).'?id='.$aviso->id.'&action=setpendiente&token='.newToken(), '', true);
+		print dolGetButtonAction('', $langs->trans('BtnCancelarAviso'), 'delete', dol_escape_htmltag($_SERVER["PHP_SELF"]).'?id='.$aviso->id.'&action=setcancelado&token='.newToken(), '', true);
 	} elseif ($aviso->estado == 'pendiente') {
 		// El form de acuse ya está arriba — scroll a él
 		print '<a class="butAction" href="#form-acuse">'.$langs->trans('BtnRegistrarAcuse').'</a>';
-		print dolGetButtonAction('', $langs->trans('BtnVolverBorrador'), 'default', $_SERVER["PHP_SELF"].'?id='.$aviso->id.'&action=setborrador&token='.newToken(), '', true);
-		print dolGetButtonAction('', $langs->trans('BtnCancelarAviso'), 'delete', $_SERVER["PHP_SELF"].'?id='.$aviso->id.'&action=setcancelado&token='.newToken(), '', true);
+		print dolGetButtonAction('', $langs->trans('BtnVolverBorrador'), 'default', dol_escape_htmltag($_SERVER["PHP_SELF"]).'?id='.$aviso->id.'&action=setborrador&token='.newToken(), '', true);
+		print dolGetButtonAction('', $langs->trans('BtnCancelarAviso'), 'delete', dol_escape_htmltag($_SERVER["PHP_SELF"]).'?id='.$aviso->id.'&action=setcancelado&token='.newToken(), '', true);
 	}
 }
 

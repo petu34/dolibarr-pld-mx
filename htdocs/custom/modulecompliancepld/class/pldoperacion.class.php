@@ -331,6 +331,10 @@ class PLDOperacion extends CommonObject
         $sql .= " WHERE mes_reportado = '".$mes."'";
 
         $resql = $this->db->query($sql);
+        if (!$resql) {
+            $this->db->rollback();
+            return '';
+        }
         $obj = $this->db->fetch_object($resql);
         $consecutivo = (int) ($obj->ultimo ?? 0) + 1;
 

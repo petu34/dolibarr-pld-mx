@@ -60,6 +60,9 @@ if ($action == 'generar' && $mes_input) {
 
 		if ($xml_content === false) {
 			$msgs_err[] = "Error al generar XML: ".$generator->error;
+			foreach ($generator->errors as $e) {
+				$msgs_err[] = $e;
+			}
 		} else {
 			// Firma opcional
 			if ($firmar) {
