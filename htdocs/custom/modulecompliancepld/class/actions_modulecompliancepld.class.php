@@ -292,18 +292,8 @@ class ActionsModulecompliancepld extends CommonHookActions
 			// used to make some tabs removed
 			return 0;
 		} elseif ($parameters['mode'] == 'add') {
-			$langs->load('modulecompliancepld@modulecompliancepld');
-			$counter = count($parameters['head']);
-			$element = $parameters['object']->element;
-			$id = $parameters['object']->id;
-
-			if (in_array($element, ['societe', 'contact', 'product', 'facture', 'commande'])) {
-				$parameters['head'][$counter][0] = dol_buildpath('/modulecompliancepld/pld_tab.php', 1) . '?id=' . $id . '&amp;element='.$element;
-				$parameters['head'][$counter][1] = $langs->trans('PLDTab');
-				$parameters['head'][$counter][2] = 'plddata';
-				$counter++;
-			}
-			// Dolibarr 14+ modifica $parameters['head'] por referencia
+			// Tabs PLD registrados vía $this->tabs en modModulecompliancepld.class.php.
+			// No agregar aquí para evitar tabs duplicados.
 			return 0;
 		} else {
 			// Bad value for $parameters['mode']
