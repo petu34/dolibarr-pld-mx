@@ -508,6 +508,14 @@ class modModulecompliancepld extends DolibarrModules
 		$extrafields->addExtraField('pld_tiene_beneficiario', '¿Tiene Beneficiario Controlador? (PLD)', 'boolean', 135, '', 'thirdparty', 0, 1, '', '', 1, '',1, '', '', '', $l, $e);
 		$extrafields->addExtraField('pld_observaciones', 'Observaciones PLD', 'text', 136, '', 'thirdparty', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
+		// 1.7 Verificación PEP (Art. 45 Bis-Quinquies DOF 27/03/2026)
+		$optResultadoPep = array('values' => array('no_consultado' => 'No consultado', 'negativo' => 'Negativo', 'positivo' => 'Positivo (PEP)', 'sin_respuesta' => 'Sin respuesta UIF', 'error_uif' => 'Error consulta UIF'));
+		$optNivelDiligencia = array('values' => array('simplificada' => 'Simplificada', 'normal' => 'Normal', 'reforzada' => 'Reforzada'));
+		$extrafields->addExtraField('pld_resultado_pep', 'Resultado verificación PEP', 'select', 137, '', 'thirdparty', 0, 0, '', $optResultadoPep, 1, '', 0, 'Resultado de la última consulta PEP ante la UIF (Art. 45 Bis)', '', '', $l, $e);
+		$extrafields->addExtraField('pld_fecha_verificacion_pep', 'Fecha verificación PEP', 'datetime', 138, '', 'thirdparty', 0, 0, '', '', 1, '', 0, '', '', '', $l, $e);
+		$extrafields->addExtraField('pld_nivel_diligencia', 'Nivel de diligencia debida', 'select', 139, '', 'thirdparty', 0, 0, '', $optNivelDiligencia, 1, '', 0, 'simplificada=bajo riesgo, normal=riesgo medio, reforzada=PEP o extranjero', '', '', $l, $e);
+		$extrafields->addExtraField('pld_is_pep', 'Es PEP confirmado', 'boolean', 140, '', 'thirdparty', 0, 0, '', '', 1, '', 0, 'Marcado automáticamente cuando resultado_pep = positivo', '', '', $l, $e);
+
 		// =====================================================================
 		// SOCPEOPLE (llx_socpeople_extrafields) — 22 campos
 		// LFPIORPI Art. 17 Fracc. VIII: Representantes y contactos

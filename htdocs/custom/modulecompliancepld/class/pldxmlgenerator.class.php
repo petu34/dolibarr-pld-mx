@@ -7,6 +7,7 @@ if (!defined('DOL_VERSION')) {
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldoperacion.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldcatalogos.class.php';
 
 /**
  * Motor de generación de XML de avisos PLD/LFPIORPI
@@ -33,16 +34,20 @@ class PLDXMLGenerator
     }
 
     /**
-     * Generar XML mensual con todos los avisos del período
+     * Generar XML mensual.
      *
-     * @param string $mes_reportado  Formato YYYYMM
+     * @param string   $mes_reportado   Formato YYYYMM
+     * @param int[]    $ids_operaciones  Si se pasa, solo incluye esas operaciones.
+     *                                   Si está vacío, busca todas las pendientes del mes.
      * @return string|false  XML string o false si error
      */
-    public function generarXMLMensual(string $mes_reportado)
+    public function generarXMLMensual(string $mes_reportado, array $ids_operaciones = [])
     {
-        dol_syslog(__METHOD__." mes=$mes_reportado", LOG_INFO);
+        dol_syslog(__METHOD__." mes=$mes_reportado ids=".implode(',', $ids_operaciones), LOG_INFO);
 
-        $operaciones = $this->getOperacionesMes($mes_reportado);
+        $operaciones = empty($ids_operaciones)
+            ? $this->getOperacionesMes($mes_reportado)
+            : $this->getOperacionesByIds($ids_operaciones);
 
         if (empty($operaciones)) {
             $this->error = "No hay operaciones pendientes de aviso para el mes $mes_reportado";
@@ -105,6 +110,46 @@ class PLDXMLGenerator
         $operaciones = array();
         if (!$resql) {
             $this->errors[] = "getOperacionesMes: ".$this->db->lasterror();
+            return $operaciones;
+        }
+
+        $num = $this->db->num_rows($resql);
+        for ($i = 0; $i < $num; $i++) {
+            $obj = $this->db->fetch_object($resql);
+            $operacion = new PLDOperacion($this->db);
+            if ($operacion->fetch($obj->rowid) <= 0) {
+                continue;
+            }
+            $operacion->fetchCliente();
+            $operacion->fetchVehiculo();
+            $operacion->fetchBeneficiarios();
+            $operacion->fetchFormasPago();
+            $operaciones[] = $operacion;
+        }
+        $this->db->free($resql);
+
+        return $operaciones;
+    }
+
+    /**
+     * Carga operaciones por array de IDs (para XML generado desde un aviso específico)
+     */
+    private function getOperacionesByIds(array $ids): array
+    {
+        $operaciones = array();
+        $ids_safe = array_map('intval', $ids);
+        if (empty($ids_safe)) {
+            return $operaciones;
+        }
+
+        $sql = "SELECT o.rowid FROM ".MAIN_DB_PREFIX."pld_operacion as o";
+        $sql .= " WHERE o.rowid IN (".implode(',', $ids_safe).")";
+        $sql .= " AND o.estado != 'cancelada'";
+        $sql .= " ORDER BY o.fecha_operacion ASC";
+
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            $this->errors[] = "getOperacionesByIds: ".$this->db->lasterror();
             return $operaciones;
         }
 
@@ -337,13 +382,13 @@ class PLDXMLGenerator
         $acto->appendChild($dom->createElement('fecha_operacion', date('Ymd', $ts_op)));
         $acto->appendChild($dom->createElement('fecha_deteccion_operacion', date('Ymd', $ts_op)));
 
-        // Monto y moneda
-        $acto->appendChild($dom->createElement('monto_operacion', number_format((float)$operacion->monto_mxn, 2, '.', '')));
+        // Monto con IVA para el XML (Art. 6 DOF 27/03/2026 — reportar monto total al SAT)
+        $acto->appendChild($dom->createElement('monto_operacion', number_format($operacion->getMontoXML(), 2, '.', '')));
         $acto->appendChild($dom->createElement('moneda', $operacion->moneda ?: 'MXN'));
         $acto->appendChild($dom->createElement('tipo_cambio', number_format((float)$operacion->tipo_cambio, 4, '.', '')));
 
-        // Forma de pago
-        $fp_code = $this->mapFormaPago($operacion->forma_pago_principal);
+        // Forma de pago (usa PLDCatalogos para código SAT correcto)
+        $fp_code = PLDCatalogos::formaPago($operacion->forma_pago_principal ?: '01');
         $acto->appendChild($dom->createElement('forma_pago', $fp_code));
 
         // Instrumento monetario (primer pago)
@@ -384,8 +429,10 @@ class PLDXMLGenerator
         $veh = $operacion->vehiculo;
         $vehiculo = $dom->createElement('vehiculo');
 
-        $vehiculo->appendChild($dom->createElement('tipo_vehiculo', $this->mapTipoVehiculo($veh->tipo_vehiculo)));
-        $vehiculo->appendChild($dom->createElement('clase_vehiculo', $this->mapClaseVehiculo($veh->tipo_vehiculo)));
+        $vehiculo->appendChild($dom->createElement('tipo_vehiculo', PLDCatalogos::tipoVehiculo($veh->tipo_vehiculo ?? 'terrestre')));
+        // clase_vehiculo usa el subtipo si está disponible, si no infiere desde tipo
+        $subtipo = $veh->subtipo ?? $veh->clase_vehiculo ?? $veh->tipo_vehiculo ?? 'automovil';
+        $vehiculo->appendChild($dom->createElement('clase_vehiculo', PLDCatalogos::claseVehiculo($subtipo)));
         $vehiculo->appendChild($dom->createElement('marca', strtoupper($this->cleanXML($veh->marca))));
         $vehiculo->appendChild($dom->createElement('modelo', strtoupper($this->cleanXML($veh->modelo))));
         $vehiculo->appendChild($dom->createElement('anio', (string)$veh->anio_modelo));
@@ -397,68 +444,10 @@ class PLDXMLGenerator
             $vehiculo->appendChild($dom->createElement('numero_serie', strtoupper($veh->numero_serie)));
         }
 
-        $vehiculo->appendChild($dom->createElement('origen', $this->mapOrigen($veh->origen)));
-        $vehiculo->appendChild($dom->createElement('uso', $this->mapUso($veh->uso_destino)));
+        $vehiculo->appendChild($dom->createElement('origen', PLDCatalogos::origenVehiculo($veh->origen ?? 'nacional')));
+        $vehiculo->appendChild($dom->createElement('uso', PLDCatalogos::usoVehiculo($veh->uso_destino ?? 'particular')));
 
         return $vehiculo;
-    }
-
-    // -----------------------------------------------------------------------
-    // Catálogos SAT
-    // -----------------------------------------------------------------------
-
-    private function mapFormaPago(string $forma): string
-    {
-        $map = array(
-            '1' => '01', 'efectivo' => '01', '01' => '01',
-            '4' => '04', 'transferencia' => '04', '04' => '04',
-            '6' => '06', 'cheque' => '06', '06' => '06',
-            '9' => '09', 'tarjeta_credito' => '09', '09' => '09',
-            '10' => '10', 'tarjeta_debito' => '10', '10' => '10',
-        );
-        return $map[strtolower($forma)] ?? '01';
-    }
-
-    private function mapTipoVehiculo(string $tipo): string
-    {
-        $map = array(
-            'terrestre' => '01', '01' => '01',
-            'aereo' => '02', 'aéreo' => '02', '02' => '02',
-            'maritimo' => '03', 'marítimo' => '03', '03' => '03',
-        );
-        return $map[strtolower($tipo)] ?? '01';
-    }
-
-    private function mapClaseVehiculo(string $tipo): string
-    {
-        // 01=Automóvil, 02=Camioneta, 03=Motocicleta
-        // Sin subtipo disponible, default automóvil para terrestres
-        if (in_array(strtolower($tipo), array('aereo', 'aéreo', '02'))) {
-            return '01'; // aeronave
-        }
-        if (in_array(strtolower($tipo), array('maritimo', 'marítimo', '03'))) {
-            return '01'; // embarcación
-        }
-        return '01'; // automóvil
-    }
-
-    private function mapOrigen(string $origen): string
-    {
-        $map = array(
-            'nacional' => '01', '01' => '01',
-            'importado' => '02', '02' => '02',
-        );
-        return $map[strtolower($origen)] ?? '01';
-    }
-
-    private function mapUso(string $uso): string
-    {
-        $map = array(
-            'particular' => '01', '01' => '01',
-            'comercial' => '02', '02' => '02',
-            'transporte' => '03', '03' => '03',
-        );
-        return $map[strtolower($uso)] ?? '01';
     }
 
     // -----------------------------------------------------------------------

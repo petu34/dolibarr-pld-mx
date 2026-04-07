@@ -387,6 +387,11 @@ function crearCliente($db, $user, $data, &$stats)
     $soc->array_options['options_pld_tiene_beneficiario']     = 0;
     $soc->array_options['options_pld_es_pep']                 = 0;
     $soc->array_options['options_pld_es_domicilio_extranjero'] = 0;
+    // PEP: marcar como negativo (ya verificado en datos de prueba) — Art. 45 Bis DOF 2026
+    $soc->array_options['options_pld_resultado_pep']        = 'negativo';
+    $soc->array_options['options_pld_fecha_verificacion_pep'] = dol_now();
+    $soc->array_options['options_pld_is_pep']               = 0;
+    $soc->array_options['options_pld_nivel_diligencia']     = 'simplificada';
     $soc->insertExtraFields();
 
     $stats['clientes']++;
@@ -507,12 +512,17 @@ function crearOperacion($db, $user, $societe, $product, $monto, $tipo_veh, $mes,
     $op->fecha_operacion         = $fecha_op;
     $op->mes_reportado           = $mes;
     $op->moneda                  = 'MXN';
+    // Art. 6 DOF 2026: monto_sin_impuestos (sin IVA, para umbral) + monto_mxn (con IVA, para XML)
+    $monto_sin_iva = round((float)$monto / 1.16, 2);
+    $op->monto_sin_impuestos     = $monto_sin_iva;
+    $op->tasa_impuesto           = 0.16;
     $op->monto_mxn               = (float)$monto;
     $op->cliente_identificado    = 1;
     $op->documentacion_completa  = 1;
     $op->aviso_presentado        = 0;
     $op->genera_alerta           = 0;
     $op->estado                  = 'pendiente';
+    $op->import_key              = 'SEED_PLD_TEST';
 
     // Evaluar umbral
     $eval = $op->evaluarUmbral($tipo_veh);
