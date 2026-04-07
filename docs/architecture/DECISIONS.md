@@ -126,6 +126,87 @@
 
 ---
 
+## ADR-007: Acumulación de 6 meses para evaluación de umbral (Art. 7 DOF 27/03/2026)
+
+**Fecha:** 2026-04-07
+**Estado:** Aprobada
+**Contexto:** El Art. 7 del Reglamento DOF 27/03/2026 confirma que la evaluación de umbral para aviso al SAT no es solo por operación individual, sino que se considera la **acumulación de operaciones con el mismo cliente en un período de 6 meses**. Si la suma acumulada supera el umbral, todas las operaciones del período requieren aviso.
+
+**Decisión:** `PLDOperacion::evaluarUmbral()` realiza dos evaluaciones:
+1. **Individual:** monto de la operación actual vs. umbral del tipo de vehículo
+2. **Acumulada:** `SUM(COALESCE(monto_sin_impuestos, monto_mxn))` de los últimos 6 meses para el mismo `fk_societe`, excluyendo operaciones canceladas
+
+Si cualquiera supera el umbral → `requiere_aviso = 1`. Se devuelve `motivo` ('individual' o 'acumulada') para trazabilidad.
+
+**Base legal:** Art. 7 Reglamento LFPIORPI, DOF 27/03/2026. Anterior: interpretación no era explícita en el texto del reglamento pre-2026.
+
+**Justificación:**
+- Cumplimiento legal directo con texto normativo vigente
+- Evita evasión del umbral mediante fraccionamiento de operaciones (smurfing)
+- El campo `motivo` en el resultado permite explicar al cliente/auditor por qué se genera aviso
+
+**Alternativas evaluadas:**
+1. *Solo evaluación individual:* Simple pero no cumple Art. 7. Descartado.
+2. *Ventana deslizante de 12 meses:* Más restrictivo que la ley; podría generar avisos innecesarios. Descartado.
+3. *Ventana de 6 meses calendario:* Más predecible para el operador. Descartado por no ser la interpretación del reglamento (dice "6 meses anteriores a la fecha de la operación").
+
+**Consecuencias:**
+- (+) Cumplimiento Art. 7 DOF 2026
+- (+) Trazabilidad del motivo del aviso
+- (-) Consulta SQL adicional en cada creación/evaluación de operación (aceptable para volumen de VEH)
+- (-) Requiere campo `monto_sin_impuestos` para comparación correcta (ver ADR-008)
+
+---
+
+## ADR-008: Separación monto_sin_impuestos / monto_mxn (Art. 6 DOF 27/03/2026)
+
+**Fecha:** 2026-04-07
+**Estado:** Aprobada
+**Contexto:** El Art. 6 del Reglamento DOF 27/03/2026 establece que:
+- La **evaluación del umbral** se hace sobre el **monto sin IVA** (base gravable)
+- El **XML SAT** debe reportar el **monto con IVA** (monto total de la operación)
+
+Antes de este cambio, `monto_mxn` era usado para ambos propósitos, lo que podía llevar a no reportar operaciones que superan umbral cuando se calcula sin IVA, o a reportar montos incorrectos en el XML.
+
+**Decisión:** Agregar campo `monto_sin_impuestos DOUBLE(24,8)` y `tasa_impuesto DOUBLE(5,4) DEFAULT 0.16` a `llx_pld_operacion`.
+- `getMontoBruto()` → devuelve `monto_sin_impuestos ?? monto_mxn` (para umbral)
+- `getMontoXML()` → devuelve `monto_mxn` (siempre con IVA, para XML)
+- `calcularMontoTotal()` → recalcula `monto_mxn = monto_sin_impuestos * (1 + tasa_impuesto)`
+
+**Justificación:**
+- Separación clara entre dato regulatorio (umbral) y dato contable (XML)
+- Retrocompatibilidad: si `monto_sin_impuestos` es NULL, `getMontoBruto()` cae a `monto_mxn`
+- La tasa es configurable via `MODULECOMPLIANCEPLD_IVA_DEFAULT` para cambios futuros de IVA
+
+**Consecuencias:**
+- (+) XML correcto con monto total (lo que pagó el cliente)
+- (+) Umbral correcto sobre base sin IVA
+- (+) Retrocompatible con operaciones ya capturadas
+- (-) UI requiere dos campos de monto (mitigado con cálculo JS automático)
+
+---
+
+## ADR-009: Retención 10 años con inicio retroactivo 2025-07-17 (Art. 20 + Trans. 7º DOF 2026)
+
+**Fecha:** 2026-04-07
+**Estado:** Aprobada
+**Contexto:** El Art. 20 del Reglamento DOF 27/03/2026 amplía el período de retención de expedientes PLD de **5 a 10 años**. El Transitorio Séptimo establece que para registros anteriores a la entrada en vigor, el reloj de 10 años comienza el **17 de julio de 2025** (fecha de entrada en vigor de la resolución previa).
+
+**Decisión:** `PLDOperacion::getFechaFinCustodia()` calcula:
+```
+fecha_inicio = MAX(fecha_operacion, '2025-07-17')
+fecha_fin = fecha_inicio + 10 años
+```
+`PLDDocumento::ANIOS_RETENCION = 10` (cambiado de 5).
+`MODULECOMPLIANCEPLD_PERIODO_CONSERVACION` default cambiado a 10.
+
+**Consecuencias:**
+- (+) Cumplimiento Art. 20 + Transitorio Séptimo
+- (+) Para registros anteriores a 2025-07-17, la fecha de fin queda en 2035-07-17 (no en fechas pasadas)
+- (-) Expedientes que bajo la ley anterior ya podían destruirse ahora deben conservarse hasta 2035
+
+---
+
 ## Plantilla para nuevas decisiones
 
 ```markdown

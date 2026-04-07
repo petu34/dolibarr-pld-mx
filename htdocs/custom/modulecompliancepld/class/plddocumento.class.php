@@ -40,7 +40,12 @@ class PLDDocumento extends CommonObject
     public $tms;
     public $fk_user_creat;
     
-    const ANIOS_RETENCION = 5;
+    /**
+     * Años de retención de documentos PLD.
+     * Art. 20 + Transitorio Séptimo DOF 27/03/2026: 10 años desde fecha de operación,
+     * con tope de inicio en 2025-07-17 para registros anteriores.
+     */
+    const ANIOS_RETENCION = 10;
     
     public function __construct($db)
     {

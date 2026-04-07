@@ -30,7 +30,15 @@ class PLDOperacion extends CommonObject
     
     public $moneda;
     public $monto_mxn;
-    
+    /** Monto sin IVA — usado para comparar con umbral (Art. 6 DOF 27/03/2026) */
+    public $monto_sin_impuestos;
+    /** Tasa de IVA aplicada (default 0.16). monto_mxn = monto_sin_impuestos * (1 + tasa_impuesto) */
+    public $tasa_impuesto;
+    /** Fecha inicio custodia 10 años (Art. 20 + Trans. 7º DOF). NULL = usa fecha_operacion con tope 2025-07-17 */
+    public $fecha_inicio_custodia;
+    /** Clave de importación masiva. SEED_PLD_TEST = dato de prueba eliminable */
+    public $import_key;
+
     public $supera_umbral;
     public $cliente_identificado;
     public $documentacion_completa;
@@ -65,6 +73,7 @@ class PLDOperacion extends CommonObject
         $this->requiere_aviso = 0;
         $this->aviso_presentado = 0;
         $this->genera_alerta = 0;
+        $this->tasa_impuesto = 0.16;
     }
     
     public function create($user, $notrigger = 0): int
@@ -87,11 +96,12 @@ class PLDOperacion extends CommonObject
         $sql .= " entity, fk_facture, fk_societe, fk_product,";
         $sql .= " tipo_operacion, tipo_actividad_vulnerable,";
         $sql .= " fecha_operacion, mes_reportado, folio_interno,";
-        $sql .= " moneda, monto_mxn,";
+        $sql .= " moneda, monto_mxn, monto_sin_impuestos, tasa_impuesto,";
         $sql .= " supera_umbral, cliente_identificado, documentacion_completa,";
         $sql .= " requiere_aviso, aviso_presentado, fk_pld_aviso,";
         $sql .= " genera_alerta, fk_pld_alerta,";
         $sql .= " estado,";
+        $sql .= " fecha_inicio_custodia, import_key,";
         $sql .= " datec, fk_user_creat";
         $sql .= ") VALUES (";
         $sql .= " ".(int)$this->entity.",";
@@ -105,6 +115,8 @@ class PLDOperacion extends CommonObject
         $sql .= " ".($this->folio_interno ? "'".$this->db->escape($this->folio_interno)."'" : 'NULL').",";
         $sql .= " '".$this->db->escape($this->moneda)."',";
         $sql .= " ".(float)$this->monto_mxn.",";
+        $sql .= " ".($this->monto_sin_impuestos !== null ? (float)$this->monto_sin_impuestos : 'NULL').",";
+        $sql .= " ".(float)($this->tasa_impuesto ?? 0.16).",";
         $sql .= " ".(int)$this->supera_umbral.",";
         $sql .= " ".(int)$this->cliente_identificado.",";
         $sql .= " ".(int)$this->documentacion_completa.",";
@@ -114,6 +126,8 @@ class PLDOperacion extends CommonObject
         $sql .= " ".(int)$this->genera_alerta.",";
         $sql .= " ".($this->fk_pld_alerta > 0 ? (int)$this->fk_pld_alerta : 'NULL').",";
         $sql .= " '".$this->db->escape($this->estado)."',";
+        $sql .= " ".($this->fecha_inicio_custodia ? "'".$this->db->escape($this->fecha_inicio_custodia)."'" : 'NULL').",";
+        $sql .= " ".($this->import_key ? "'".$this->db->escape($this->import_key)."'" : 'NULL').",";
         $sql .= " '".$this->db->idate($now)."',";
         $sql .= " ".(int)$this->fk_user_creat;
         $sql .= ")";
@@ -150,11 +164,12 @@ class PLDOperacion extends CommonObject
         $sql .= " rowid, entity, fk_facture, fk_societe, fk_product,";
         $sql .= " tipo_operacion, tipo_actividad_vulnerable,";
         $sql .= " fecha_operacion, mes_reportado, folio_interno,";
-        $sql .= " moneda, monto_mxn,";
+        $sql .= " moneda, monto_mxn, monto_sin_impuestos, tasa_impuesto,";
         $sql .= " supera_umbral, cliente_identificado, documentacion_completa,";
         $sql .= " requiere_aviso, aviso_presentado, fk_pld_aviso,";
         $sql .= " genera_alerta, fk_pld_alerta,";
         $sql .= " estado,";
+        $sql .= " fecha_inicio_custodia, import_key,";
         $sql .= " datec, tms, fk_user_creat, fk_user_modif";
         $sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
         
@@ -184,6 +199,10 @@ class PLDOperacion extends CommonObject
                 $this->folio_interno = $obj->folio_interno;
                 $this->moneda = $obj->moneda;
                 $this->monto_mxn = $obj->monto_mxn;
+                $this->monto_sin_impuestos = $obj->monto_sin_impuestos;
+                $this->tasa_impuesto = $obj->tasa_impuesto ?? 0.16;
+                $this->fecha_inicio_custodia = $obj->fecha_inicio_custodia;
+                $this->import_key = $obj->import_key;
                 $this->supera_umbral = $obj->supera_umbral;
                 $this->cliente_identificado = $obj->cliente_identificado;
                 $this->documentacion_completa = $obj->documentacion_completa;
@@ -229,6 +248,10 @@ class PLDOperacion extends CommonObject
         $sql .= " folio_interno = ".($this->folio_interno ? "'".$this->db->escape($this->folio_interno)."'" : 'NULL').",";
         $sql .= " moneda = '".$this->db->escape($this->moneda)."',";
         $sql .= " monto_mxn = ".(float)$this->monto_mxn.",";
+        $sql .= " monto_sin_impuestos = ".($this->monto_sin_impuestos !== null ? (float)$this->monto_sin_impuestos : 'NULL').",";
+        $sql .= " tasa_impuesto = ".(float)($this->tasa_impuesto ?? 0.16).",";
+        $sql .= " fecha_inicio_custodia = ".($this->fecha_inicio_custodia ? "'".$this->db->escape($this->fecha_inicio_custodia)."'" : 'NULL').",";
+        $sql .= " import_key = ".($this->import_key ? "'".$this->db->escape($this->import_key)."'" : 'NULL').",";
         $sql .= " supera_umbral = ".(int)$this->supera_umbral.",";
         $sql .= " cliente_identificado = ".(int)$this->cliente_identificado.",";
         $sql .= " documentacion_completa = ".(int)$this->documentacion_completa.",";
@@ -298,23 +321,120 @@ class PLDOperacion extends CommonObject
         }
     }
     
+    /**
+     * Devuelve el monto sin IVA para comparar con el umbral (Art. 6 DOF 27/03/2026).
+     * Si monto_sin_impuestos no está capturado, asume que monto_mxn ya es sin IVA.
+     */
+    public function getMontoBruto(): float
+    {
+        return ($this->monto_sin_impuestos !== null)
+            ? (float)$this->monto_sin_impuestos
+            : (float)$this->monto_mxn;
+    }
+
+    /**
+     * Devuelve el monto con IVA para reportar en el XML del SAT (Art. 6 DOF 27/03/2026).
+     * monto_mxn siempre representa el total con impuestos.
+     */
+    public function getMontoXML(): float
+    {
+        return (float)$this->monto_mxn;
+    }
+
+    /**
+     * Recalcula monto_mxn a partir de monto_sin_impuestos y tasa_impuesto.
+     * Llamar cuando se edita cualquiera de los dos campos en el formulario.
+     */
+    public function calcularMontoTotal(): void
+    {
+        if ($this->monto_sin_impuestos !== null) {
+            $this->monto_mxn = round((float)$this->monto_sin_impuestos * (1 + (float)($this->tasa_impuesto ?? 0.16)), 2);
+        }
+    }
+
+    /**
+     * Evalúa si la operación supera el umbral de reporte.
+     * Usa monto_sin_impuestos para la comparación (Art. 6 DOF 2026).
+     * También evalúa acumulación de 6 meses para el mismo cliente (Art. 7 Regl.).
+     *
+     * @param string $tipo_vehiculo  'nuevo' | 'usado'
+     * @return array  supera_umbral, umbral_aplicado, requiere_aviso, diferencia, motivo
+     */
     public function evaluarUmbral(string $tipo_vehiculo): array
     {
-        $umbral = ($tipo_vehiculo === 'nuevo') 
-            ? self::UMBRAL_VEHICULO_NUEVO 
-            : self::UMBRAL_VEHICULO_USADO;
-        
-        $supera = $this->monto_mxn >= $umbral;
-        
+        $umbral = ($tipo_vehiculo === 'nuevo')
+            ? (float)getDolGlobalString('MODULECOMPLIANCEPLD_UMBRAL_VEH_NUEVO', (string)self::UMBRAL_VEHICULO_NUEVO)
+            : (float)getDolGlobalString('MODULECOMPLIANCEPLD_UMBRAL_VEH_USADO', (string)self::UMBRAL_VEHICULO_USADO);
+
+        $monto_bruto = $this->getMontoBruto();
+        $supera_individual = $monto_bruto >= $umbral;
+        $motivo = '';
+
+        // Verificar acumulación 6 meses para el mismo cliente (Art. 7 Regl. LFPIORPI)
+        $supera_acumulado = false;
+        if ($this->fk_societe > 0) {
+            $fecha_inicio_6m = date('Y-m-d', strtotime('-6 months'));
+            $sql = "SELECT SUM(COALESCE(monto_sin_impuestos, monto_mxn)) as total_acum";
+            $sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion";
+            $sql .= " WHERE fk_societe = ".(int)$this->fk_societe;
+            $sql .= " AND fecha_operacion >= '".$this->db->escape($fecha_inicio_6m)."'";
+            $sql .= " AND estado != 'cancelada'";
+            if ($this->id > 0) {
+                $sql .= " AND rowid != ".(int)$this->id; // excluir la operación actual
+            }
+            $resql = $this->db->query($sql);
+            if ($resql) {
+                $obj = $this->db->fetch_object($resql);
+                $acumulado_previo = (float)($obj->total_acum ?? 0);
+                $total_con_esta = $acumulado_previo + $monto_bruto;
+                if (!$supera_individual && $total_con_esta >= $umbral) {
+                    $supera_acumulado = true;
+                    $motivo = 'acumulacion_6_meses';
+                }
+                $this->db->free($resql);
+            }
+        }
+
+        $supera = $supera_individual || $supera_acumulado;
+        if ($supera_individual) {
+            $motivo = 'supera_umbral_individual';
+        }
+
         $this->supera_umbral = $supera ? 1 : 0;
         $this->requiere_aviso = $supera ? 1 : 0;
-        
+
         return [
-            'supera_umbral' => $supera,
-            'umbral_aplicado' => $umbral,
-            'requiere_aviso' => $supera,
-            'diferencia' => $this->monto_mxn - $umbral
+            'supera_umbral'    => $supera,
+            'umbral_aplicado'  => $umbral,
+            'requiere_aviso'   => $supera,
+            'diferencia'       => $monto_bruto - $umbral,
+            'motivo'           => $motivo,
         ];
+    }
+
+    /**
+     * Calcula la fecha límite de custodia (10 años, Art. 20 + Trans. 7º DOF 2026).
+     * El reloj para registros anteriores al 17/07/2025 inicia en esa fecha.
+     *
+     * @return string  Fecha en formato Y-m-d
+     */
+    public function getFechaFinCustodia(): string
+    {
+        $CUSTODIA_INICIO_LEGAL = '2025-07-17'; // Transitorio Séptimo DOF
+        $anios = 10;
+
+        if (!empty($this->fecha_inicio_custodia)) {
+            $inicio = $this->fecha_inicio_custodia;
+        } elseif (!empty($this->fecha_operacion)) {
+            $fecha_op = is_numeric($this->fecha_operacion)
+                ? date('Y-m-d', (int)$this->fecha_operacion)
+                : substr($this->fecha_operacion, 0, 10);
+            $inicio = max($fecha_op, $CUSTODIA_INICIO_LEGAL);
+        } else {
+            $inicio = $CUSTODIA_INICIO_LEGAL;
+        }
+
+        return date('Y-m-d', strtotime($inicio.' +'.$anios.' years'));
     }
     
     public function generarFolioInterno(): string

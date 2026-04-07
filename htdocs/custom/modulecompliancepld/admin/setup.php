@@ -47,8 +47,14 @@ if ($action == 'update') {
 		'MODULECOMPLIANCEPLD_UMBRAL_VEH_USADO'     => array('type' => 'float',  'default' => 117310.00),
 		'MODULECOMPLIANCEPLD_DIAS_ALERTA_ID'       => array('type' => 'int',    'default' => 30),
 		'MODULECOMPLIANCEPLD_OFICIAL_CUMPLIMIENTO' => array('type' => 'int',    'default' => 0),
-		'MODULECOMPLIANCEPLD_PERIODO_CONSERVACION' => array('type' => 'int',    'default' => 5),
+		'MODULECOMPLIANCEPLD_PERIODO_CONSERVACION' => array('type' => 'int',    'default' => 10),
 		'MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE' => array('type' => 'chaine', 'default' => 'VIII'),
+		// DOF 27/03/2026 — Art. 6 (monto IVA)
+		'MODULECOMPLIANCEPLD_IVA_DEFAULT'          => array('type' => 'chaine', 'default' => '0.16'),
+		// DOF 27/03/2026 — Art. 45 Bis (PEPs)
+		'MODULECOMPLIANCEPLD_PEP_ENDPOINT'         => array('type' => 'chaine', 'default' => ''),
+		// DOF 27/03/2026 — Art. 7 Bis (operaciones intentadas — pendiente XSD SAT)
+		'MODULECOMPLIANCEPLD_AVISOS_INTENTADAS_ACTIVO' => array('type' => 'int', 'default' => 0),
 		// Sujeto obligado y e.firma (la contraseña se maneja por separado, cifrada)
 		'MODULECOMPLIANCEPLD_EFIRMA_CERT_PATH'     => array('type' => 'chaine', 'default' => ''),
 		'MODULECOMPLIANCEPLD_EFIRMA_KEY_PATH'      => array('type' => 'chaine', 'default' => ''),
@@ -81,6 +87,46 @@ if ($action == 'update') {
 	} else {
 		setEventMessages($langs->trans("ErrorSavingSetup"), null, 'errors');
 	}
+}
+
+// ── Acción: cargar datos de prueba ────────────────────────────────────────────
+if ($action == 'load_seed' && $user->admin) {
+	// Ejecutar seed como función include con $db y $user ya listos
+	// El seed usa import_key='SEED_PLD_TEST' en todos sus INSERT
+	$seed_file = __DIR__.'/../scripts/seed_datos_prueba.php';
+	if (file_exists($seed_file)) {
+		// El seed espera ser ejecutado en contexto CLI con $db y $user,
+		// lo incluimos desactivando la salida directa al buffer
+		ob_start();
+		try {
+			// Redefinir NOSESSION/NOLOGIN si no están definidos
+			if (!defined('NOSESSION')) define('NOSESSION', '1');
+			include $seed_file;
+		} catch (Exception $e) {
+			// continuar
+		}
+		$seed_output = ob_get_clean();
+		setEventMessages($langs->trans('SeedCargado'), null, 'mesgs');
+		setEventMessages('<pre style="font-size:0.85em;max-height:200px;overflow:auto">'.dol_escape_htmltag($seed_output).'</pre>', null, 'mesgs');
+	} else {
+		setEventMessages('Archivo seed no encontrado: '.$seed_file, null, 'errors');
+	}
+	header("Location: ".dol_escape_htmltag($_SERVER["PHP_SELF"]));
+	exit;
+}
+
+// ── Acción: eliminar datos de prueba ──────────────────────────────────────────
+if ($action == 'delete_seed' && $user->admin) {
+	$tables = array('pld_aviso_operacion', 'pld_operacion', 'pld_aviso', 'pld_alerta', 'pld_beneficiario', 'pld_documento');
+	$total_deleted = 0;
+	foreach ($tables as $t) {
+		$sql_del = "DELETE FROM ".MAIN_DB_PREFIX.$t." WHERE import_key = 'SEED_PLD_TEST'";
+		$db->query($sql_del);
+		$total_deleted += $db->affected_rows($db->db);
+	}
+	setEventMessages($langs->trans('SeedEliminado', $total_deleted), null, 'mesgs');
+	header("Location: ".dol_escape_htmltag($_SERVER["PHP_SELF"]));
+	exit;
 }
 
 /*
@@ -178,11 +224,11 @@ print '</td>';
 print '<td class="opacitymedium">Usuario designado como Oficial de Cumplimiento PLD (recibe notificaciones)</td>';
 print '</tr>';
 
-$periodo = getDolGlobalInt('MODULECOMPLIANCEPLD_PERIODO_CONSERVACION', 5);
+$periodo = getDolGlobalInt('MODULECOMPLIANCEPLD_PERIODO_CONSERVACION', 10);
 print '<tr class="oddeven">';
 print '<td><label for="MODULECOMPLIANCEPLD_PERIODO_CONSERVACION">'.$langs->trans("PeriodoConservacion").'</label></td>';
 print '<td><input type="number" id="MODULECOMPLIANCEPLD_PERIODO_CONSERVACION" name="MODULECOMPLIANCEPLD_PERIODO_CONSERVACION" class="flat minwidth100" value="'.$periodo.'"></td>';
-print '<td class="opacitymedium">Años de conservacion de expedientes PLD (Art. 18 LFPIORPI). Minimo legal: 5 años</td>';
+print '<td class="opacitymedium">Años de conservacion de expedientes PLD. Minimo legal: 10 años (Art. 20 + Transitorio Séptimo DOF 27/03/2026)</td>';
 print '</tr>';
 
 $actividad = getDolGlobalString('MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE', 'VIII');
@@ -190,6 +236,43 @@ print '<tr class="oddeven">';
 print '<td><label for="MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE">'.$langs->trans("ActividadVulnerable").'</label></td>';
 print '<td><input type="text" id="MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE" name="MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE" class="flat minwidth100" value="'.dol_escape_htmltag($actividad).'"></td>';
 print '<td class="opacitymedium">Fraccion del Art. 17 LFPIORPI aplicable. Para vehiculos: VIII</td>';
+print '</tr>';
+
+print '</table><br>';
+
+// ======= SECCIÓN DOF 27/03/2026 =======
+print load_fiche_titre($langs->trans("SeccionDOF2026"), '', '');
+print '<table class="noborder centpercent">';
+print '<tr class="liste_titre">';
+print '<td class="titlefieldmiddle">'.$langs->trans("Parameter").'</td>';
+print '<td>'.$langs->trans("Value").'</td>';
+print '<td>'.$langs->trans("Description").'</td>';
+print '</tr>';
+
+$iva_default = getDolGlobalString('MODULECOMPLIANCEPLD_IVA_DEFAULT', '0.16');
+print '<tr class="oddeven">';
+print '<td><label for="MODULECOMPLIANCEPLD_IVA_DEFAULT">'.$langs->trans("IVADefault").'</label></td>';
+print '<td><input type="text" id="MODULECOMPLIANCEPLD_IVA_DEFAULT" name="MODULECOMPLIANCEPLD_IVA_DEFAULT" class="flat minwidth100" value="'.dol_escape_htmltag($iva_default).'"></td>';
+print '<td class="opacitymedium">Tasa IVA por omisión para cálculo de monto con impuestos (0.16 = 16%). Art. 6 DOF 27/03/2026</td>';
+print '</tr>';
+
+$pep_endpoint = getDolGlobalString('MODULECOMPLIANCEPLD_PEP_ENDPOINT', '');
+print '<tr class="oddeven">';
+print '<td><label for="MODULECOMPLIANCEPLD_PEP_ENDPOINT">'.$langs->trans("PEPEndpoint").'</label></td>';
+print '<td><input type="text" id="MODULECOMPLIANCEPLD_PEP_ENDPOINT" name="MODULECOMPLIANCEPLD_PEP_ENDPOINT" class="flat minwidth300" value="'.dol_escape_htmltag($pep_endpoint).'"></td>';
+print '<td class="opacitymedium">URL del servicio de consulta PEP (UIF/SAT). Art. 45 Bis-Quinquies DOF 27/03/2026. Dejar vacío para registro manual.</td>';
+print '</tr>';
+
+$avisos_intentadas = getDolGlobalInt('MODULECOMPLIANCEPLD_AVISOS_INTENTADAS_ACTIVO', 0);
+print '<tr class="oddeven">';
+print '<td><label for="MODULECOMPLIANCEPLD_AVISOS_INTENTADAS_ACTIVO">'.$langs->trans("AvisosIntentadasActivo").'</label></td>';
+print '<td>';
+print '<select id="MODULECOMPLIANCEPLD_AVISOS_INTENTADAS_ACTIVO" name="MODULECOMPLIANCEPLD_AVISOS_INTENTADAS_ACTIVO" class="flat">';
+print '<option value="0"'.($avisos_intentadas == 0 ? ' selected' : '').'>Desactivado (pendiente XSD SAT)</option>';
+print '<option value="1"'.($avisos_intentadas == 1 ? ' selected' : '').'>Activado</option>';
+print '</select>';
+print '</td>';
+print '<td class="opacitymedium">Reportar operaciones intentadas (Art. 7 Bis). En espera de XSD actualizado por SAT (Transitorio Quinto).</td>';
 print '</tr>';
 
 print '</table><br>';
@@ -238,6 +321,61 @@ print '<input type="submit" class="butAction" value="'.$langs->trans("Save").'">
 print '</div>';
 
 print '</form>';
+
+// ======= SECCIÓN DATOS DE PRUEBA (solo entornos no-producción) =======
+if (empty($conf->global->MAIN_PROD)) {
+    print '<br>';
+    print load_fiche_titre($langs->trans("SeccionDatosPrueba"), '', 'fa-flask');
+
+    // Contar registros seed en cada tabla relevante
+    $seed_counts = array();
+    $seed_tables = array('pld_operacion', 'pld_aviso', 'pld_alerta', 'pld_beneficiario', 'pld_documento');
+    $total_seed = 0;
+    foreach ($seed_tables as $t) {
+        $sql_c = "SELECT COUNT(*) as cnt FROM ".MAIN_DB_PREFIX.$t." WHERE import_key = 'SEED_PLD_TEST'";
+        $res_c = $db->query($sql_c);
+        $cnt = 0;
+        if ($res_c) {
+            $obj_c = $db->fetch_object($res_c);
+            $cnt = (int)($obj_c ? $obj_c->cnt : 0);
+            $db->free($res_c);
+        }
+        $seed_counts[$t] = $cnt;
+        $total_seed += $cnt;
+    }
+
+    print '<div class="info">';
+    if ($total_seed == 0) {
+        print '<p>'.$langs->trans("SeedNoData").'</p>';
+        print '<form method="POST" action="'.dol_escape_htmltag($_SERVER["PHP_SELF"]).'">';
+        print '<input type="hidden" name="token" value="'.newToken().'">';
+        print '<input type="hidden" name="action" value="load_seed">';
+        print '<button type="submit" class="butAction">'.$langs->trans("SeedCargar").'</button>';
+        print '</form>';
+    } else {
+        print '<p>'.$langs->trans("SeedDataPresent").'</p>';
+        print '<ul>';
+        $labels = array(
+            'pld_operacion'   => $langs->trans("PLDOperaciones"),
+            'pld_aviso'       => $langs->trans("PLDAvisos"),
+            'pld_alerta'      => $langs->trans("PLDAlertas"),
+            'pld_beneficiario'=> $langs->trans("PLDBeneficiarios"),
+            'pld_documento'   => $langs->trans("PLDDocumentos"),
+        );
+        foreach ($seed_counts as $t => $cnt) {
+            if ($cnt > 0) {
+                print '<li>'.dol_escape_htmltag($labels[$t] ?? $t).': <strong>'.$cnt.'</strong></li>';
+            }
+        }
+        print '</ul>';
+        print '<form method="POST" action="'.dol_escape_htmltag($_SERVER["PHP_SELF"]).'" onsubmit="return confirm(\''.$langs->trans("SeedConfirmDelete").'\');">';
+        print '<input type="hidden" name="token" value="'.newToken().'">';
+        print '<input type="hidden" name="action" value="delete_seed">';
+        print '<button type="submit" class="butActionDelete">'.$langs->trans("SeedEliminar").'</button>';
+        print '</form>';
+    }
+    print '</div>';
+}
 
 print dol_get_fiche_end();
 

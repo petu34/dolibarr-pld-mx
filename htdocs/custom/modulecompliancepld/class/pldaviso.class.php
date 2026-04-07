@@ -309,4 +309,141 @@ class PLDAviso extends CommonObject
     {
         return hash('sha256', $xml_content);
     }
+
+    /**
+     * Carga las operaciones vinculadas a este aviso (llx_pld_aviso_operacion).
+     * Popula $this->operaciones (array de stdClass con id, folio, monto, fecha, estado).
+     *
+     * @return int 1=ok (incluso si no hay operaciones), -1=error
+     */
+    public function fetchOperaciones(): int
+    {
+        $this->operaciones = array();
+
+        if (!$this->id) {
+            return -1;
+        }
+
+        $sql = "SELECT o.rowid, o.folio_interno, o.fecha_operacion,";
+        $sql .= " o.monto_mxn, o.monto_sin_impuestos, o.estado, o.fk_societe";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_aviso_operacion ao";
+        $sql .= " INNER JOIN ".MAIN_DB_PREFIX."pld_operacion o ON o.rowid = ao.fk_pld_operacion";
+        $sql .= " WHERE ao.fk_pld_aviso = ".(int)$this->id;
+        $sql .= " ORDER BY o.fecha_operacion ASC";
+
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            $this->errors[] = "fetchOperaciones: ".$this->db->lasterror();
+            return -1;
+        }
+
+        $num = $this->db->num_rows($resql);
+        for ($i = 0; $i < $num; $i++) {
+            $this->operaciones[] = $this->db->fetch_object($resql);
+        }
+        $this->db->free($resql);
+
+        return 1;
+    }
+
+    /**
+     * Vincula una operación a este aviso (INSERT en llx_pld_aviso_operacion).
+     * Actualiza también numero_operaciones y monto_total_operaciones en el aviso.
+     *
+     * @param int  $fk_operacion  rowid de llx_pld_operacion
+     * @param object $user
+     * @return int 1=ok, -1=error
+     */
+    public function agregarOperacion(int $fk_operacion, $user): int
+    {
+        if (!$this->id || $fk_operacion <= 0) {
+            return -1;
+        }
+
+        $this->db->begin();
+
+        // Verificar que no esté ya vinculada
+        $sql_check = "SELECT rowid FROM ".MAIN_DB_PREFIX."pld_aviso_operacion";
+        $sql_check .= " WHERE fk_pld_aviso = ".(int)$this->id." AND fk_pld_operacion = ".(int)$fk_operacion;
+        $rescheck = $this->db->query($sql_check);
+        if ($rescheck && $this->db->num_rows($rescheck) > 0) {
+            $this->db->free($rescheck);
+            $this->db->rollback();
+            $this->errors[] = "La operación $fk_operacion ya está vinculada al aviso";
+            return -1;
+        }
+
+        $sql = "INSERT INTO ".MAIN_DB_PREFIX."pld_aviso_operacion (fk_pld_aviso, fk_pld_operacion, datec, fk_user_creat)";
+        $sql .= " VALUES (".(int)$this->id.", ".(int)$fk_operacion.", '".$this->db->idate(dol_now())."', ".(int)$user->id.")";
+
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            $this->errors[] = "agregarOperacion: ".$this->db->lasterror();
+            $this->db->rollback();
+            return -1;
+        }
+
+        // Actualizar totales del aviso
+        $this->recalcularTotales($user);
+
+        $this->db->commit();
+        return 1;
+    }
+
+    /**
+     * Desvincula una operación de este aviso (DELETE en llx_pld_aviso_operacion).
+     *
+     * @param int  $fk_operacion  rowid de llx_pld_operacion
+     * @param object $user
+     * @return int 1=ok, -1=error
+     */
+    public function quitarOperacion(int $fk_operacion, $user): int
+    {
+        if (!$this->id || $fk_operacion <= 0) {
+            return -1;
+        }
+
+        $this->db->begin();
+
+        $sql = "DELETE FROM ".MAIN_DB_PREFIX."pld_aviso_operacion";
+        $sql .= " WHERE fk_pld_aviso = ".(int)$this->id." AND fk_pld_operacion = ".(int)$fk_operacion;
+
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            $this->errors[] = "quitarOperacion: ".$this->db->lasterror();
+            $this->db->rollback();
+            return -1;
+        }
+
+        // Actualizar totales del aviso
+        $this->recalcularTotales($user);
+
+        $this->db->commit();
+        return 1;
+    }
+
+    /**
+     * Recalcula numero_operaciones y monto_total_operaciones desde la tabla de relación.
+     * Se llama internamente después de agregar/quitar operaciones.
+     *
+     * @param object $user
+     * @return int 1=ok, -1=error
+     */
+    private function recalcularTotales($user): int
+    {
+        $sql = "SELECT COUNT(*) as num, SUM(o.monto_mxn) as total";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_aviso_operacion ao";
+        $sql .= " INNER JOIN ".MAIN_DB_PREFIX."pld_operacion o ON o.rowid = ao.fk_pld_operacion";
+        $sql .= " WHERE ao.fk_pld_aviso = ".(int)$this->id;
+
+        $resql = $this->db->query($sql);
+        if ($resql) {
+            $obj = $this->db->fetch_object($resql);
+            $this->numero_operaciones = (int)($obj->num ?? 0);
+            $this->monto_total_operaciones = (float)($obj->total ?? 0);
+            $this->db->free($resql);
+        }
+
+        return $this->update($user, 1); // notrigger=1 para no generar eventos extra
+    }
 }

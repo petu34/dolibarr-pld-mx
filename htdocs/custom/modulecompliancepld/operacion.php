@@ -18,6 +18,7 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once __DIR__.'/class/pldoperacion.class.php';
 require_once __DIR__.'/class/compliancepld.class.php';
+require_once __DIR__.'/class/pldpepverificacion.class.php';
 
 $langs->loadLangs(array("modulecompliancepld@modulecompliancepld"));
 
@@ -57,15 +58,26 @@ if ($action == 'add' && !$cancel) {
     $object->tipo_operacion = GETPOST('tipo_operacion', 'alpha');
     $object->tipo_actividad_vulnerable = GETPOST('tipo_actividad_vulnerable', 'alpha');
     $object->fecha_operacion = dol_mktime(0, 0, 0, GETPOST('fecha_operacionmonth', 'int'), GETPOST('fecha_operacionday', 'int'), GETPOST('fecha_operacionyear', 'int'));
-    $object->monto_mxn = price2num(GETPOST('monto_mxn', 'alpha'));
-    
+
+    // Monto: separar sin IVA y total con IVA (Art. 6 DOF 27/03/2026)
+    $monto_sin_iva = price2num(GETPOST('monto_sin_impuestos', 'alpha'));
+    $tasa = (float) str_replace(',', '.', GETPOST('tasa_impuesto', 'alpha') ?: '0.16');
+    if ($monto_sin_iva > 0) {
+        $object->monto_sin_impuestos = $monto_sin_iva;
+        $object->tasa_impuesto = $tasa;
+        $object->calcularMontoTotal();
+    } else {
+        // Compatibilidad: si no se captura monto_sin_impuestos, monto_mxn es el total
+        $object->monto_mxn = price2num(GETPOST('monto_mxn', 'alpha'));
+    }
+
     $tipo_vehiculo = GETPOST('tipo_vehiculo', 'alpha');
     $resultado_umbral = $object->evaluarUmbral($tipo_vehiculo);
-    
+
     $object->generarFolioInterno();
-    
+
     $result = $object->create($user);
-    
+
     if ($result > 0) {
         header("Location: ".$_SERVER["PHP_SELF"]."?id=".$object->id);
         exit;
@@ -76,13 +88,21 @@ if ($action == 'add' && !$cancel) {
 }
 
 if ($action == 'update' && !$cancel) {
-    $object->monto_mxn = price2num(GETPOST('monto_mxn', 'alpha'));
+    $monto_sin_iva = price2num(GETPOST('monto_sin_impuestos', 'alpha'));
+    $tasa = (float) str_replace(',', '.', GETPOST('tasa_impuesto', 'alpha') ?: '0.16');
+    if ($monto_sin_iva > 0) {
+        $object->monto_sin_impuestos = $monto_sin_iva;
+        $object->tasa_impuesto = $tasa;
+        $object->calcularMontoTotal();
+    } else {
+        $object->monto_mxn = price2num(GETPOST('monto_mxn', 'alpha'));
+    }
     $object->estado = GETPOST('estado', 'alpha');
     $object->cliente_identificado = GETPOST('cliente_identificado', 'int');
     $object->documentacion_completa = GETPOST('documentacion_completa', 'int');
-    
+
     $result = $object->update($user);
-    
+
     if ($result > 0) {
         header("Location: ".$_SERVER["PHP_SELF"]."?id=".$object->id);
         exit;
@@ -135,10 +155,36 @@ if ($action == 'create') {
     print $form->selectDate(dol_now(), 'fecha_operacion', 0, 0, 0, '', 1, 1);
     print '</td></tr>';
     
-    print '<tr><td class="fieldrequired">'.$langs->trans('MontoMXN').'</td><td>';
-    print '<input type="text" name="monto_mxn" size="15" value="'.GETPOST('monto_mxn', 'alpha').'">';
+    // Campos de monto separados por IVA (Art. 6 DOF 27/03/2026)
+    $iva_default = getDolGlobalString('MODULECOMPLIANCEPLD_IVA_DEFAULT', '0.16');
+    print '<tr><td class="fieldrequired">'.$langs->trans('MontoSinImpuestos').'</td><td>';
+    print '<input type="text" id="monto_sin_impuestos" name="monto_sin_impuestos" size="15" value="'.GETPOST('monto_sin_impuestos', 'alpha').'">';
+    print ' <small class="opacitymedium">'.$langs->trans('MontoSinIVAHelp').'</small>';
     print '</td></tr>';
-    
+    print '<tr><td>'.$langs->trans('TasaImpuesto').'</td><td>';
+    print '<input type="text" id="tasa_impuesto" name="tasa_impuesto" size="6" value="'.dol_escape_htmltag($iva_default).'"> ';
+    print '<small class="opacitymedium">(0.16 = IVA 16%)</small>';
+    print '</td></tr>';
+    print '<tr><td>'.$langs->trans('MontoMXN').' ('.$langs->trans('MontoConIVA').')</td><td>';
+    print '<input type="text" id="monto_mxn_calc" name="monto_mxn" size="15" readonly style="background:#f0f0f0" value="'.GETPOST('monto_mxn', 'alpha').'">';
+    print ' <small class="opacitymedium">'.$langs->trans('CalculadoAutomatico').'</small>';
+    print '</td></tr>';
+    print '<script>
+(function() {
+    var sin = document.getElementById("monto_sin_impuestos");
+    var tasa = document.getElementById("tasa_impuesto");
+    var total = document.getElementById("monto_mxn_calc");
+    function recalc() {
+        var s = parseFloat((sin.value+"").replace(",",".")) || 0;
+        var t = parseFloat((tasa.value+"").replace(",",".")) || 0;
+        total.value = (s * (1 + t)).toFixed(2);
+    }
+    sin.addEventListener("input", recalc);
+    tasa.addEventListener("input", recalc);
+    recalc();
+})();
+</script>';
+
     print '</table>';
     
     print '<div class="center">';
@@ -159,14 +205,47 @@ if ($action == 'create') {
     print '<div class="fichecenter">';
     print '<div class="underbanner clearboth"></div>';
 
+    // Badge PEP del cliente
+    $pepChecker = new PLDPepVerificacion($db);
+    $pep_resultado = ($object->fk_societe > 0) ? $pepChecker->getResultadoActual((int)$object->fk_societe) : 'no_consultado';
+    $pep_badge = '';
+    if ($pep_resultado === 'positivo') {
+        $pep_badge = ' <span class="badge badge-status8" title="'.$langs->trans('PLDClientePEP').'">PEP</span>';
+    } elseif ($pep_resultado === 'no_consultado') {
+        $pep_badge = ' <span class="badge badge-status1" title="'.$langs->trans('PLDPEPNoVerificado').'">PEP?</span>';
+    }
+
     print '<table class="border centpercent tableforfield">';
 
-    print '<tr><td class="titlefield">'.$langs->trans('Folio').'</td><td>'.$object->folio_interno.'</td></tr>';
+    print '<tr><td class="titlefield">'.$langs->trans('Folio').'</td><td>'.dol_escape_htmltag($object->folio_interno).'</td></tr>';
     print '<tr><td>'.$langs->trans('FechaOperacion').'</td><td>'.dol_print_date($object->fecha_operacion, 'day').'</td></tr>';
-    print '<tr><td>'.$langs->trans('MontoMXN').'</td><td>'.price($object->monto_mxn, 0, $langs, 1, -1, -1, 'MXN').'</td></tr>';
+
+    // Línea cliente con badge PEP
+    if ($object->fk_societe > 0) {
+        require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
+        $soc = new Societe($db);
+        if ($soc->fetch($object->fk_societe) > 0) {
+            print '<tr><td>'.$langs->trans('Customer').'</td><td>';
+            print '<a href="'.DOL_URL_ROOT.'/societe/card.php?socid='.$object->fk_societe.'">'.dol_escape_htmltag($soc->name).'</a>';
+            print $pep_badge;
+            print '</td></tr>';
+        }
+    }
+
+    // Montos separados
+    print '<tr><td>'.$langs->trans('MontoSinImpuestos').'</td><td>';
+    if ($object->monto_sin_impuestos !== null) {
+        print price($object->monto_sin_impuestos, 0, $langs, 1, -1, -1, 'MXN');
+        print ' <small class="opacitymedium">sin IVA — umbral</small>';
+    } else {
+        print '<span class="opacitymedium">—</span>';
+    }
+    print '</td></tr>';
+    print '<tr><td>'.$langs->trans('MontoMXN').' (con IVA)</td><td>'.price($object->monto_mxn, 0, $langs, 1, -1, -1, 'MXN').'</td></tr>';
     print '<tr><td>'.$langs->trans('SuperaUmbral').'</td><td>'.yn($object->supera_umbral).'</td></tr>';
     print '<tr><td>'.$langs->trans('RequiereAviso').'</td><td>'.yn($object->requiere_aviso).'</td></tr>';
-    print '<tr><td>'.$langs->trans('Estado').'</td><td>'.$object->estado.'</td></tr>';
+    print '<tr><td>'.$langs->trans('Estado').'</td><td>'.dol_escape_htmltag($object->estado).'</td></tr>';
+    print '<tr><td>'.$langs->trans('CustodiaHasta').'</td><td>'.dol_escape_htmltag($object->getFechaFinCustodia()).'</td></tr>';
 
     print '</table>';
 

@@ -840,3 +840,52 @@ EstadoActualizado = Estado actualizado correctamente
 AcuseRegistrado = Acuse SAT registrado. Aviso presentado.
 ErrorFolioFechaRequeridos = El folio SAT y la fecha de presentación son obligatorios
 NoXMLGenerado = Sin XML generado
+
+# ============================================================
+# PARTE 8.1: Alpha — DOF 27/03/2026 + Datos de prueba
+# ============================================================
+
+# Campos monto separado (Art. 6 DOF 2026)
+MontoSinImpuestos = Monto sin impuestos
+MontoConIVA = con IVA
+MontoSinIVAHelp = Base para evaluación de umbral (sin IVA)
+CalculadoAutomatico = Calculado automáticamente
+
+# Custodia 10 años (Art. 20 + Trans. 7º DOF 2026)
+CustodiaHasta = Custodia hasta
+
+# PEP badges en operacion.php
+PLDClientePEP = Cliente Persona Expuesta Políticamente (PEP) — diligencia reforzada requerida
+PLDPEPNoVerificado = Verificación PEP pendiente
+
+# Configuración admin — Sección DOF 2026
+SeccionDOF2026 = Parámetros DOF 27/03/2026
+IVADefault = Tasa IVA por omisión
+PEPEndpoint = URL servicio consulta PEP (UIF)
+AvisosIntentadasActivo = Reportar operaciones intentadas (Art. 7 Bis)
+
+# Configuración admin — Sección Datos de prueba
+SeccionDatosPrueba = Datos de prueba (entorno no-producción)
+SeedNoData = No hay datos de prueba cargados. Puede cargarlos para explorar el módulo con datos realistas.
+SeedDataPresent = Hay datos de prueba cargados (marcados con import_key=SEED_PLD_TEST):
+SeedCargar = Cargar datos de prueba
+SeedEliminar = Eliminar todos los datos de prueba
+SeedCargado = Datos de prueba cargados correctamente
+SeedEliminado = Datos de prueba eliminados (%s registros)
+SeedConfirmDelete = ¿Confirmar eliminación de todos los datos de prueba? Esta acción no se puede deshacer.
+
+# Aviso — sección operaciones vinculadas (aviso/card.php)
+PLDOperacionesDelAviso = Operaciones vinculadas al aviso
+PLDAvisoSinOperaciones = No hay operaciones vinculadas. Agregue operaciones del período que requieran aviso.
+PLDAgregarOperacion = Agregar operación al aviso
+OperacionVinculada = Operación vinculada al aviso correctamente
+OperacionDesvinculada = Operación desvinculada del aviso
+XMLGeneradoCorrectamente = XML generado y guardado correctamente
+PLDFirmarConEfirma = Firmar con e.firma al generar
+
+# Documentos / Beneficiarios (para seed counters)
+PLDDocumentos = Documentos PLD
+PLDBeneficiarios = Beneficiarios Controladores
+PLDAlertas = Alertas PLD
+PLDAvisos = Avisos SAT
+PLDOperaciones = Operaciones Vulnerables
