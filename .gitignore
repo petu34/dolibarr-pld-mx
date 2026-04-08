@@ -1,0 +1,55 @@
+# Composer
+/vendor/
+composer.lock
+
+# PHPUnit
+/coverage/
+.phpunit.result.cache
+
+# Seguridad PLD - NUNCA versionar datos sensibles
+.env
+.env.*
+
+# Certificados e.firma (SAT)
+*.cert
+*.key
+*.p12
+*.cer
+*.pem
+
+# XML con datos reales (solo .sample permitidos)
+xml-samples/*.xml
+!xml-samples/*.sample
+
+# Documentos regulatorios sensibles
+docs/regulatorio/*.pdf
+!docs/regulatorio/README.md
+
+# Logs y temporales
+*.log
+tmp/
+temp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Archivos binarios de distribución
+*.zip
+*.tar.gz
+*.docx
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Dolibarr específico
+htdocs/conf/conf.php
+htdocs/custom/*/conf/conf.php
+
+# OMO / Claude Code
+.mcp.json

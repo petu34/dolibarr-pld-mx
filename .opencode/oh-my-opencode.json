@@ -1,0 +1,56 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "agents": {
+    "atlas": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "variant": "max",
+      "knowledge_paths": [
+        "AGENTS.md",
+        "docs/prompts/sisyphus-context.md",
+        "docs/plans/fase1-extrafields-plan.md",
+        "docs/architecture/DECISIONS.md",
+        "docs/architecture/llx-best-practices.md",
+        "schemas/README.md"
+      ]
+    },
+    "librarian": {
+      "model": "google/gemini-2.5-pro",
+      "knowledge_paths": [
+        "AGENTS.md",
+        "docs/prompts/librarian-instructions.md",
+        "docs/database/field-mapping-analysis.md",
+        "docs/database/dolibarr-tables-reference.md",
+        "docs/architecture/llx-best-practices.md",
+        "docs/plans/fase1-extrafields-plan.md",
+        "docs/plans/fase2-tables-plan.md",
+        "docs/plans/fase3-xml-generator-plan.md"
+      ]
+    },
+    "oracle": {
+      "model": "google/gemini-2.5-pro",
+      "knowledge_paths": [
+        "AGENTS.md",
+        "docs/prompts/oracle-faqs.md",
+        "docs/BLUEPRINT_SINTESIS.md",
+        "docs/plans/fase1-extrafields-plan.md",
+        "docs/regulatorio/RESOLUCION-Avisos.pdf",
+        "docs/architecture/DECISIONS.md",
+        "docs/database/dolibarr-tables-reference.md",
+        "schemas/README.md"
+      ]
+    },
+    "explore": {
+      "model": "opencode/default",
+      "knowledge_paths": [
+        "AGENTS.md"
+      ]
+    }
+  },
+  "rules": "Proyecto Dolibarr PLD México. Siempre usar prefijo llx_. Seguir LFPIORPI Art.17 Fracc.VIII. Leer AGENTS.md antes de cualquier tarea.",
+  "hooks": {
+    "PostToolUse": {
+      "enabled": true,
+      "command": "composer test"
+    }
+  }
+}

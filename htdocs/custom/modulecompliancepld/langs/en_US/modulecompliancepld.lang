@@ -1,0 +1,42 @@
+# Translation file
+
+#
+# Generic
+#
+
+# Module label 'ModuleModulecompliancepldName'
+ModuleModulecompliancepldName = Modulecompliancepld
+# Module description 'ModuleModulecompliancepldDesc'
+ModuleModulecompliancepldDesc = Modulecompliancepld description
+
+#
+# Admin page
+#
+ModulecompliancepldSetup = Modulecompliancepld setup
+Settings = Settings
+ModulecompliancepldSetupPage = Modulecompliancepld setup page
+NewSection=New section
+MODULECOMPLIANCEPLD_MYPARAM1 = My param 1
+MODULECOMPLIANCEPLD_MYPARAM1Tooltip = My param 1 tooltip
+MODULECOMPLIANCEPLD_MYPARAM2=My param 2
+MODULECOMPLIANCEPLD_MYPARAM2Tooltip=My param 2 tooltip
+
+
+#
+# About page
+#
+About = About
+ModulecompliancepldAbout = About Modulecompliancepld
+ModulecompliancepldAboutPage = Modulecompliancepld about page
+
+#
+# Sample page
+#
+ModulecompliancepldArea = Home Modulecompliancepld
+MyPageName = My page name
+
+#
+# Sample widget
+#
+MyWidget = My widget
+MyWidgetDescription = My widget description
