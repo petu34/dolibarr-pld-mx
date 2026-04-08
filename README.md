@@ -1,7 +1,7 @@
 # Dolibarr PLD México
 
 Módulo de Prevención de Lavado de Dinero (PLD) para Dolibarr ERP.
-Cumplimiento LFPIORPI Art. 17 Fraccion VIII - México.
+Cumplimiento LFPIORPI Art. 17 Fraccion VIII, Compra-venta de vehículos - México.
 
 ## Estado del proyecto
 En desarrollo - Fase develop inicial
