@@ -1,4 +1,3 @@
-#!/usr/bin/env php
 <?php
 /**
  * @file    scripts/seed_datos_prueba.php
@@ -7,8 +6,11 @@
  *          B) 10 que NO superan el umbral (vehículos usados, montos bajos)
  *          C) 10 que superan el umbral de forma ACUMULADA (mismo cliente, 6 meses)
  *
- * Uso:
+ * Uso (CLI):
  *   docker exec doli20 php /var/www/html/custom/modulecompliancepld/scripts/seed_datos_prueba.php
+ *
+ * También puede ser include-ado desde admin/setup.php cuando $db y $user
+ * ya están disponibles en contexto web.
  *
  * RFC/CURP generados siguiendo el algoritmo oficial SAT:
  *   Pos 1-4  : 1a letra ap.paterno + 1a vocal interna ap.paterno + 1a letra ap.materno + 1a letra nombre
@@ -25,54 +27,54 @@
  *   separado (pendiente de Fase 4 o proceso manual del oficial de cumplimiento).
  */
 
-if (!defined('NOSESSION')) {
-    define('NOSESSION', '1');
-}
-if (!defined('NOLOGIN')) {
-    define('NOLOGIN', '1');   // Script CLI: carga usuario manualmente debajo
-}
+// ── Bootstrap CLI (solo cuando se ejecuta directamente, no cuando se include-a) ──
+if (php_sapi_name() === 'cli') {
+    if (!defined('NOSESSION')) {
+        define('NOSESSION', '1');
+    }
+    if (!defined('NOLOGIN')) {
+        define('NOLOGIN', '1');
+    }
 
-$sapi_type = php_sapi_name();
-if (substr($sapi_type, 0, 3) == 'cgi') {
-    echo "Error: usar PHP CLI, no CGI.\n";
-    exit(-1);
-}
+    @set_time_limit(0);
+    if (!defined('EVEN_IF_ONLY_LOGIN_ALLOWED')) {
+        define('EVEN_IF_ONLY_LOGIN_ALLOWED', 1);
+    }
 
-@set_time_limit(0);
-define('EVEN_IF_ONLY_LOGIN_ALLOWED', 1);
-
-// Bootstrap Dolibarr
-$res = 0;
-$paths = array(
-    '/var/www/html/main.inc.php',
-    __DIR__.'/../../../main.inc.php',
-    __DIR__.'/../../../../main.inc.php',
-);
-foreach ($paths as $p) {
-    if (!$res && file_exists($p)) {
-        $res = @include $p;
-        if ($res) break;
+    // Bootstrap Dolibarr
+    $res = 0;
+    $paths = array(
+        '/var/www/html/main.inc.php',
+        __DIR__.'/../../../main.inc.php',
+        __DIR__.'/../../../../main.inc.php',
+    );
+    foreach ($paths as $p) {
+        if (!$res && file_exists($p)) {
+            $res = @include $p;
+            if ($res) break;
+        }
+    }
+    if (!$res) {
+        die("No se encontró main.inc.php\n");
     }
 }
-if (!$res) {
-    die("No se encontró main.inc.php\n");
-}
 
+// Clases requeridas por las funciones helper (require_once es seguro en ambos contextos)
 require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once __DIR__.'/../class/pldoperacion.class.php';
 
-// -----------------------------------------------------------------------
-// Cargar usuario administrador (id=1)
-// -----------------------------------------------------------------------
-$user->fetch(1);
-$user->getrights();
+if (php_sapi_name() === 'cli') {
+    // Cargar usuario administrador (id=1) — en web ya viene del contexto de sesión
+    $user->fetch(1);
+    $user->getrights();
 
-echo "\n========================================\n";
-echo " SEED: Datos de prueba PLD — 30 ops\n";
-echo "========================================\n\n";
+    echo "\n========================================\n";
+    echo " SEED: Datos de prueba PLD — 30 ops\n";
+    echo "========================================\n\n";
+}
 
 // -----------------------------------------------------------------------
 // DATOS — 10 clientes personas físicas
