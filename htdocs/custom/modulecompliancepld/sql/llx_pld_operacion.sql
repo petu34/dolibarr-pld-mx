@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS llx_pld_operacion (
   
   -- Referencias Dolibarr
   fk_facture INT DEFAULT NULL,
+  fk_propal  INT DEFAULT NULL,                                    -- ID de la cotización (llx_propal)
   fk_societe INT NOT NULL,
   fk_product INT DEFAULT NULL,                                    -- ID del vehículo
   

@@ -63,6 +63,7 @@ if (php_sapi_name() === 'cli') {
 require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
+require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once __DIR__.'/../class/pldoperacion.class.php';
 
@@ -130,26 +131,110 @@ $vehiculos_usados_b = array(
 );
 
 // Grupo C — 10 vehículos USADOS baratos para el mismo cliente (FLORES RAMOS)
-// Acumulado total: $142,500 MXN > umbral $117,310
+// Acumulado total: $142,500 MXN > umbral $117,310 — período julio–diciembre 2024
 // Individualmente: cada uno < $117,310 → supera_umbral=0 por operación
 $vehiculos_acumulados = array(
     // marca, modelo, anio, vin, estado, monto, mes_reportado, fecha_op
-    array('NISSAN',    'TSURU',    '2010', '3N1FB3DD1FK031001', 'usado', 12000.00, '202501', '2025-01-08'),
-    array('VOLKSWAGEN','GOL',      '2012', '9BWZZZ9Z4CP032002', 'usado', 14500.00, '202501', '2025-01-22'),
-    array('CHEVROLET', 'SPARK',    '2014', 'KL1TB5AE9AB033003', 'usado', 18000.00, '202502', '2025-02-05'),
-    array('FORD',      'KA',       '2013', '3FADP4EJ3GM034004', 'usado', 11500.00, '202502', '2025-02-19'),
-    array('TOYOTA',    'YARIS',    '2015', 'JTDBT4K30E1035005', 'usado', 15000.00, '202503', '2025-03-04'),
-    array('HYUNDAI',   'I10',      '2016', 'KMHCM4AC2BU036006', 'usado', 13500.00, '202503', '2025-03-18'),
-    array('SEAT',      'IBIZA',    '2017', 'VSSZZZ6JZJ2037007', 'usado', 16000.00, '202504', '2025-04-03'),
-    array('KIA',       'PICANTO',  '2018', 'KNADN5A38B6038008', 'usado', 12500.00, '202504', '2025-04-17'),
-    array('RENAULT',   'LOGAN',    '2015', 'VF1BS1BA6FW039009', 'usado', 14000.00, '202505', '2025-05-07'),
-    array('HONDA',     'FIT',      '2015', 'JHMGD1840ES040010', 'usado', 15500.00, '202506', '2025-06-11'),
+    array('NISSAN',    'TSURU',    '2010', '3N1FB3DD1FK031001', 'usado', 12000.00, '202407', '2024-07-08'),
+    array('VOLKSWAGEN','GOL',      '2012', '9BWZZZ9Z4CP032002', 'usado', 14500.00, '202407', '2024-07-22'),
+    array('CHEVROLET', 'SPARK',    '2014', 'KL1TB5AE9AB033003', 'usado', 18000.00, '202408', '2024-08-05'),
+    array('FORD',      'KA',       '2013', '3FADP4EJ3GM034004', 'usado', 11500.00, '202408', '2024-08-19'),
+    array('TOYOTA',    'YARIS',    '2015', 'JTDBT4K30E1035005', 'usado', 15000.00, '202409', '2024-09-04'),
+    array('HYUNDAI',   'I10',      '2016', 'KMHCM4AC2BU036006', 'usado', 13500.00, '202409', '2024-09-18'),
+    array('SEAT',      'IBIZA',    '2017', 'VSSZZZ6JZJ2037007', 'usado', 16000.00, '202410', '2024-10-03'),
+    array('KIA',       'PICANTO',  '2018', 'KNADN5A38B6038008', 'usado', 12500.00, '202410', '2024-10-17'),
+    array('RENAULT',   'LOGAN',    '2015', 'VF1BS1BA6FW039009', 'usado', 14000.00, '202411', '2024-11-07'),
+    array('HONDA',     'FIT',      '2015', 'JHMGD1840ES040010', 'usado', 15500.00, '202412', '2024-12-11'),
 );
 
 // -----------------------------------------------------------------------
 // HELPERS
 // -----------------------------------------------------------------------
-$stats = array('clientes' => 0, 'vehiculos' => 0, 'ops_a' => 0, 'ops_b' => 0, 'ops_c' => 0, 'facturas' => 0, 'pagos' => 0, 'errores' => 0);
+$stats = array('clientes' => 0, 'vehiculos' => 0, 'ops_a' => 0, 'ops_b' => 0, 'ops_c' => 0, 'cotizaciones' => 0, 'facturas' => 0, 'pagos' => 0, 'errores' => 0);
+
+/**
+ * Asigna precio de venta HT al producto (monto_mxn / 1.16), con IVA 16%.
+ * Idempotente: si el producto ya tiene precio asignado, lo omite.
+ */
+function asignarPrecioProducto($db, $user, Product $prod, float $monto_mxn)
+{
+    $prod->fetch_optionals();
+    // Si ya tiene precio real asignado, no sobreescribir
+    if (!empty($prod->price) && $prod->price > 0) {
+        echo "  [SKIP] Precio ya asignado producto #{$prod->id} (HT: ".number_format((float)$prod->price, 2).")\n";
+        return;
+    }
+    $ht = round($monto_mxn / 1.16, 2);
+    $result = $prod->updatePrice($ht, 'HT', $user, 16.0);
+    if ($result < 0) {
+        echo "  [WARN] updatePrice producto #{$prod->id}: ".$prod->error."\n";
+    } else {
+        echo "  [OK] Precio producto #{$prod->id} → HT: ".number_format($ht, 2)." + IVA 16% = ".number_format($monto_mxn, 2)." MXN\n";
+    }
+}
+
+/**
+ * Crea una cotización (Propal) para la operación y actualiza fk_propal en llx_pld_operacion.
+ * Idempotente: si op->fk_propal ya está asignado, retorna la cotización existente.
+ *
+ * @return Propal|null
+ */
+function crearCotizacion($db, $user, PLDOperacion $op, Societe $soc, Product $prod, float $monto_mxn, &$stats)
+{
+    if (!empty($op->fk_propal) && $op->fk_propal > 0) {
+        echo "  [SKIP] Op #{$op->id} ya tiene cotización #{$op->fk_propal}\n";
+        $p = new Propal($db);
+        $p->fetch($op->fk_propal);
+        return $p;
+    }
+
+    $ht = round($monto_mxn / 1.16, 2);
+
+    $propal = new Propal($db);
+    $propal->socid          = $soc->id;
+    $propal->date           = strtotime($op->fecha_operacion);
+    $propal->duree_validite = 30;
+    $propal->entity         = 1;
+    $propal->import_key     = 'SEED_PLD_TEST';
+
+    $result = $propal->create($user);
+    if ($result <= 0) {
+        echo "  [ERROR] Cotización op #{$op->id}: ".implode(', ', $propal->errors)."\n";
+        $stats['errores']++;
+        return null;
+    }
+
+    $propal->addline(
+        strtoupper($prod->label),  // description
+        $ht,                        // pu_ht
+        1,                          // qty
+        16.0,                       // tva_tx
+        0,                          // localtax1_tx
+        0,                          // localtax2_tx
+        $prod->id,                  // fk_product
+        0,                          // remise_percent
+        '',                         // date_start
+        '',                         // date_end
+        0,                          // ventilated
+        0,                          // info_bits
+        '',                         // flat_options
+        'HT'                        // price_base_type
+    );
+
+    $propal->setValid($user);
+
+    // Vincular cotización a la operación PLD
+    $sql_upd = "UPDATE ".MAIN_DB_PREFIX."pld_operacion"
+        ." SET fk_propal = ".(int)$propal->id
+        .", tms = tms"
+        ." WHERE rowid = ".(int)$op->id;
+    $db->query($sql_upd);
+    $op->fk_propal = $propal->id;
+
+    $stats['cotizaciones']++;
+    echo "  [OK] Cotización #{$propal->ref} (#{$propal->id}) — op #{$op->id} — HT: ".number_format($ht, 2)."\n";
+    return $propal;
+}
 
 /**
  * Crea la tabla llx_paiement_extrafields si no existe.
@@ -222,22 +307,23 @@ function crearFactura($db, $user, PLDOperacion $op, Societe $soc, Product $prod,
         return null;
     }
 
-    // Línea: vehículo sin IVA (el monto_mxn en PLDOperacion es el monto reportado al SAT)
+    // Línea: vehículo HT + 16% IVA → total = monto_mxn (coherente con cotización)
+    $ht = round((float)$op->monto_mxn / 1.16, 2);
     $res_line = $factura->addline(
         strtoupper($prod->label),  // desc
-        (float)$op->monto_mxn,     // pu_ht
-        1,                         // qty
-        0,                         // vatrate (0 para simplificar datos de prueba)
-        0,                         // localtax1
-        0,                         // localtax2
-        $prod->id,                 // fk_product
-        0,                         // remise_percent
-        '',                        // date_start
-        '',                        // date_end
-        0,                         // fk_code_ventilation
-        0,                         // info_bits
-        0,                         // fk_remise_except
-        'HT'                       // price_base_type
+        $ht,                        // pu_ht
+        1,                          // qty
+        16.0,                       // vatrate
+        0,                          // localtax1
+        0,                          // localtax2
+        $prod->id,                  // fk_product
+        0,                          // remise_percent
+        '',                         // date_start
+        '',                         // date_end
+        0,                          // fk_code_ventilation
+        0,                          // info_bits
+        0,                          // fk_remise_except
+        'HT'                        // price_base_type
     );
     if ($res_line < 0) {
         echo "  [WARN] addline para factura #{$factura->id} falló (op #{$op->id}).\n";
@@ -490,6 +576,18 @@ function crearVehiculo($db, $user, $marca, $modelo, $anio, $vin, $estado_veh, &$
     return $prod;
 }
 
+/**
+ * Wrapper que crea el vehículo y le asigna precio HT en el mismo paso.
+ */
+function crearVehiculoConPrecio($db, $user, $marca, $modelo, $anio, $vin, $estado_veh, float $monto_mxn, &$stats)
+{
+    $prod = crearVehiculo($db, $user, $marca, $modelo, $anio, $vin, $estado_veh, $stats);
+    if ($prod) {
+        asignarPrecioProducto($db, $user, $prod, $monto_mxn);
+    }
+    return $prod;
+}
+
 function crearOperacion($db, $user, $societe, $product, $monto, $tipo_veh, $mes, $fecha_op, $grupo, &$stats)
 {
     // Verificar idempotencia: misma societe + producto + mes
@@ -559,16 +657,16 @@ $cliente_acumulado = $societes[8]; // MIGUEL ANGEL FLORES RAMOS (índice 8)
 // -----------------------------------------------------------------------
 echo "\n── GRUPO A: Superan umbral individualmente (vehículos nuevos) ─\n";
 $fechas_a = array(
-    '2024-11-04','2024-11-06','2024-11-08','2024-11-12','2024-11-14',
-    '2024-11-18','2024-11-20','2024-11-22','2024-11-26','2024-11-28',
+    '2024-12-02','2024-12-03','2024-12-04','2024-12-05','2024-12-08',
+    '2024-12-09','2024-12-10','2024-12-11','2024-12-12','2024-12-15',
 );
 foreach ($vehiculos_nuevos as $i => $veh) {
     list($marca, $modelo, $anio, $vin, $estado_veh, $monto) = $veh;
     $soc = $societes[$i] ?? $societes[0];
     if (!$soc) continue;
-    $prod = crearVehiculo($db, $user, $marca, $modelo, $anio, $vin, $estado_veh, $stats);
+    $prod = crearVehiculoConPrecio($db, $user, $marca, $modelo, $anio, $vin, $estado_veh, $monto, $stats);
     if (!$prod) continue;
-    crearOperacion($db, $user, $soc, $prod, $monto, 'nuevo', '202411', $fechas_a[$i], 'a', $stats);
+    crearOperacion($db, $user, $soc, $prod, $monto, 'nuevo', '202412', $fechas_a[$i], 'a', $stats);
 }
 
 // -----------------------------------------------------------------------
@@ -583,7 +681,7 @@ foreach ($vehiculos_usados_b as $i => $veh) {
     list($marca, $modelo, $anio, $vin, $estado_veh, $monto) = $veh;
     $soc = $societes[$i] ?? $societes[0];
     if (!$soc) continue;
-    $prod = crearVehiculo($db, $user, $marca, $modelo, $anio, $vin, $estado_veh, $stats);
+    $prod = crearVehiculoConPrecio($db, $user, $marca, $modelo, $anio, $vin, $estado_veh, $monto, $stats);
     if (!$prod) continue;
     crearOperacion($db, $user, $soc, $prod, $monto, 'usado', '202412', $fechas_b[$i], 'b', $stats);
 }
@@ -597,109 +695,210 @@ echo "   (Individualmente bajo umbral; acumulado = \$142,500 > \$117,310)\n";
 foreach ($vehiculos_acumulados as $veh) {
     list($marca, $modelo, $anio, $vin, $estado_veh, $monto, $mes, $fecha_op) = $veh;
     if (!$cliente_acumulado) continue;
-    $prod = crearVehiculo($db, $user, $marca, $modelo, $anio, $vin, $estado_veh, $stats);
+    $prod = crearVehiculoConPrecio($db, $user, $marca, $modelo, $anio, $vin, $estado_veh, $monto, $stats);
     if (!$prod) continue;
     crearOperacion($db, $user, $cliente_acumulado, $prod, $monto, 'usado', $mes, $fecha_op, 'c', $stats);
 }
 
 // -----------------------------------------------------------------------
-// FACTURAS, PAGOS Y EXTRAFIELDS PLD — Grupo A (mes 202411)
-// Necesario para que fetchFormasPago() retorne datos reales en el XML aviso.
+// COTIZACIONES, FACTURAS Y PAGOS — los 3 grupos (202412)
+// Flujo: Cotización (Propal) → Factura → Pago con extrafields PLD
 // -----------------------------------------------------------------------
-echo "\n── FACTURAS Y PAGOS (Grupo A — mes 202411) ─────────────────────\n";
+echo "\n── COTIZACIONES, FACTURAS Y PAGOS (todos los grupos) ───────────\n";
 
 // Asegurar tabla de extrafields de pago
 asegurarTablaExtrasPago($db);
 
-// Tipos de pago variados para los 10 registros del Grupo A
-// Índice corresponde al orden por fecha_operacion ASC (2024-11-04 → 2024-11-28)
-// [fk_paiement_code (llx_c_paiement.id), pld_forma_pago, pld_instrumento, banco, cuenta, banco_chq, num_chq]
+// ── Datos de pago para los 30 registros seed ─────────────────────────────────
+// Grupo A (índices 0-9): vehículos nuevos, alto valor — formas mixtas
+// Grupo B (índices 10-19): vehículos usados bajo umbral — transferencias simples
+// Grupo C (índices 20-29): acumulados mismo cliente — efectivo y transferencia
+
+// Por defecto: transferencia BBVA (para registros sin datos específicos)
+$pago_default = array('fk_c' => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+    'pld_monto_transferencia' => 0, 'pld_monto_efectivo' => 0, 'pld_monto_cheque' => 0,
+    'pld_banco_destino' => 'BBVA México', 'pld_cuenta_destino' => '0000',
+    'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN');
+
+// Grupo A — 10 ops de alto valor (vehículos nuevos)
+// Orden por fecha_operacion ASC: 2024-12-02 … 2024-12-15
 $tipos_pago_a = array(
-    //  op0  Toyota   MORENO      $480K  — Transferencia BBVA
-    array('fk_c'  => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
-          'pld_monto_transferencia' => 480000.00, 'pld_monto_efectivo' => 0,
+    // Toyota   MORENO    $480K  — Transferencia BBVA
+    array('fk_c' => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 480000.00, 'pld_monto_efectivo' => 0, 'pld_monto_cheque' => 0,
           'pld_banco_destino' => 'BBVA México', 'pld_cuenta_destino' => '4523',
           'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
-    //  op1  BMW      SANTOS      $680K  — Transferencia Banorte
-    array('fk_c'  => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
-          'pld_monto_transferencia' => 680000.00, 'pld_monto_efectivo' => 0,
-          'pld_banco_destino' => 'Banorte',       'pld_cuenta_destino' => '7891',
+    // BMW      SANTOS    $680K  — Transferencia Banorte
+    array('fk_c' => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 680000.00, 'pld_monto_efectivo' => 0, 'pld_monto_cheque' => 0,
+          'pld_banco_destino' => 'Banorte', 'pld_cuenta_destino' => '7891',
           'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
-    //  op2  Mercedes HERNANDEZ   $750K  — Efectivo (monto alto para prueba)
-    array('fk_c'  => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
-          'pld_monto_efectivo' => 750000.00, 'pld_monto_transferencia' => 0,
+    // Mercedes HERNANDEZ $750K  — Efectivo
+    array('fk_c' => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
+          'pld_monto_efectivo' => 750000.00, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 0,
           'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
           'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
-    //  op3  Audi     GARCIA      $695K  — Transferencia HSBC
-    array('fk_c'  => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
-          'pld_monto_transferencia' => 695000.00, 'pld_monto_efectivo' => 0,
-          'pld_banco_destino' => 'HSBC México',  'pld_cuenta_destino' => '1234',
+    // Audi     GARCIA    $695K  — Transferencia HSBC
+    array('fk_c' => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 695000.00, 'pld_monto_efectivo' => 0, 'pld_monto_cheque' => 0,
+          'pld_banco_destino' => 'HSBC México', 'pld_cuenta_destino' => '1234',
           'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
-    //  op4  Mazda    LOPEZ       $480K  — Cheque Santander
-    array('fk_c'  => 7, 'pld_forma_pago' => '06', 'pld_instrumento_monetario' => '02',
-          'pld_monto_efectivo' => 0, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 480000.00,
+    // Mazda    LOPEZ     $480K  — Cheque Santander
+    array('fk_c' => 7, 'pld_forma_pago' => '06', 'pld_instrumento_monetario' => '02',
+          'pld_monto_cheque' => 480000.00, 'pld_monto_efectivo' => 0, 'pld_monto_transferencia' => 0,
           'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
-          'pld_banco_cheque' => 'Santander', 'pld_numero_cheque' => 'CHQ-2025-00421', 'pld_moneda' => 'MXN'),
-    //  op5  Honda    MARTINEZ    $435K  — Transferencia Citibanamex
-    array('fk_c'  => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
-          'pld_monto_transferencia' => 435000.00, 'pld_monto_efectivo' => 0,
+          'pld_banco_cheque' => 'Santander', 'pld_numero_cheque' => 'CHQ-2024-00421', 'pld_moneda' => 'MXN'),
+    // Honda    MARTINEZ  $435K  — Transferencia Citibanamex
+    array('fk_c' => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 435000.00, 'pld_monto_efectivo' => 0, 'pld_monto_cheque' => 0,
           'pld_banco_destino' => 'Citibanamex', 'pld_cuenta_destino' => '6789',
           'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
-    //  op6  Chevrolet REYES      $1.2M  — Efectivo
-    array('fk_c'  => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
-          'pld_monto_efectivo' => 1200000.00, 'pld_monto_transferencia' => 0,
+    // Chevrolet REYES    $1.2M  — Efectivo
+    array('fk_c' => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
+          'pld_monto_efectivo' => 1200000.00, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 0,
           'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
           'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
-    //  op7  Ford     VARGAS      $550K  — Transferencia Scotiabank
-    array('fk_c'  => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
-          'pld_monto_transferencia' => 550000.00, 'pld_monto_efectivo' => 0,
+    // Ford     VARGAS    $550K  — Transferencia Scotiabank
+    array('fk_c' => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 550000.00, 'pld_monto_efectivo' => 0, 'pld_monto_cheque' => 0,
           'pld_banco_destino' => 'Scotiabank', 'pld_cuenta_destino' => '9012',
           'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
-    //  op8  Nissan   FLORES      $420K  — Cheque Banorte
-    array('fk_c'  => 7, 'pld_forma_pago' => '06', 'pld_instrumento_monetario' => '02',
-          'pld_monto_efectivo' => 0, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 420000.00,
+    // Nissan   FLORES    $420K  — Cheque Banorte
+    array('fk_c' => 7, 'pld_forma_pago' => '06', 'pld_instrumento_monetario' => '02',
+          'pld_monto_cheque' => 420000.00, 'pld_monto_efectivo' => 0, 'pld_monto_transferencia' => 0,
           'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
-          'pld_banco_cheque' => 'Banorte', 'pld_numero_cheque' => 'CHQ-2025-00788', 'pld_moneda' => 'MXN'),
-    //  op9  Jeep     TORRES      $510K  — Transferencia BBVA
-    array('fk_c'  => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
-          'pld_monto_transferencia' => 510000.00, 'pld_monto_efectivo' => 0,
+          'pld_banco_cheque' => 'Banorte', 'pld_numero_cheque' => 'CHQ-2024-00788', 'pld_moneda' => 'MXN'),
+    // Jeep     TORRES    $510K  — Transferencia BBVA
+    array('fk_c' => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 510000.00, 'pld_monto_efectivo' => 0, 'pld_monto_cheque' => 0,
           'pld_banco_destino' => 'BBVA México', 'pld_cuenta_destino' => '2567',
           'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
 );
 
-// Obtener operaciones Grupo A sin factura asignada aún
-$sql_ops_a = "SELECT o.rowid, o.fk_societe, o.fk_product, o.monto_mxn, o.fecha_operacion"
+// Grupo B — 10 ops bajo umbral (vehículos usados baratos)
+// Orden por fecha_operacion ASC: 2024-12-03 … 2024-12-23
+$tipos_pago_b = array(
+    // Tsuru  $85K  — Efectivo
+    array('fk_c' => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
+          'pld_monto_efectivo' => 85000.00, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 0,
+          'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    // Pointer $45K  — Efectivo
+    array('fk_c' => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
+          'pld_monto_efectivo' => 45000.00, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 0,
+          'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    // Aveo   $98K  — Transferencia
+    array('fk_c' => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 98000.00, 'pld_monto_efectivo' => 0, 'pld_monto_cheque' => 0,
+          'pld_banco_destino' => 'Banorte', 'pld_cuenta_destino' => '3311',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    // Fiesta $75K  — Efectivo
+    array('fk_c' => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
+          'pld_monto_efectivo' => 75000.00, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 0,
+          'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    // Yaris  $110K — Transferencia
+    array('fk_c' => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 110000.00, 'pld_monto_efectivo' => 0, 'pld_monto_cheque' => 0,
+          'pld_banco_destino' => 'BBVA México', 'pld_cuenta_destino' => '5512',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    // Accent $65K  — Efectivo
+    array('fk_c' => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
+          'pld_monto_efectivo' => 65000.00, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 0,
+          'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    // Ibiza  $88K  — Transferencia
+    array('fk_c' => 2, 'pld_forma_pago' => '04', 'pld_instrumento_monetario' => '03',
+          'pld_monto_transferencia' => 88000.00, 'pld_monto_efectivo' => 0, 'pld_monto_cheque' => 0,
+          'pld_banco_destino' => 'HSBC México', 'pld_cuenta_destino' => '9900',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    // Rio    $95K  — Efectivo
+    array('fk_c' => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
+          'pld_monto_efectivo' => 95000.00, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 0,
+          'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    // Sandero $55K — Efectivo
+    array('fk_c' => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
+          'pld_monto_efectivo' => 55000.00, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 0,
+          'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+    // Fit    $72K  — Efectivo
+    array('fk_c' => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
+          'pld_monto_efectivo' => 72000.00, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 0,
+          'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
+          'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN'),
+);
+
+// Grupo C — 10 ops acumuladas mismo cliente FLORES RAMOS (montos pequeños)
+// Todas en efectivo (patrón de estructuración)
+$tipos_pago_c = array();
+$montos_c = array(12000.00, 14500.00, 18000.00, 11500.00, 15000.00, 13500.00, 16000.00, 12500.00, 14000.00, 15500.00);
+foreach ($montos_c as $m) {
+    $tipos_pago_c[] = array('fk_c' => 4, 'pld_forma_pago' => '01', 'pld_instrumento_monetario' => '01',
+        'pld_monto_efectivo' => $m, 'pld_monto_transferencia' => 0, 'pld_monto_cheque' => 0,
+        'pld_banco_destino' => '', 'pld_cuenta_destino' => '',
+        'pld_banco_cheque' => '', 'pld_numero_cheque' => '', 'pld_moneda' => 'MXN');
+}
+
+// ── Proceso unificado: todas las ops seed sin cotización/factura ──────────────
+$sql_all_ops = "SELECT o.rowid, o.fk_societe, o.fk_product, o.monto_mxn,"
+    ." o.fecha_operacion, o.mes_reportado, o.requiere_aviso, o.fk_propal, o.fk_facture"
     ." FROM ".MAIN_DB_PREFIX."pld_operacion o"
-    ." WHERE o.mes_reportado = '202411'"
-    ." AND o.requiere_aviso = 1"
-    ." AND (o.fk_facture IS NULL OR o.fk_facture = 0)"
-    ." ORDER BY o.fecha_operacion ASC";
-$res_ops_a = $db->query($sql_ops_a);
-if ($res_ops_a) {
-    $idx = 0;
-    while ($row = $db->fetch_object($res_ops_a)) {
+    ." WHERE o.import_key = 'SEED_PLD_TEST'"
+    ." ORDER BY o.mes_reportado ASC, o.fecha_operacion ASC";
+
+$res_all = $db->query($sql_all_ops);
+if (!$res_all) {
+    echo "  [ERROR] Consulta ops seed: ".$db->lasterror()."\n";
+} else {
+    // Preconstruir mapa pago por grupo (A=requiere_aviso=1 en 202412, B=bajo umbral 202412, C=acumulados)
+    $idx_a = 0; $idx_b = 0; $idx_c = 0;
+
+    while ($row = $db->fetch_object($res_all)) {
         $op_tmp = new PLDOperacion($db);
-        if ($op_tmp->fetch($row->rowid) <= 0) { $idx++; continue; }
+        if ($op_tmp->fetch($row->rowid) <= 0) continue;
 
         $soc_tmp = new Societe($db);
-        if ($soc_tmp->fetch($row->fk_societe) <= 0) { $idx++; continue; }
+        if ($soc_tmp->fetch($row->fk_societe) <= 0) continue;
 
         $prod_tmp = new Product($db);
-        if ($prod_tmp->fetch($row->fk_product) <= 0) { $idx++; continue; }
+        if ($prod_tmp->fetch($row->fk_product) <= 0) continue;
 
-        // Crear factura para esta operación
+        $monto = (float)$row->monto_mxn;
+
+        // Asegurar precio en el producto
+        asignarPrecioProducto($db, $user, $prod_tmp, $monto);
+
+        // Determinar datos de pago según grupo
+        if ($row->requiere_aviso == 1) {
+            // Grupo A
+            $extras = $tipos_pago_a[$idx_a] ?? $pago_default;
+            $extras['pld_monto_transferencia'] = $extras['pld_monto_transferencia'] ?? $monto;
+            $idx_a++;
+        } elseif ($row->mes_reportado === '202412' && $monto < 117310) {
+            // Grupo B
+            $extras = $tipos_pago_b[$idx_b] ?? $pago_default;
+            $idx_b++;
+        } else {
+            // Grupo C (acumulados)
+            $extras = $tipos_pago_c[$idx_c] ?? $pago_default;
+            $extras['pld_monto_efectivo'] = $monto;
+            $idx_c++;
+        }
+
+        // 1. Cotización
+        $propal = crearCotizacion($db, $user, $op_tmp, $soc_tmp, $prod_tmp, $monto, $stats);
+
+        // 2. Factura
         $factura = crearFactura($db, $user, $op_tmp, $soc_tmp, $prod_tmp, $stats);
-        if (!$factura) { $idx++; continue; }
+        if (!$factura) continue;
 
-        // Datos de pago para este índice
-        $extras = isset($tipos_pago_a[$idx]) ? $tipos_pago_a[$idx] : $tipos_pago_a[0];
-        crearPago($db, $user, $factura->id, (float)$row->monto_mxn, $row->fecha_operacion,
+        // 3. Pago con extrafields PLD
+        crearPago($db, $user, $factura->id, $monto, $row->fecha_operacion,
                   (int)$extras['fk_c'], $extras, $stats);
-        $idx++;
     }
-    $db->free($res_ops_a);
-} else {
-    echo "  [ERROR] Consulta ops Grupo A: ".$db->lasterror()."\n";
+    $db->free($res_all);
 }
 
 // -----------------------------------------------------------------------
@@ -710,9 +909,10 @@ echo " RESUMEN FINAL\n";
 echo "========================================\n";
 echo " Clientes creados   : ".$stats['clientes']."\n";
 echo " Vehículos creados  : ".$stats['vehiculos']."\n";
-echo " Operaciones Grupo A: ".$stats['ops_a']." (superan umbral → requiere_aviso=1)\n";
+echo " Operaciones Grupo A: ".$stats['ops_a']." (superan umbral individualmente → requiere_aviso=1)\n";
 echo " Operaciones Grupo B: ".$stats['ops_b']." (bajo umbral → requiere_aviso=0)\n";
-echo " Operaciones Grupo C: ".$stats['ops_c']." (acumuladas → requiere_aviso=0 individual)\n";
+echo " Operaciones Grupo C: ".$stats['ops_c']." (acumuladas jul-dic 2024 → requiere_aviso=0 individual)\n";
+echo " Cotizaciones creadas: ".$stats['cotizaciones']."\n";
 echo " Facturas creadas   : ".$stats['facturas']."\n";
 echo " Pagos creados      : ".$stats['pagos']."\n";
 echo " Errores            : ".$stats['errores']."\n";
@@ -720,10 +920,10 @@ echo "\n NOTA Grupo C: La detección de estructuración/acumulación requiere\n"
 echo " proceso batch del oficial de cumplimiento (pendiente Fase 4).\n";
 echo " Para marcar estas ops como 'requiere_aviso=1' manualmente:\n";
 echo "   UPDATE llx_pld_operacion SET requiere_aviso=1\n";
-echo "   WHERE fk_societe = ".(($cliente_acumulado) ? $cliente_acumulado->id : '?')." AND mes_reportado BETWEEN '202501' AND '202506';\n";
+echo "   WHERE fk_societe = ".(($cliente_acumulado) ? $cliente_acumulado->id : '?')." AND mes_reportado BETWEEN '202407' AND '202412';\n";
 echo "\n NOTA XML: Para generar el XML del Grupo A ejecutar:\n";
-echo "   php xml_generator.php (mes_reportado=202411) desde la UI, o\n";
-echo "   php scripts/test_xml_generator.php 202411\n";
+echo "   php xml_generator.php (mes_reportado=202412) desde la UI, o\n";
+echo "   php scripts/test_xml_generator.php 202412\n";
 echo "\n";
 
 $db->close();
