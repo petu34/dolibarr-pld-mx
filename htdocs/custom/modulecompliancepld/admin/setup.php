@@ -117,13 +117,65 @@ if ($action == 'load_seed' && $user->admin) {
 
 // ── Acción: eliminar datos de prueba ──────────────────────────────────────────
 if ($action == 'delete_seed' && $user->admin) {
-	$tables = array('pld_aviso_operacion', 'pld_operacion', 'pld_aviso', 'pld_alerta', 'pld_beneficiario', 'pld_documento');
 	$total_deleted = 0;
-	foreach ($tables as $t) {
-		$sql_del = "DELETE FROM ".MAIN_DB_PREFIX.$t." WHERE import_key = 'SEED_PLD_TEST'";
-		$db->query($sql_del);
-		$total_deleted += $db->affected_rows($db->db);
+
+	// 1. Recopilar IDs de facturas y propals vinculadas a operaciones seed
+	$factura_ids = array();
+	$propal_ids  = array();
+	$sql_fk = "SELECT fk_facture, fk_propal FROM ".MAIN_DB_PREFIX."pld_operacion"
+		." WHERE import_key = 'SEED_PLD_TEST'";
+	$res_fk = $db->query($sql_fk);
+	if ($res_fk) {
+		while ($row_fk = $db->fetch_object($res_fk)) {
+			if (!empty($row_fk->fk_facture) && $row_fk->fk_facture > 0) {
+				$factura_ids[] = (int)$row_fk->fk_facture;
+			}
+			if (!empty($row_fk->fk_propal) && $row_fk->fk_propal > 0) {
+				$propal_ids[] = (int)$row_fk->fk_propal;
+			}
+		}
+		$db->free($res_fk);
 	}
+
+	// 2. Eliminar pagos y sus ligaduras (vía facturas seed)
+	if (!empty($factura_ids)) {
+		$ids = implode(',', $factura_ids);
+		// Extrafields PLD del pago
+		$db->query("DELETE FROM ".MAIN_DB_PREFIX."paiement_extrafields"
+			." WHERE fk_object IN ("
+			."  SELECT fk_paiement FROM ".MAIN_DB_PREFIX."paiement_facture"
+			."  WHERE fk_facture IN ($ids)"
+			." )");
+		// Pagos
+		$db->query("DELETE FROM ".MAIN_DB_PREFIX."paiement"
+			." WHERE rowid IN ("
+			."  SELECT fk_paiement FROM ".MAIN_DB_PREFIX."paiement_facture"
+			."  WHERE fk_facture IN ($ids)"
+			." )");
+		// Ligaduras pago→factura
+		$db->query("DELETE FROM ".MAIN_DB_PREFIX."paiement_facture WHERE fk_facture IN ($ids)");
+		// Líneas de factura
+		$db->query("DELETE FROM ".MAIN_DB_PREFIX."facturedet WHERE fk_facture IN ($ids)");
+		// Facturas
+		$res_del = $db->query("DELETE FROM ".MAIN_DB_PREFIX."facture WHERE rowid IN ($ids)");
+		if ($res_del) $total_deleted += $db->affected_rows($db->db);
+	}
+
+	// 3. Eliminar líneas y cotizaciones seed
+	if (!empty($propal_ids)) {
+		$ids = implode(',', $propal_ids);
+		$db->query("DELETE FROM ".MAIN_DB_PREFIX."propaldet WHERE fk_propal IN ($ids)");
+		$res_del = $db->query("DELETE FROM ".MAIN_DB_PREFIX."propal WHERE rowid IN ($ids)");
+		if ($res_del) $total_deleted += $db->affected_rows($db->db);
+	}
+
+	// 4. Eliminar tablas PLD seed
+	$pld_tables = array('pld_aviso_operacion', 'pld_operacion', 'pld_aviso', 'pld_alerta', 'pld_beneficiario', 'pld_documento');
+	foreach ($pld_tables as $t) {
+		$res_del = $db->query("DELETE FROM ".MAIN_DB_PREFIX.$t." WHERE import_key = 'SEED_PLD_TEST'");
+		if ($res_del) $total_deleted += $db->affected_rows($db->db);
+	}
+
 	setEventMessages($langs->trans('SeedEliminado', $total_deleted), null, 'mesgs');
 	header("Location: ".dol_escape_htmltag($_SERVER["PHP_SELF"]));
 	exit;

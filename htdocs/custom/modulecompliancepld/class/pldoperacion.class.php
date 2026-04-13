@@ -18,6 +18,7 @@ class PLDOperacion extends CommonObject
     public $entity;
     
     public $fk_facture;
+    public $fk_propal;
     public $fk_societe;
     public $fk_product;
     
@@ -93,7 +94,7 @@ class PLDOperacion extends CommonObject
         }
         
         $sql = "INSERT INTO ".MAIN_DB_PREFIX.$this->table_element." (";
-        $sql .= " entity, fk_facture, fk_societe, fk_product,";
+        $sql .= " entity, fk_facture, fk_propal, fk_societe, fk_product,";
         $sql .= " tipo_operacion, tipo_actividad_vulnerable,";
         $sql .= " fecha_operacion, mes_reportado, folio_interno,";
         $sql .= " moneda, monto_mxn, monto_sin_impuestos, tasa_impuesto,";
@@ -106,6 +107,7 @@ class PLDOperacion extends CommonObject
         $sql .= ") VALUES (";
         $sql .= " ".(int)$this->entity.",";
         $sql .= " ".($this->fk_facture > 0 ? (int)$this->fk_facture : 'NULL').",";
+        $sql .= " ".($this->fk_propal > 0 ? (int)$this->fk_propal : 'NULL').",";
         $sql .= " ".(int)$this->fk_societe.",";
         $sql .= " ".($this->fk_product > 0 ? (int)$this->fk_product : 'NULL').",";
         $sql .= " '".$this->db->escape($this->tipo_operacion)."',";
@@ -161,7 +163,7 @@ class PLDOperacion extends CommonObject
     public function fetch($id, $ref = ''): int
     {
         $sql = "SELECT";
-        $sql .= " rowid, entity, fk_facture, fk_societe, fk_product,";
+        $sql .= " rowid, entity, fk_facture, fk_propal, fk_societe, fk_product,";
         $sql .= " tipo_operacion, tipo_actividad_vulnerable,";
         $sql .= " fecha_operacion, mes_reportado, folio_interno,";
         $sql .= " moneda, monto_mxn, monto_sin_impuestos, tasa_impuesto,";
@@ -190,6 +192,7 @@ class PLDOperacion extends CommonObject
                 $this->rowid = $obj->rowid;
                 $this->entity = $obj->entity;
                 $this->fk_facture = $obj->fk_facture;
+                $this->fk_propal  = $obj->fk_propal;
                 $this->fk_societe = $obj->fk_societe;
                 $this->fk_product = $obj->fk_product;
                 $this->tipo_operacion = $obj->tipo_operacion;
@@ -239,6 +242,7 @@ class PLDOperacion extends CommonObject
         
         $sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element." SET";
         $sql .= " fk_facture = ".($this->fk_facture > 0 ? (int)$this->fk_facture : 'NULL').",";
+        $sql .= " fk_propal = ".($this->fk_propal > 0 ? (int)$this->fk_propal : 'NULL').",";
         $sql .= " fk_societe = ".(int)$this->fk_societe.",";
         $sql .= " fk_product = ".($this->fk_product > 0 ? (int)$this->fk_product : 'NULL').",";
         $sql .= " tipo_operacion = '".$this->db->escape($this->tipo_operacion)."',";
