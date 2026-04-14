@@ -147,7 +147,6 @@ class modModulecompliancepld extends DolibarrModules
 		$this->tabs[] = array('data' => 'thirdparty:+plddata:PLDTabThirdparty:'.$pldLang.':'.$pldPerm.':/modulecompliancepld/pld_thirdparty.php?id=__ID__');
 		$this->tabs[] = array('data' => 'contact:+plddata:PLDTabContact:'.$pldLang.':'.$pldPerm.':/modulecompliancepld/pld_contact.php?id=__ID__');
 		$this->tabs[] = array('data' => 'product:+plddata:PLDTabProduct:'.$pldLang.':'.$pldPerm.':/modulecompliancepld/pld_product.php?id=__ID__');
-		$this->tabs[] = array('data' => 'invoice:+plddata:PLDTabInvoice:'.$pldLang.':'.$pldPerm.':/modulecompliancepld/pld_invoice.php?id=__ID__');
 		$this->tabs[] = array('data' => 'order:+plddata:PLDTabOrder:'.$pldLang.':'.$pldPerm.':/modulecompliancepld/pld_order.php?id=__ID__');
 		$this->tabs[] = array('data' => 'payment:+plddata:PLDTabPayment:'.$pldLang.':'.$pldPerm.':/modulecompliancepld/pld_payment.php?id=__ID__');
 
@@ -424,10 +423,8 @@ class modModulecompliancepld extends DolibarrModules
 		// Limpiar fieldcomputed residual de init() previos con args desalineados (fix commit 49c6cb3)
 		$this->db->query("UPDATE ".MAIN_DB_PREFIX."extrafields SET fieldcomputed = NULL WHERE name LIKE 'pld_%' AND fieldcomputed LIKE 'PLD%'");
 
-		// Ocultar extrafields PLD del formulario nativo de facturas (list=0).
-		// Los campos se muestran exclusivamente en el tab pld_invoice.php.
-		// fix: tab PLD en factura 2026-03-16
-		$this->db->query("UPDATE ".MAIN_DB_PREFIX."extrafields SET list = '0' WHERE elementtype = 'facture' AND name LIKE 'pld_%'");
+		// Eliminar extrafields PLD de factura (causan bug en registro de pagos — ver ADR-003)
+		$this->db->query("DELETE FROM ".MAIN_DB_PREFIX."extrafields WHERE elementtype = 'facture' AND name LIKE 'pld_%'");
 
 		$e = 'isModEnabled("modulecompliancepld")';
 		$l = 'modulecompliancepld@modulecompliancepld';
@@ -590,59 +587,6 @@ class modModulecompliancepld extends DolibarrModules
 		$extrafields->addExtraField('pld_valor_libro_azul', 'Valor Libro Azul (PLD)', 'price', 123, '15,2', 'product', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
 
 		// =====================================================================
-		// FACTURE (llx_facture_extrafields) — 31 campos
-		// LFPIORPI Art. 17 Fracc. VIII: Operación vulnerable
-		// =====================================================================
-
-		// 4.1 Control PLD
-		$extrafields->addExtraField('pld_es_actividad_vulnerable', '¿Es Actividad Vulnerable? (PLD)', 'boolean', 100, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_clave_actividad', 'Clave de Actividad Vulnerable (PLD)', 'varchar', 101, '3', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_tipo_operacion', 'Tipo de Operación (PLD)', 'varchar', 102, '4', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_supera_umbral_id', '¿Supera Umbral Identificación? (PLD)', 'boolean', 103, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_supera_umbral_aviso', '¿Supera Umbral Aviso? (PLD)', 'boolean', 104, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_requiere_aviso', '¿Requiere Aviso SAT? (PLD)', 'boolean', 105, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_tipo_aviso', 'Tipo de Aviso (PLD)', 'select', 106, '', 'facture', 0, 0, '', $optTipoAviso, 1, '',0, '', '', '', $l, $e);
-
-		// 4.2 Datos de la Operación
-		$extrafields->addExtraField('pld_fecha_operacion', 'Fecha de Operación (PLD)', 'date', 107, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_codigo_postal_operacion', 'Código Postal de la Operación (PLD)', 'varchar', 108, '5', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_descripcion_operacion', 'Descripción de la Operación (PLD)', 'text', 109, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_razon_operacion', 'Razón / Justificación (PLD)', 'text', 110, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_monto_moneda_nacional', 'Monto en Moneda Nacional (PLD)', 'price', 111, '15,2', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_tipo_cambio_aplicado', 'Tipo de Cambio Aplicado (PLD)', 'price', 112, '10,4', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-
-		// 4.3 Referencia del Aviso
-		$extrafields->addExtraField('pld_referencia_aviso', 'Referencia del Aviso (PLD)', 'varchar', 113, '14', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_prioridad', 'Prioridad del Aviso (PLD)', 'varchar', 114, '1', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-
-		// 4.4 Alerta
-		$extrafields->addExtraField('pld_tipo_alerta', 'Tipo de Alerta (PLD)', 'varchar', 115, '4', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_descripcion_alerta', 'Descripción de la Alerta (PLD)', 'text', 116, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-
-		// 4.5 Acumulación
-		$extrafields->addExtraField('pld_es_operacion_acumulada', '¿Operación Acumulada? (PLD)', 'boolean', 117, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_inicio_acumulacion', 'Fecha Inicio Acumulación (PLD)', 'date', 118, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_fin_acumulacion', 'Fecha Fin Acumulación (PLD)', 'date', 119, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_monto_acumulado_total', 'Monto Acumulado Total (PLD)', 'price', 120, '15,2', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-
-		// 4.6 Control de Avisos
-		$extrafields->addExtraField('pld_aviso_presentado', '¿Aviso Presentado? (PLD)', 'boolean', 121, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_fecha_presentacion', 'Fecha de Presentación (PLD)', 'date', 122, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_folio_aviso', 'Folio del Aviso SAT (PLD)', 'varchar', 123, '14', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_mes_reportado', 'Mes Reportado (PLD)', 'varchar', 124, '6', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_acuse_sat', 'Acuse SAT (PLD)', 'text', 125, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-
-		// 4.7 Modificatorio
-		$extrafields->addExtraField('pld_es_modificatorio', '¿Es Aviso Modificatorio? (PLD)', 'boolean', 126, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_folio_modificacion', 'Folio del Aviso a Modificar (PLD)', 'varchar', 127, '14', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_descripcion_modificacion', 'Descripción de la Modificación (PLD)', 'text', 128, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-
-		// 4.8 Alertas y Aviso 24h
-		$extrafields->addExtraField('pld_genera_alerta', '¿Genera Alerta Interna? (PLD)', 'boolean', 129, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_requiere_aviso_24hrs', '¿Requiere Aviso 24 Horas? (PLD)', 'boolean', 130, '', 'facture', 0, 1, '', '', 1, '',0, '', '', '', $l, $e);
-		$extrafields->addExtraField('pld_razon_24hrs', 'Razón del Aviso 24 Horas (PLD)', 'text', 131, '', 'facture', 0, 0, '', '', 1, '',0, '', '', '', $l, $e);
-
-		// =====================================================================
 		// PAYMENT (llx_paiement_extrafields) — 29 campos
 		// LFPIORPI Art. 17 Fracc. VIII: Datos de liquidación
 		// =====================================================================
@@ -708,6 +652,8 @@ class modModulecompliancepld extends DolibarrModules
 	public function remove($options = '')
 	{
 		$sql = array();
+		// Limpiar extrafields PLD de factura al desinstalar
+		$sql[] = "DELETE FROM ".MAIN_DB_PREFIX."extrafields WHERE elementtype = 'facture' AND name LIKE 'pld_%'";
 		return $this->_remove($sql, $options);
 	}
 }
