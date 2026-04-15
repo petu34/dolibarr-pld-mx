@@ -45,6 +45,7 @@ if ($action == 'update') {
 		'MODULECOMPLIANCEPLD_UMA_ANIO'             => array('type' => 'int',    'default' => 2026),
 		'MODULECOMPLIANCEPLD_UMBRAL_VEH_NUEVO'     => array('type' => 'float',  'default' => 377778.20),
 		'MODULECOMPLIANCEPLD_UMBRAL_VEH_USADO'     => array('type' => 'float',  'default' => 117310.00),
+		'MODULECOMPLIANCEPLD_UMBRAL_ACUMULADO_6M'  => array('type' => 'float',  'default' => 500000.00),
 		'MODULECOMPLIANCEPLD_DIAS_ALERTA_ID'       => array('type' => 'int',    'default' => 30),
 		'MODULECOMPLIANCEPLD_OFICIAL_CUMPLIMIENTO' => array('type' => 'int',    'default' => 0),
 		'MODULECOMPLIANCEPLD_PERIODO_CONSERVACION' => array('type' => 'int',    'default' => 10),
@@ -236,6 +237,13 @@ print '<tr class="oddeven">';
 print '<td><label for="MODULECOMPLIANCEPLD_UMBRAL_VEH_USADO">'.$langs->trans("UmbralVehUsado").'</label></td>';
 print '<td><input type="number" step="0.01" id="MODULECOMPLIANCEPLD_UMBRAL_VEH_USADO" name="MODULECOMPLIANCEPLD_UMBRAL_VEH_USADO" class="flat minwidth150" value="'.dol_escape_htmltag($umbral_usado).'"></td>';
 print '<td class="opacitymedium">1,000 UMAs x $117.31 = $117,310.00 MXN</td>';
+print '</tr>';
+
+$umbral_acum = getDolGlobalString('MODULECOMPLIANCEPLD_UMBRAL_ACUMULADO_6M', '500000.00');
+print '<tr class="oddeven">';
+print '<td><label for="MODULECOMPLIANCEPLD_UMBRAL_ACUMULADO_6M">'.$langs->trans("UmbralAcumulado6M").'</label></td>';
+print '<td><input type="number" step="0.01" id="MODULECOMPLIANCEPLD_UMBRAL_ACUMULADO_6M" name="MODULECOMPLIANCEPLD_UMBRAL_ACUMULADO_6M" class="flat minwidth150" value="'.dol_escape_htmltag($umbral_acum).'"></td>';
+print '<td class="opacitymedium">Monto acumulado en 6 meses que activa aviso por el mismo cliente (Art. 7 Regl. LFPIORPI). Default: $500,000.00 MXN</td>';
 print '</tr>';
 
 print '</table><br>';
