@@ -17,6 +17,8 @@ if (!$res) {
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once __DIR__.'/class/pldbeneficiario.class.php';
+require_once __DIR__.'/class/vo/CURP.php';
+require_once __DIR__.'/class/vo/RFC.php';
 
 $langs->loadLangs(array("modulecompliancepld@modulecompliancepld"));
 
@@ -51,26 +53,56 @@ if ($id > 0) {
 }
 
 if ($action == 'add' && !$cancel) {
-    $object->fk_societe = GETPOST('fk_societe', 'int');
-    $object->fk_socpeople = GETPOST('fk_socpeople', 'int');
-    $object->tipo_beneficiario = GETPOST('tipo_beneficiario', 'alpha');
-    $object->nombre = GETPOST('nombre', 'alpha');
-    $object->apellido_paterno = GETPOST('apellido_paterno', 'alpha');
-    $object->apellido_materno = GETPOST('apellido_materno', 'alpha');
-    $object->curp = GETPOST('curp', 'alpha');
-    $object->rfc = GETPOST('rfc', 'alpha');
-    $object->nacionalidad = GETPOST('nacionalidad', 'alpha');
+    $object->fk_societe            = GETPOST('fk_societe', 'int');
+    $object->fk_socpeople          = GETPOST('fk_socpeople', 'int');
+    $object->tipo_beneficiario     = GETPOST('tipo_beneficiario', 'alpha');
+    $object->nombre                = GETPOST('nombre', 'alpha');
+    $object->apellido_paterno      = GETPOST('apellido_paterno', 'alpha');
+    $object->apellido_materno      = GETPOST('apellido_materno', 'alpha');
+    $object->nacionalidad          = GETPOST('nacionalidad', 'alpha');
     $object->porcentaje_participacion = price2num(GETPOST('porcentaje_participacion', 'alpha'));
-    $object->es_pep = GETPOST('es_pep', 'int');
-    
-    $result = $object->create($user);
-    
-    if ($result > 0) {
-        header("Location: ".$_SERVER["PHP_SELF"]."?id=".$object->id);
-        exit;
+    $object->es_pep                = GETPOST('es_pep', 'int');
+
+    // Validar CURP y RFC mediante Value Objects en la frontera de entrada
+    $curp_input = GETPOST('curp', 'alpha');
+    $rfc_input  = GETPOST('rfc', 'alpha');
+    $vo_errors  = [];
+
+    if (!empty($curp_input)) {
+        try {
+            $object->curp = (string)CURP::from($curp_input);
+        } catch (\InvalidArgumentException $e) {
+            $vo_errors[] = $langs->trans('PLDErrorCURPInvalida').' ('.$curp_input.')';
+        }
     } else {
-        setEventMessages($object->error, $object->errors, 'errors');
+        $object->curp = '';
+    }
+
+    if (!empty($rfc_input)) {
+        try {
+            $object->rfc = (string)RFC::from($rfc_input);
+        } catch (\InvalidArgumentException $e) {
+            $vo_errors[] = $langs->trans('PLDErrorRFCInvalido').' ('.$rfc_input.')';
+        }
+    } else {
+        $object->rfc = '';
+    }
+
+    if (!empty($vo_errors)) {
+        foreach ($vo_errors as $ve) {
+            setEventMessages($ve, null, 'errors');
+        }
         $action = 'create';
+    } else {
+        $result = $object->create($user);
+
+        if ($result > 0) {
+            header("Location: ".$_SERVER["PHP_SELF"]."?id=".$object->id);
+            exit;
+        } else {
+            setEventMessages($object->error, $object->errors, 'errors');
+            $action = 'create';
+        }
     }
 }
 
