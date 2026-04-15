@@ -7,6 +7,9 @@ if (!defined('DOL_VERSION')) {
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/repository/PLDOperacionRepository.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/vo/CURP.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/vo/RFC.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/vo/VIN.php';
 
 class PLDOperacion extends CommonObject
 {
@@ -493,9 +496,13 @@ class PLDOperacion extends CommonObject
             $this->cliente->denominacion_razon = '';
         }
 
-        // Identificación
-        $this->cliente->rfc = strtoupper($opts['options_pld_rfc_validado'] ?? ($societe->idprof2 ?? ''));
-        $this->cliente->curp = strtoupper($opts['options_pld_curp'] ?? '');
+        // Identificación — normalizada mediante Value Objects (garantizan formato SAT)
+        $rfc_raw  = $opts['options_pld_rfc_validado'] ?? ($societe->idprof2 ?? '');
+        $curp_raw = $opts['options_pld_curp'] ?? '';
+        $rfc_vo   = RFC::tryFrom((string)$rfc_raw);
+        $curp_vo  = CURP::tryFrom((string)$curp_raw);
+        $this->cliente->rfc  = $rfc_vo  ? (string)$rfc_vo  : strtoupper(trim((string)$rfc_raw));
+        $this->cliente->curp = $curp_vo ? (string)$curp_vo : strtoupper(trim((string)$curp_raw));
         $this->cliente->fecha_nacimiento = $opts['options_pld_fecha_nacimiento'] ?? '';
         $this->cliente->pais_nacimiento = $opts['options_pld_pais_nacimiento'] ?? 'MX';
         $this->cliente->nacionalidad = $opts['options_pld_nacionalidad'] ?? 'MX';
@@ -555,7 +562,10 @@ class PLDOperacion extends CommonObject
         $this->vehiculo->marca = $opts['options_pld_marca'] ?? '';
         $this->vehiculo->modelo = $opts['options_pld_modelo'] ?? '';
         $this->vehiculo->anio_modelo = $opts['options_pld_anio_modelo'] ?? date('Y');
-        $this->vehiculo->vin = strtoupper($opts['options_pld_vin'] ?? '');
+        // VIN normalizado mediante Value Object (garantiza 17 chars alfanuméricos SAT)
+        $vin_raw = $opts['options_pld_vin'] ?? '';
+        $vin_vo  = VIN::tryFrom((string)$vin_raw);
+        $this->vehiculo->vin          = $vin_vo ? (string)$vin_vo : strtoupper(trim((string)$vin_raw));
         $this->vehiculo->numero_serie = strtoupper($opts['options_pld_numero_serie'] ?? '');
         $this->vehiculo->placas = $opts['options_pld_placas'] ?? '';
         $this->vehiculo->origen = $opts['options_pld_origen'] ?? 'nacional';
