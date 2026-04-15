@@ -177,4 +177,91 @@ class PLDOperacionRepository
 
         return $pagos;
     }
+
+    /**
+     * Devuelve operaciones del mes pendientes de aviso, completamente hidratadas.
+     *
+     * Busca operaciones con requiere_aviso=1 y aviso_presentado=0 para un mes
+     * dado y las devuelve con cliente, vehículo, beneficiarios y formas de pago
+     * ya cargados, listas para el generador de XML.
+     *
+     * @param string $mes_reportado Formato YYYYMM
+     * @return PLDOperacion[] Operaciones hidratadas; vacío si no hay pendientes
+     */
+    public function fetchOperacionesPorMes(string $mes_reportado): array
+    {
+        $sql  = "SELECT o.rowid";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion as o";
+        $sql .= " WHERE o.mes_reportado = '".$this->db->escape($mes_reportado)."'";
+        $sql .= " AND o.requiere_aviso = 1";
+        $sql .= " AND o.aviso_presentado = 0";
+        $sql .= " AND o.estado != 'cancelada'";
+        $sql .= " ORDER BY o.fecha_operacion ASC";
+
+        return $this->hidratar($sql);
+    }
+
+    /**
+     * Devuelve operaciones por array de IDs, completamente hidratadas.
+     *
+     * Usado para generar XML de un aviso específico donde ya se conocen
+     * los IDs de las operaciones que lo componen.
+     *
+     * @param int[] $ids Array de rowids de llx_pld_operacion
+     * @return PLDOperacion[] Operaciones hidratadas en el mismo orden que la BD
+     */
+    public function fetchOperacionesPorIds(array $ids): array
+    {
+        $ids_safe = array_map('intval', $ids);
+        if (empty($ids_safe)) {
+            return [];
+        }
+
+        $sql  = "SELECT o.rowid";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion as o";
+        $sql .= " WHERE o.rowid IN (".implode(',', $ids_safe).")";
+        $sql .= " AND o.estado != 'cancelada'";
+        $sql .= " ORDER BY o.fecha_operacion ASC";
+
+        return $this->hidratar($sql);
+    }
+
+    /**
+     * Ejecuta una query de rowids y devuelve PLDOperacion completamente hidratadas.
+     *
+     * Centraliza la instanciación y carga de relaciones para los métodos
+     * fetchOperacionesPorMes() y fetchOperacionesPorIds().
+     * El require_once es diferido (dentro del método) para evitar dependencia
+     * circular a nivel de archivo con pldoperacion.class.php.
+     *
+     * @param string $sql Query que retorna columna 'rowid'
+     * @return PLDOperacion[]
+     */
+    private function hidratar(string $sql): array
+    {
+        // Carga diferida: pldoperacion.class.php requiere este repositorio en su
+        // cabecera; cargarlo aquí (ya incluido por PHP) no genera dependencia circular.
+        require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldoperacion.class.php';
+
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            return [];
+        }
+
+        $operaciones = [];
+        while ($obj = $this->db->fetch_object($resql)) {
+            $operacion = new PLDOperacion($this->db);
+            if ($operacion->fetch((int)$obj->rowid) <= 0) {
+                continue;
+            }
+            $operacion->fetchCliente();
+            $operacion->fetchVehiculo();
+            $operacion->fetchBeneficiarios();
+            $operacion->fetchFormasPago();
+            $operaciones[] = $operacion;
+        }
+        $this->db->free($resql);
+
+        return $operaciones;
+    }
 }

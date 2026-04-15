@@ -15,6 +15,7 @@ if (!$res) { die("Include of main fails"); }
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once __DIR__.'/../class/pldaviso.class.php';
 require_once __DIR__.'/../class/pldxmlgenerator.class.php';
+require_once __DIR__.'/../class/repository/PLDOperacionRepository.php';
 require_once __DIR__.'/../class/pldefirmaintegration.class.php';
 
 $langs->loadLangs(array("modulecompliancepld@modulecompliancepld"));
@@ -141,7 +142,12 @@ if ($action == 'generar_xml' && $user->hasRight('modulecompliancepld', 'generate
 	if (empty($ids_ops)) {
 		setEventMessages($langs->trans('PLDAvisoSinOperaciones'), null, 'errors');
 	} else {
-		$generator = new PLDXMLGenerator($db);
+		$repo      = new PLDOperacionRepository($db);
+		$config    = [
+			'rfc_sujeto'      => getDolGlobalString('MAIN_INFO_SIREN'),
+			'clave_actividad' => getDolGlobalString('MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE') ?: 'VIII',
+		];
+		$generator = new PLDXMLGenerator($repo, $config);
 		$xml = $generator->generarXMLMensual($aviso->mes_reportado, $ids_ops);
 
 		if ($xml === false) {
