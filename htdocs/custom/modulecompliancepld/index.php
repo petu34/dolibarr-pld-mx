@@ -25,6 +25,8 @@ if (!$res) { die("Include of main fails"); }
 
 $langs->loadLangs(array("modulecompliancepld@modulecompliancepld"));
 
+require_once __DIR__.'/class/services/PLDReporteService.php';
+
 if (!$user->hasRight('modulecompliancepld', 'read')) {
 	accessforbidden();
 }
@@ -33,37 +35,15 @@ $now       = dol_now();
 $thismonth = date('Ym', $now); // YYYYMM del mes actual
 
 /*
- * Contadores del mes actual
+ * Contadores y listados vía Service Layer
  */
+$reporteSvc  = new PLDReporteService($db);
+$contadores  = $reporteSvc->getContadoresDashboard($thismonth);
 
-// Operaciones vulnerables del mes
-$sql_ops_mes  = "SELECT COUNT(rowid) as total FROM ".MAIN_DB_PREFIX."pld_operacion";
-$sql_ops_mes .= " WHERE entity IN (".getEntity('modulecompliancepld').")";
-$sql_ops_mes .= " AND mes_reportado = '".$db->escape($thismonth)."'";
-$res_ops_mes  = $db->query($sql_ops_mes);
-$cnt_ops_mes  = ($res_ops_mes ? $db->fetch_object($res_ops_mes)->total : 0);
-
-// Avisos pendientes (estado borrador o pendiente)
-$sql_avisos  = "SELECT COUNT(rowid) as total FROM ".MAIN_DB_PREFIX."pld_aviso";
-$sql_avisos .= " WHERE entity IN (".getEntity('modulecompliancepld').")";
-$sql_avisos .= " AND estado IN ('borrador', 'pendiente')";
-$res_avisos  = $db->query($sql_avisos);
-$cnt_avisos  = ($res_avisos ? $db->fetch_object($res_avisos)->total : 0);
-
-// Alertas abiertas
-$sql_alertas  = "SELECT COUNT(rowid) as total FROM ".MAIN_DB_PREFIX."pld_alerta";
-$sql_alertas .= " WHERE entity IN (".getEntity('modulecompliancepld').")";
-$sql_alertas .= " AND estado = 'abierta'";
-$res_alertas  = $db->query($sql_alertas);
-$cnt_alertas  = ($res_alertas ? $db->fetch_object($res_alertas)->total : 0);
-
-// Documentos vencidos (fecha_vencimiento < hoy)
-$today_sql    = dol_print_date($now, 'dayrfc');
-$sql_docs_venc  = "SELECT COUNT(rowid) as total FROM ".MAIN_DB_PREFIX."pld_documento";
-$sql_docs_venc .= " WHERE entity IN (".getEntity('modulecompliancepld').")";
-$sql_docs_venc .= " AND fecha_vencimiento IS NOT NULL AND fecha_vencimiento < '".$db->escape($today_sql)."'";
-$res_docs_venc  = $db->query($sql_docs_venc);
-$cnt_docs_venc  = ($res_docs_venc ? $db->fetch_object($res_docs_venc)->total : 0);
+$cnt_ops_mes  = $contadores['ops_mes'];
+$cnt_avisos   = $contadores['avisos_pendientes'];
+$cnt_alertas  = $contadores['alertas_abiertas'];
+$cnt_docs_venc = $contadores['docs_vencidos'];
 
 /*
  * View
@@ -127,15 +107,8 @@ print '<br>';
 print '<div class="fichecenter"><div class="fichethirdleft">';
 
 // Últimas operaciones vulnerables
-$sql_last_ops  = "SELECT o.rowid, o.folio_interno, o.tipo_operacion, o.monto_mxn, o.supera_umbral, o.estado, s.nom as empresa_nom";
-$sql_last_ops .= " FROM ".MAIN_DB_PREFIX."pld_operacion as o";
-$sql_last_ops .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = o.fk_societe";
-$sql_last_ops .= " WHERE o.entity IN (".getEntity('modulecompliancepld').")";
-$sql_last_ops .= " ORDER BY o.datec DESC";
-$sql_last_ops .= $db->plimit(10, 0);
-
-$res_last_ops  = $db->query($sql_last_ops);
-$num_last_ops  = ($res_last_ops ? $db->num_rows($res_last_ops) : 0);
+$last_ops     = $reporteSvc->getUltimasOperaciones(10);
+$num_last_ops = count($last_ops);
 
 print '<div style="background:#f6f6f6;border-radius:4px;padding:4px 8px 8px 8px;margin-bottom:10px">';
 print '<table class="noborder centpercent">';
@@ -148,7 +121,7 @@ print '</tr>';
 if ($num_last_ops == 0) {
 	print '<tr><td colspan="4" class="opacitymedium">'.$langs->trans('DashSinRegistros').'</td></tr>';
 } else {
-	while ($obj = $db->fetch_object($res_last_ops)) {
+	foreach ($last_ops as $obj) {
 		$trclass = $obj->supera_umbral ? 'trwarning' : 'oddeven';
 		print '<tr class="'.$trclass.'">';
 		print '<td class="nowrap"><a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/operacion.php?id='.$obj->rowid.'">'.dol_escape_htmltag($obj->folio_interno ?: '#'.$obj->rowid).'</a></td>';
@@ -164,15 +137,8 @@ print '</table>';
 print '</div>'; // gray bg operaciones
 
 // Alertas sin resolver
-$sql_open_alerts  = "SELECT al.rowid, al.tipo_alerta, al.nivel_riesgo, al.datec as fecha_alerta, s.nom as empresa_nom";
-$sql_open_alerts .= " FROM ".MAIN_DB_PREFIX."pld_alerta as al";
-$sql_open_alerts .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = al.fk_societe";
-$sql_open_alerts .= " WHERE al.entity IN (".getEntity('modulecompliancepld').") AND al.estado = 'abierta'";
-$sql_open_alerts .= " ORDER BY CASE al.nivel_riesgo WHEN 'alto' THEN 1 WHEN 'medio' THEN 2 ELSE 3 END, al.datec DESC";
-$sql_open_alerts .= $db->plimit(10, 0);
-
-$res_open_alerts  = $db->query($sql_open_alerts);
-$num_open_alerts  = ($res_open_alerts ? $db->num_rows($res_open_alerts) : 0);
+$open_alerts     = $reporteSvc->getAlertasAbiertas(10);
+$num_open_alerts = count($open_alerts);
 
 print '<div style="background:#f6f6f6;border-radius:4px;padding:4px 8px 8px 8px;margin-bottom:10px">';
 print '<table class="noborder centpercent">';
@@ -187,7 +153,7 @@ if ($num_open_alerts == 0) {
 	print '<tr><td colspan="4" class="opacitymedium">'.$langs->trans('DashSinRegistros').'</td></tr>';
 } else {
 	$nivel_colors = array('alto' => 'badge-status6', 'medio' => 'badge-status5', 'bajo' => 'badge-status1');
-	while ($obj = $db->fetch_object($res_open_alerts)) {
+	foreach ($open_alerts as $obj) {
 		$trclass = ($obj->nivel_riesgo == 'alto' ? 'trwarning' : 'oddeven');
 		print '<tr class="'.$trclass.'">';
 		print '<td><a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/alerta.php?id='.$obj->rowid.'">'.dol_escape_htmltag($obj->tipo_alerta).'</a></td>';
@@ -204,14 +170,8 @@ print '</div>'; // gray bg alertas
 print '</div><div class="fichetwothirdright">';
 
 // Avisos SAT pendientes
-$sql_pending_avisos  = "SELECT a.rowid, a.referencia_aviso, a.tipo_aviso, a.mes_reportado, a.numero_operaciones, a.monto_total_operaciones";
-$sql_pending_avisos .= " FROM ".MAIN_DB_PREFIX."pld_aviso as a";
-$sql_pending_avisos .= " WHERE a.entity IN (".getEntity('modulecompliancepld').") AND a.estado IN ('borrador', 'pendiente')";
-$sql_pending_avisos .= " ORDER BY a.mes_reportado ASC, a.datec DESC";
-$sql_pending_avisos .= $db->plimit(10, 0);
-
-$res_pending  = $db->query($sql_pending_avisos);
-$num_pending  = ($res_pending ? $db->num_rows($res_pending) : 0);
+$pending_avisos = $reporteSvc->getAvisosPendientes(10);
+$num_pending    = count($pending_avisos);
 
 print '<div style="background:#f6f6f6;border-radius:4px;padding:4px 8px 8px 8px;margin-bottom:10px">';
 print '<table class="noborder centpercent">';
@@ -226,7 +186,7 @@ if ($num_pending == 0) {
 	print '<tr><td colspan="5" class="opacitymedium">'.$langs->trans('DashSinRegistros').'</td></tr>';
 } else {
 	$tipo_labels = array('MEN' => $langs->trans('PLDTipoAvisoMensual'), '24H' => $langs->trans('PLDTipoAviso24hrs'), 'ACU' => $langs->trans('PLDTipoAvisoAcumulado'));
-	while ($obj = $db->fetch_object($res_pending)) {
+	foreach ($pending_avisos as $obj) {
 		print '<tr class="oddeven">';
 		print '<td><a href="'.DOL_URL_ROOT.'/custom/modulecompliancepld/aviso/card.php?id='.$obj->rowid.'">'.dol_escape_htmltag($obj->referencia_aviso ?: '#'.$obj->rowid).'</a></td>';
 		print '<td>'.dol_escape_htmltag($tipo_labels[$obj->tipo_aviso] ?? $obj->tipo_aviso).'</td>';

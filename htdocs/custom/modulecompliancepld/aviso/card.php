@@ -14,9 +14,7 @@ if (!$res) { die("Include of main fails"); }
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once __DIR__.'/../class/pldaviso.class.php';
-require_once __DIR__.'/../class/pldxmlgenerator.class.php';
-require_once __DIR__.'/../class/repository/PLDOperacionRepository.php';
-require_once __DIR__.'/../class/pldefirmaintegration.class.php';
+require_once __DIR__.'/../class/services/PLDAvisoService.php';
 
 $langs->loadLangs(array("modulecompliancepld@modulecompliancepld"));
 
@@ -136,47 +134,20 @@ if ($action == 'quitar_operacion' && $user->hasRight('modulecompliancepld', 'wri
 
 // ── Generar XML para este aviso ───────────────────────────────────────────────
 if ($action == 'generar_xml' && $user->hasRight('modulecompliancepld', 'generate') && $id > 0) {
-	$aviso->fetchOperaciones();
-	$ids_ops = array_map(fn($o) => (int)$o->rowid, $aviso->operaciones ?? []);
+	$avisoSvc = new PLDAvisoService($db);
+	$firmar   = (bool) GETPOST('firmar_xml', 'int');
+	$ok       = $avisoSvc->generarXML($aviso, $firmar, $user);
 
-	if (empty($ids_ops)) {
-		setEventMessages($langs->trans('PLDAvisoSinOperaciones'), null, 'errors');
-	} else {
-		$repo      = new PLDOperacionRepository($db);
-		$config    = [
-			'rfc_sujeto'      => getDolGlobalString('MAIN_INFO_SIREN'),
-			'clave_actividad' => getDolGlobalString('MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE') ?: 'VIII',
-		];
-		$generator = new PLDXMLGenerator($repo, $config);
-		$xml = $generator->generarXMLMensual($aviso->mes_reportado, $ids_ops);
-
-		if ($xml === false) {
-			setEventMessages(implode(', ', $generator->errors), null, 'errors');
-		} else {
-			$firmar = GETPOST('firmar_xml', 'int');
-			if ($firmar) {
-				$efirma = new PLDEFirmaIntegration($db);
-				$xml = $efirma->firmarXMLContent($xml) ?: $xml;
-				if ($efirma->error) {
-					setEventMessages($efirma->error, null, 'warnings');
-				}
-			}
-
-			$ruta = $generator->guardarXML($xml, $aviso->mes_reportado, $user);
-
-			if ($ruta) {
-				$aviso->archivo_xml_ruta = $ruta;
-				$aviso->archivo_xml_hash = $aviso->calcularHashXML($xml);
-				$aviso->fecha_generacion_xml = $db->idate(dol_now());
-				if ($aviso->estado == 'borrador') {
-					$aviso->estado = 'pendiente';
-				}
-				$aviso->update($user);
-				setEventMessages($langs->trans('XMLGeneradoCorrectamente'), null, 'mesgs');
-			} else {
-				setEventMessages($generator->error, null, 'errors');
-			}
+	if ($ok) {
+		setEventMessages($langs->trans('XMLGeneradoCorrectamente'), null, 'mesgs');
+		foreach ($avisoSvc->errors as $w) { // advertencias de firma
+			setEventMessages($w, null, 'warnings');
 		}
+	} else {
+		$msg = $avisoSvc->error === 'PLDAvisoSinOperaciones'
+			? $langs->trans('PLDAvisoSinOperaciones')
+			: $avisoSvc->error;
+		setEventMessages($msg, $avisoSvc->errors, 'errors');
 	}
 	header("Location: ".dol_escape_htmltag($_SERVER["PHP_SELF"])."?id=".$id);
 	exit;
