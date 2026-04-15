@@ -19,6 +19,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once __DIR__.'/class/pldoperacion.class.php';
 require_once __DIR__.'/class/compliancepld.class.php';
 require_once __DIR__.'/class/pldpepverificacion.class.php';
+require_once __DIR__.'/class/services/PLDOperacionService.php';
 
 $langs->loadLangs(array("modulecompliancepld@modulecompliancepld"));
 
@@ -37,8 +38,9 @@ if (!$user->hasRight('modulecompliancepld', 'read')) {
     accessforbidden();
 }
 
-$object = new PLDOperacion($db);
+$object     = new PLDOperacion($db);
 $compliance = new CompliancePLD($db);
+$operSvc    = new PLDOperacionService($db);
 
 if ($id > 0) {
     $result = $object->fetch($id);
@@ -72,17 +74,13 @@ if ($action == 'add' && !$cancel) {
     }
 
     $tipo_vehiculo = GETPOST('tipo_vehiculo', 'alpha');
-    $resultado_umbral = $object->evaluarUmbral($tipo_vehiculo);
-
-    $object->generarFolioInterno();
-
-    $result = $object->create($user);
+    $result = $operSvc->crearOperacion($object, $tipo_vehiculo, $user);
 
     if ($result > 0) {
         header("Location: ".$_SERVER["PHP_SELF"]."?id=".$object->id);
         exit;
     } else {
-        setEventMessages($object->error, $object->errors, 'errors');
+        setEventMessages($operSvc->error, $operSvc->errors, 'errors');
         $action = 'create';
     }
 }
@@ -101,13 +99,13 @@ if ($action == 'update' && !$cancel) {
     $object->cliente_identificado = GETPOST('cliente_identificado', 'int');
     $object->documentacion_completa = GETPOST('documentacion_completa', 'int');
 
-    $result = $object->update($user);
+    $result = $operSvc->actualizarOperacion($object, $user);
 
     if ($result > 0) {
         header("Location: ".$_SERVER["PHP_SELF"]."?id=".$object->id);
         exit;
     } else {
-        setEventMessages($object->error, $object->errors, 'errors');
+        setEventMessages($operSvc->error, $operSvc->errors, 'errors');
         $action = 'edit';
     }
 }
