@@ -159,58 +159,6 @@ class InterfaceModulecompliancepldTriggers extends DolibarrTriggers
 	}
 
 	/**
-	 * Al registrar un pago de cliente, copia la fecha de pago al extrafield
-	 * pld_fecha_operacion de cada factura vinculada al pago.
-	 *
-	 * @param string       $action  Acción (PAYMENT_CUSTOMER_CREATE)
-	 * @param CommonObject $object  Objeto Paiement
-	 * @param User         $user    Usuario que ejecuta
-	 * @param Translate    $langs   Traducciones
-	 * @param Conf         $conf    Configuración
-	 * @return int 0 si no hay facturas, 1 si OK, -1 si error
-	 */
-	public function paymentCustomerCreate($action, $object, User $user, Translate $langs, Conf $conf): int
-	{
-		if (empty($object->amounts) || empty($object->datepaye)) {
-			return 0;
-		}
-
-		require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
-		require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
-
-		$extrafields = new ExtraFields($this->db);
-		$extrafields->fetch_name_optionals_label('facture');
-
-		$errors = 0;
-		foreach ($object->amounts as $fk_facture => $amount) {
-			$fk_facture = (int) $fk_facture;
-			if ($fk_facture <= 0) {
-				continue;
-			}
-
-			$facture = new Facture($this->db);
-			if ($facture->fetch($fk_facture) <= 0) {
-				dol_syslog("PLD Trigger paymentCustomerCreate: no se pudo cargar factura id=".$fk_facture, LOG_WARNING);
-				$errors++;
-				continue;
-			}
-
-			$facture->fetch_optionals();
-			$facture->array_options['options_pld_fecha_operacion'] = $object->datepaye;
-
-			$ret = $facture->insertExtraFields();
-			if ($ret < 0) {
-				dol_syslog("PLD Trigger paymentCustomerCreate: error al guardar pld_fecha_operacion en factura id=".$fk_facture, LOG_ERR);
-				$errors++;
-			} else {
-				dol_syslog("PLD Trigger paymentCustomerCreate: pld_fecha_operacion actualizada en factura id=".$fk_facture." fecha=".dol_print_date($object->datepaye, 'day'), LOG_INFO);
-			}
-		}
-
-		return ($errors > 0) ? -1 : 1;
-	}
-
-	/**
 	 * Valida campos PLD de un contacto (socpeople)
 	 *
 	 * @param CommonObject $object Contacto con array_options cargado
