@@ -5,10 +5,15 @@ declare(strict_types=1);
  * @file    class/services/PLDReporteService.php
  * @module  modulecompliancepld
  *
- * Servicio de consultas para el dashboard y reportes PLD.
+ * Servicio de consultas para el dashboard, listas y reportes PLD.
  *
- * Centraliza las queries de contadores y listados que anteriormente
- * vivían como SQL inline en index.php (Mejora 1 — Service Layer).
+ * Centraliza todas las queries SELECT que anteriormente vivían como SQL
+ * inline en index.php y en los archivos *_list.php del módulo.
+ *
+ * Mejora 1 — Service Layer: métodos de dashboard (getContadoresDashboard,
+ *   getUltimasOperaciones, getAlertasAbiertas, getAvisosPendientes).
+ * Mejora 4 — Eliminar SQL en vistas: métodos de lista/conteo para las
+ *   cinco entidades PLD y helper getSocietesParaFiltro().
  *
  * @license GNU/GPL v3+
  */
@@ -21,12 +26,10 @@ class PLDReporteService
 {
     public function __construct(private $db) {}
 
+    // ── Dashboard ─────────────────────────────────────────────────────────────
+
     /**
      * Contadores del dashboard para un mes dado.
-     *
-     * Devuelve en una sola llamada los cuatro contadores del panel
-     * principal: operaciones del mes, avisos pendientes, alertas abiertas
-     * y documentos con fecha de vencimiento vencida.
      *
      * @param string $mesActual  Formato YYYYMM (ej: '202604')
      * @return array{ops_mes: int, avisos_pendientes: int, alertas_abiertas: int, docs_vencidos: int}
@@ -64,7 +67,7 @@ class PLDReporteService
      * Últimas N operaciones vulnerables con nombre de cliente.
      *
      * @param int $limit Máximo de filas (default 10)
-     * @return stdClass[]  rowid, folio_interno, tipo_operacion, monto_mxn, supera_umbral, estado, empresa_nom
+     * @return stdClass[]
      */
     public function getUltimasOperaciones(int $limit = 10): array
     {
@@ -83,7 +86,7 @@ class PLDReporteService
      * Alertas abiertas ordenadas por nivel de riesgo descendente.
      *
      * @param int $limit Máximo de filas (default 10)
-     * @return stdClass[]  rowid, tipo_alerta, nivel_riesgo, fecha_alerta, empresa_nom
+     * @return stdClass[]
      */
     public function getAlertasAbiertas(int $limit = 10): array
     {
@@ -103,7 +106,7 @@ class PLDReporteService
      * Avisos SAT en estado borrador o pendiente.
      *
      * @param int $limit Máximo de filas (default 10)
-     * @return stdClass[]  rowid, referencia_aviso, tipo_aviso, mes_reportado, numero_operaciones, monto_total_operaciones
+     * @return stdClass[]
      */
     public function getAvisosPendientes(int $limit = 10): array
     {
@@ -118,6 +121,273 @@ class PLDReporteService
         return $this->fetchAll($sql);
     }
 
+    // ── Helpers de filtro ─────────────────────────────────────────────────────
+
+    /**
+     * Array de societes para dropdown de filtro.
+     *
+     * @return array<int, string>  [rowid => nom]
+     */
+    public function getSocietesParaFiltro(): array
+    {
+        $sql = "SELECT rowid, nom FROM ".MAIN_DB_PREFIX."societe"
+            ." WHERE entity IN (".getEntity('societe').") ORDER BY nom";
+        $res = $this->db->query($sql);
+        $out = [];
+        if ($res) {
+            while ($obj = $this->db->fetch_object($res)) {
+                $out[(int) $obj->rowid] = $obj->nom;
+            }
+            $this->db->free($res);
+        }
+        return $out;
+    }
+
+    // ── Operaciones ───────────────────────────────────────────────────────────
+
+    /**
+     * Lista paginada de operaciones con filtros.
+     *
+     * @param array  $filtros     Claves: empresa(int), tipo, estado, supera
+     * @param int    $limit       Filas por página (se pide $limit+1 para detectar pág siguiente)
+     * @param int    $offset      Desplazamiento
+     * @param string $sortField   Campo de orden (ej: 'o.fecha_operacion')
+     * @param string $sortOrder   'ASC'|'DESC'
+     * @return stdClass[]
+     */
+    public function getListaOperaciones(array $filtros, int $limit, int $offset, string $sortField, string $sortOrder): array
+    {
+        $sql  = "SELECT o.rowid, o.folio_interno, o.fk_societe, o.tipo_operacion, o.fecha_operacion,";
+        $sql .= " o.monto_mxn, o.supera_umbral, o.estado, s.nom as empresa_nom";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion as o";
+        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = o.fk_societe";
+        $sql .= " WHERE o.entity IN (".getEntity('modulecompliancepld').")";
+        $sql .= $this->buildCondOperaciones($filtros);
+        $sql .= $this->db->order($sortField, $sortOrder);
+        $sql .= $this->db->plimit($limit + 1, $offset);
+        return $this->fetchAll($sql);
+    }
+
+    /**
+     * Conteo total de operaciones con filtros (para paginación).
+     *
+     * @param array $filtros  Mismas claves que getListaOperaciones()
+     * @return int
+     */
+    public function countOperaciones(array $filtros): int
+    {
+        $sql  = "SELECT COUNT(o.rowid) as total FROM ".MAIN_DB_PREFIX."pld_operacion as o";
+        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = o.fk_societe";
+        $sql .= " WHERE o.entity IN (".getEntity('modulecompliancepld').")";
+        $sql .= $this->buildCondOperaciones($filtros);
+        return $this->countQuery($sql);
+    }
+
+    private function buildCondOperaciones(array $f): string
+    {
+        $c = '';
+        if (!empty($f['empresa'])) {
+            $c .= " AND o.fk_societe = ".((int) $f['empresa']);
+        }
+        if (!empty($f['tipo'])) {
+            $c .= " AND o.tipo_operacion = '".$this->db->escape($f['tipo'])."'";
+        }
+        if (!empty($f['estado'])) {
+            $c .= " AND o.estado = '".$this->db->escape($f['estado'])."'";
+        }
+        if (isset($f['supera']) && $f['supera'] !== '') {
+            $c .= " AND o.supera_umbral = ".((int) $f['supera']);
+        }
+        return $c;
+    }
+
+    // ── Avisos ────────────────────────────────────────────────────────────────
+
+    /**
+     * Lista paginada de avisos SAT con filtros.
+     *
+     * @param array  $filtros  Claves: tipo, estado, mes (YYYYMM)
+     * @return stdClass[]
+     */
+    public function getListaAvisos(array $filtros, int $limit, int $offset, string $sortField, string $sortOrder): array
+    {
+        $sql  = "SELECT a.rowid, a.referencia_aviso, a.tipo_aviso, a.mes_reportado, a.estado,";
+        $sql .= " a.fecha_presentacion, a.folio_sat, a.numero_operaciones, a.monto_total_operaciones";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_aviso as a";
+        $sql .= " WHERE a.entity IN (".getEntity('modulecompliancepld').")";
+        $sql .= $this->buildCondAvisos($filtros);
+        $sql .= $this->db->order($sortField, $sortOrder);
+        $sql .= $this->db->plimit($limit + 1, $offset);
+        return $this->fetchAll($sql);
+    }
+
+    /**
+     * @param array $filtros  Mismas claves que getListaAvisos()
+     */
+    public function countAvisos(array $filtros): int
+    {
+        $sql  = "SELECT COUNT(a.rowid) as total FROM ".MAIN_DB_PREFIX."pld_aviso as a";
+        $sql .= " WHERE a.entity IN (".getEntity('modulecompliancepld').")";
+        $sql .= $this->buildCondAvisos($filtros);
+        return $this->countQuery($sql);
+    }
+
+    private function buildCondAvisos(array $f): string
+    {
+        $c = '';
+        if (!empty($f['tipo'])) {
+            $c .= " AND a.tipo_aviso = '".$this->db->escape($f['tipo'])."'";
+        }
+        if (!empty($f['estado'])) {
+            $c .= " AND a.estado = '".$this->db->escape($f['estado'])."'";
+        }
+        if (!empty($f['mes'])) {
+            $c .= " AND a.mes_reportado = '".$this->db->escape($f['mes'])."'";
+        }
+        return $c;
+    }
+
+    // ── Alertas ───────────────────────────────────────────────────────────────
+
+    /**
+     * Lista paginada de alertas con filtros.
+     *
+     * @param array  $filtros  Claves: nivel, estado, tipo (LIKE)
+     * @return stdClass[]
+     */
+    public function getListaAlertas(array $filtros, int $limit, int $offset, string $sortField, string $sortOrder): array
+    {
+        $sql  = "SELECT al.rowid, al.tipo_alerta, al.nivel_riesgo, al.fk_societe,";
+        $sql .= " al.descripcion, al.estado, al.datec as fecha_alerta, s.nom as empresa_nom";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_alerta as al";
+        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = al.fk_societe";
+        $sql .= " WHERE al.entity IN (".getEntity('modulecompliancepld').")";
+        $sql .= $this->buildCondAlertas($filtros);
+        $sql .= $this->db->order($sortField, $sortOrder);
+        $sql .= $this->db->plimit($limit + 1, $offset);
+        return $this->fetchAll($sql);
+    }
+
+    /**
+     * @param array $filtros  Mismas claves que getListaAlertas()
+     */
+    public function countAlertas(array $filtros): int
+    {
+        $sql  = "SELECT COUNT(al.rowid) as total FROM ".MAIN_DB_PREFIX."pld_alerta as al";
+        $sql .= " WHERE al.entity IN (".getEntity('modulecompliancepld').")";
+        $sql .= $this->buildCondAlertas($filtros);
+        return $this->countQuery($sql);
+    }
+
+    private function buildCondAlertas(array $f): string
+    {
+        $c = '';
+        if (!empty($f['nivel'])) {
+            $c .= " AND al.nivel_riesgo = '".$this->db->escape($f['nivel'])."'";
+        }
+        if (!empty($f['estado'])) {
+            $c .= " AND al.estado = '".$this->db->escape($f['estado'])."'";
+        }
+        if (!empty($f['tipo'])) {
+            $c .= " AND al.tipo_alerta LIKE '%".$this->db->escape($f['tipo'])."%'";
+        }
+        return $c;
+    }
+
+    // ── Documentos ────────────────────────────────────────────────────────────
+
+    /**
+     * Lista paginada de documentos con filtros.
+     *
+     * @param array  $filtros  Claves: empresa(int), tipo (LIKE), verif ('0'|'1'|'')
+     * @return stdClass[]
+     */
+    public function getListaDocumentos(array $filtros, int $limit, int $offset, string $sortField, string $sortOrder): array
+    {
+        $sql  = "SELECT d.rowid, d.fk_societe, d.fk_socpeople, d.tipo_documento_pld, d.numero_documento,";
+        $sql .= " d.fecha_emision, d.fecha_vencimiento, d.verificado, s.nom as empresa_nom,";
+        $sql .= " CONCAT(sp.firstname, ' ', sp.lastname) as contacto_nom";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_documento as d";
+        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = d.fk_societe";
+        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."socpeople as sp ON sp.rowid = d.fk_socpeople";
+        $sql .= " WHERE d.entity IN (".getEntity('modulecompliancepld').")";
+        $sql .= $this->buildCondDocumentos($filtros);
+        $sql .= $this->db->order($sortField, $sortOrder);
+        $sql .= $this->db->plimit($limit + 1, $offset);
+        return $this->fetchAll($sql);
+    }
+
+    /**
+     * @param array $filtros  Mismas claves que getListaDocumentos()
+     */
+    public function countDocumentos(array $filtros): int
+    {
+        $sql  = "SELECT COUNT(d.rowid) as total FROM ".MAIN_DB_PREFIX."pld_documento as d";
+        $sql .= " WHERE d.entity IN (".getEntity('modulecompliancepld').")";
+        $sql .= $this->buildCondDocumentos($filtros);
+        return $this->countQuery($sql);
+    }
+
+    private function buildCondDocumentos(array $f): string
+    {
+        $c = '';
+        if (!empty($f['empresa'])) {
+            $c .= " AND d.fk_societe = ".((int) $f['empresa']);
+        }
+        if (!empty($f['tipo'])) {
+            $c .= " AND d.tipo_documento_pld LIKE '%".$this->db->escape($f['tipo'])."%'";
+        }
+        if (isset($f['verif']) && $f['verif'] !== '') {
+            $c .= " AND d.verificado = ".((int) $f['verif']);
+        }
+        return $c;
+    }
+
+    // ── Beneficiarios ─────────────────────────────────────────────────────────
+
+    /**
+     * Lista paginada de beneficiarios controladores con filtros.
+     *
+     * @param array  $filtros  Claves: empresa(int), pep ('0'|'1'|'')
+     * @return stdClass[]
+     */
+    public function getListaBeneficiarios(array $filtros, int $limit, int $offset, string $sortField, string $sortOrder): array
+    {
+        $sql  = "SELECT b.rowid, b.fk_societe,";
+        $sql .= " CONCAT(b.nombre, ' ', b.apellido_paterno, CASE WHEN b.apellido_materno IS NOT NULL THEN CONCAT(' ', b.apellido_materno) ELSE '' END) as nombre_completo,";
+        $sql .= " b.curp, b.rfc, b.tipo_beneficiario, b.porcentaje_participacion, b.es_pep, b.activo, s.nom as empresa_nom";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_beneficiario as b";
+        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = b.fk_societe";
+        $sql .= " WHERE b.entity IN (".getEntity('modulecompliancepld').")";
+        $sql .= $this->buildCondBeneficiarios($filtros);
+        $sql .= $this->db->order($sortField, $sortOrder);
+        $sql .= $this->db->plimit($limit + 1, $offset);
+        return $this->fetchAll($sql);
+    }
+
+    /**
+     * @param array $filtros  Mismas claves que getListaBeneficiarios()
+     */
+    public function countBeneficiarios(array $filtros): int
+    {
+        $sql  = "SELECT COUNT(b.rowid) as total FROM ".MAIN_DB_PREFIX."pld_beneficiario as b";
+        $sql .= " WHERE b.entity IN (".getEntity('modulecompliancepld').")";
+        $sql .= $this->buildCondBeneficiarios($filtros);
+        return $this->countQuery($sql);
+    }
+
+    private function buildCondBeneficiarios(array $f): string
+    {
+        $c = '';
+        if (!empty($f['empresa'])) {
+            $c .= " AND b.fk_societe = ".((int) $f['empresa']);
+        }
+        if (isset($f['pep']) && $f['pep'] !== '') {
+            $c .= " AND b.es_pep = ".((int) $f['pep']);
+        }
+        return $c;
+    }
+
     // ── Helpers privados ──────────────────────────────────────────────────────
 
     private function countQuery(string $sql): int
@@ -128,7 +398,7 @@ class PLDReporteService
         }
         $obj = $this->db->fetch_object($res);
         $this->db->free($res);
-        return (int)($obj->total ?? 0);
+        return (int) ($obj->total ?? 0);
     }
 
     private function fetchAll(string $sql): array
