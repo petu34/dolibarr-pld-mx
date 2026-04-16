@@ -31,6 +31,39 @@ class PLDAvisoService
     public function __construct(private $db) {}
 
     /**
+     * Operaciones disponibles para vincular a un aviso del mismo mes.
+     *
+     * @param int    $avisoId       ID del aviso
+     * @param string $mesReportado  YYYYMM
+     * @param int[]  $idsExcluir    IDs de operaciones ya vinculadas
+     * @return stdClass[]
+     */
+    public function getOperacionesDisponibles(int $avisoId, string $mesReportado, array $idsExcluir = []): array
+    {
+        $sql  = "SELECT o.rowid, o.folio_interno, o.monto_mxn, o.fecha_operacion";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion o";
+        $sql .= " WHERE o.mes_reportado = '".$this->db->escape($mesReportado)."'";
+        $sql .= " AND o.requiere_aviso = 1";
+        $sql .= " AND o.aviso_presentado = 0";
+        $sql .= " AND o.estado != 'cancelada'";
+        if (!empty($idsExcluir)) {
+            $sql .= " AND o.rowid NOT IN (".implode(',', array_map('intval', $idsExcluir)).")";
+        }
+        $sql .= " AND (o.fk_pld_aviso IS NULL OR o.fk_pld_aviso = ".(int)$avisoId.")";
+        $sql .= " ORDER BY o.fecha_operacion ASC";
+
+        $res = $this->db->query($sql);
+        $rows = [];
+        if ($res) {
+            while ($obj = $this->db->fetch_object($res)) {
+                $rows[] = $obj;
+            }
+            $this->db->free($res);
+        }
+        return $rows;
+    }
+
+    /**
      * Genera, firma opcionalmente y persiste el XML de un aviso.
      *
      * Orquesta los pasos que antes vivían inline en aviso/card.php:
@@ -50,17 +83,13 @@ class PLDAvisoService
         $aviso->fetchOperaciones();
         $ids_ops = array_map(fn($o) => (int)$o->rowid, $aviso->operaciones ?? []);
 
-        if (empty($ids_ops)) {
-            $this->error = 'PLDAvisoSinOperaciones';
-            return false;
-        }
-
         $repo   = new PLDOperacionRepository($this->db);
         $config = [
             'rfc_sujeto'      => getDolGlobalString('MAIN_INFO_SIREN'),
             'clave_actividad' => getDolGlobalString('MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE') ?: 'VIII',
         ];
         $generator = new PLDXMLGenerator($repo, $config);
+        // Aviso en ceros: pass empty array to generate valid XML without <aviso> nodes
         $xml = $generator->generarXMLMensual($aviso->mes_reportado, $ids_ops);
 
         if ($xml === false) {

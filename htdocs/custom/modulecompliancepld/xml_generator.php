@@ -91,7 +91,7 @@ if ($action == 'generar' && $mes_input) {
 				$msgs_ok[] = "XML generado: ".basename($filepath);
 
 				// Registrar o actualizar el aviso en llx_pld_aviso
-				$sql_stats = "SELECT COUNT(rowid) as num, SUM(monto_mxn) as total"
+				$sql_stats = "SELECT COUNT(rowid) as num, COALESCE(SUM(monto_mxn), 0) as total"
 					." FROM ".MAIN_DB_PREFIX."pld_operacion"
 					." WHERE mes_reportado = '".$db->escape($mes_reportado)."'"
 					." AND requiere_aviso = 1 AND aviso_presentado = 0 AND estado != 'cancelada'";

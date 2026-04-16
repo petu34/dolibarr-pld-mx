@@ -44,8 +44,8 @@ class CompliancePLD
 	/** Clave actividad vulnerable para vehículos (catálogo SAT) */
 	const CLAVE_ACTIVIDAD_VEHICULOS = '808';
 
-	/** Período de conservación de datos en años (Art. 18 LFPIORPI) */
-	const PERIODO_CONSERVACION_ANIOS = 5;
+	/** Período de conservación de datos en años (Art. 20 + Trans. 7º DOF 27/03/2026) */
+	const PERIODO_CONSERVACION_ANIOS = 10;
 
 	// ──────────────────────────────────────────────────────────────────────────
 	// Getters de configuración regulatoria

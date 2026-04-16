@@ -22,10 +22,10 @@
 -- ============================================================
 
 ALTER TABLE llx_pld_operacion
-  ADD COLUMN IF NOT EXISTS monto_sin_impuestos DOUBLE(24,8) DEFAULT NULL COMMENT 'Monto sin IVA para comparación con umbral (Art. 6 Regl. LFPIORPI)',
-  ADD COLUMN IF NOT EXISTS tasa_impuesto DOUBLE(5,4) DEFAULT 0.16 COMMENT 'Tasa IVA aplicada (default 0.16). monto_mxn = monto_sin_impuestos * (1 + tasa_impuesto)',
-  ADD COLUMN IF NOT EXISTS fecha_inicio_custodia DATE DEFAULT NULL COMMENT 'Inicio del período de custodia 10 años (Art. 20 + Trans. 7 DOF). NULL = usa fecha_operacion con tope 2025-07-17',
-  ADD COLUMN IF NOT EXISTS import_key VARCHAR(14) DEFAULT NULL COMMENT 'Clave de importación masiva. SEED_PLD_TEST = dato de prueba';
+  ADD COLUMN IF NOT EXISTS monto_sin_impuestos double(24,8) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS tasa_impuesto double(5,4) DEFAULT 0.16,
+  ADD COLUMN IF NOT EXISTS fecha_inicio_custodia DATE DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS import_key VARCHAR(14) DEFAULT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_pld_operacion_import_key ON llx_pld_operacion (import_key);
 
@@ -36,18 +36,18 @@ CREATE INDEX IF NOT EXISTS idx_pld_operacion_import_key ON llx_pld_operacion (im
 CREATE TABLE IF NOT EXISTS llx_pld_pep_verificacion (
   rowid          INTEGER AUTO_INCREMENT PRIMARY KEY,
   entity         INTEGER DEFAULT 1 NOT NULL,
-  fk_societe     INTEGER NOT NULL COMMENT 'Empresa verificada (llx_societe)',
-  fecha_consulta DATETIME NOT NULL COMMENT 'Fecha y hora de la consulta PEP',
-  resultado      VARCHAR(20) NOT NULL COMMENT 'negativo|positivo|sin_respuesta|error_uif',
-  referencia_uif VARCHAR(100) DEFAULT NULL COMMENT 'Folio o referencia devuelta por la UIF',
-  nivel_diligencia VARCHAR(12) DEFAULT NULL COMMENT 'simplificada|normal|reforzada — calculado post-resultado',
-  observaciones  TEXT COMMENT 'Notas del oficial de cumplimiento',
+  fk_societe     INTEGER NOT NULL,
+  fecha_consulta DATETIME NOT NULL,
+  resultado      VARCHAR(20) NOT NULL,
+  referencia_uif VARCHAR(100) DEFAULT NULL,
+  nivel_diligencia VARCHAR(12) DEFAULT NULL,
+  observaciones  TEXT,
   date_creation  DATETIME NOT NULL,
   tms            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   fk_user_creat  INTEGER DEFAULT NULL,
   fk_user_modif  INTEGER DEFAULT NULL,
   import_key     VARCHAR(14) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB;
 
 CREATE INDEX IF NOT EXISTS idx_pld_pep_verif_societe ON llx_pld_pep_verificacion (fk_societe);
 CREATE INDEX IF NOT EXISTS idx_pld_pep_verif_fecha   ON llx_pld_pep_verificacion (fecha_consulta);
