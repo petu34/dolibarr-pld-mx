@@ -23,6 +23,7 @@ if (!$res) { die("Include of main fails"); }
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once __DIR__.'/class/pldxmlgenerator.class.php';
+require_once __DIR__.'/class/repository/PLDOperacionRepository.php';
 require_once __DIR__.'/class/pldefirmaintegration.class.php';
 require_once __DIR__.'/class/pldaviso.class.php';
 
@@ -55,7 +56,12 @@ if ($action == 'generar' && $mes_input) {
 	if (strlen($mes_reportado) != 6) {
 		$msgs_err[] = "Formato de mes incorrecto. Use YYYYMM (ej: 202602).";
 	} else {
-		$generator = new PLDXMLGenerator($db);
+		$repo      = new PLDOperacionRepository($db);
+		$config    = [
+			'rfc_sujeto'      => getDolGlobalString('MAIN_INFO_SIREN'),
+			'clave_actividad' => getDolGlobalString('MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE') ?: 'VIII',
+		];
+		$generator = new PLDXMLGenerator($repo, $config);
 		$xml_content = $generator->generarXMLMensual($mes_reportado);
 
 		if ($xml_content === false) {

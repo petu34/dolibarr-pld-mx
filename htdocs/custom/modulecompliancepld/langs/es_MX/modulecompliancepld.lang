@@ -787,6 +787,7 @@ UMAValor = Valor UMA Vigente (MXN)
 UMAAnio = Año del Valor UMA
 UmbralVehNuevo = Umbral Vehículo Nuevo (MXN)
 UmbralVehUsado = Umbral Vehículo Usado (MXN)
+UmbralAcumulado6M = Umbral Acumulado 6 Meses (MXN)
 DiasAlertaID = Días para alertar vencimiento de ID
 OficialCumplimiento = Oficial de Cumplimiento (ID usuario)
 PeriodoConservacion = Período de Conservación (años)

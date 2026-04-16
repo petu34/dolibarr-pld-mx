@@ -47,16 +47,61 @@ class CompliancePLD
 	/** Período de conservación de datos en años (Art. 18 LFPIORPI) */
 	const PERIODO_CONSERVACION_ANIOS = 5;
 
+	// ──────────────────────────────────────────────────────────────────────────
+	// Getters de configuración regulatoria
+	//
+	// Leen de llx_const vía getDolGlobalString() con los valores de las
+	// constantes de clase como fallback. Esto permite actualizar parámetros
+	// regulatorios desde admin/setup.php sin modificar código.
+	// ──────────────────────────────────────────────────────────────────────────
+
+	/**
+	 * Retorna el valor UMA vigente desde la configuración del módulo.
+	 * Configurable en Configuración → Módulo PLD → Valor UMA.
+	 *
+	 * @return float Valor UMA en pesos MXN
+	 */
+	public function getUMAValor(): float
+	{
+		return (float) getDolGlobalString('MODULECOMPLIANCEPLD_UMA_VALOR', (string)self::UMA_2026);
+	}
+
+	/**
+	 * Retorna el umbral de acumulación semestral desde la configuración.
+	 * Configurable en Configuración → Módulo PLD → Umbral acumulado 6 meses.
+	 *
+	 * @return float Umbral en pesos MXN
+	 */
+	public function getUmbralAcumulado6M(): float
+	{
+		return (float) getDolGlobalString('MODULECOMPLIANCEPLD_UMBRAL_ACUMULADO_6M', (string)self::UMBRAL_ACUMULADO_6M);
+	}
+
+	/**
+	 * Retorna el período de conservación de expedientes en años.
+	 * Configurable en Configuración → Módulo PLD → Período de conservación.
+	 *
+	 * @return int Años de conservación
+	 */
+	public function getPeriodoConservacion(): int
+	{
+		return (int) getDolGlobalString('MODULECOMPLIANCEPLD_PERIODO_CONSERVACION', (string)self::PERIODO_CONSERVACION_ANIOS);
+	}
+
 	/**
 	 * Calcula el umbral de aviso en pesos MXN para vehículos.
 	 *
-	 * @param float $valorUma Valor UMA vigente (default: UMA_2026)
+	 * Si no se provee $valorUma, lo lee desde la configuración del módulo
+	 * (MODULECOMPLIANCEPLD_UMA_VALOR), actualizando automáticamente cada año
+	 * sin necesidad de modificar código.
+	 *
+	 * @param float $valorUma Valor UMA a usar; 0 = leer desde configuración
 	 * @return float Umbral en pesos MXN
 	 */
 	public function calcularUmbralAviso(float $valorUma = 0): float
 	{
 		if ($valorUma <= 0) {
-			$valorUma = self::UMA_2026;
+			$valorUma = $this->getUMAValor();
 		}
 		return round(self::UMBRAL_UMAS_VEHICULO * $valorUma, 2);
 	}
@@ -64,13 +109,15 @@ class CompliancePLD
 	/**
 	 * Calcula el umbral de restricción de efectivo en pesos MXN.
 	 *
-	 * @param float $valorUma Valor UMA vigente
+	 * Si no se provee $valorUma, lo lee desde la configuración del módulo.
+	 *
+	 * @param float $valorUma Valor UMA a usar; 0 = leer desde configuración
 	 * @return float Umbral de efectivo en pesos MXN
 	 */
 	public function calcularUmbralEfectivo(float $valorUma = 0): float
 	{
 		if ($valorUma <= 0) {
-			$valorUma = self::UMA_2026;
+			$valorUma = $this->getUMAValor();
 		}
 		return round(self::UMBRAL_UMAS_EFECTIVO * $valorUma, 2);
 	}
@@ -101,7 +148,7 @@ class CompliancePLD
 				return $monto >= $this->calcularUmbralAviso($valorUma);
 
 			case 'acumulado_6m':
-				return $monto >= self::UMBRAL_ACUMULADO_6M;
+				return $monto >= $this->getUmbralAcumulado6M();
 
 			default:
 				return false;

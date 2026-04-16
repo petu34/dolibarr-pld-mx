@@ -32,6 +32,12 @@ declare(strict_types=1);
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonhookactions.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldvalidator.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/PLDFormValidator.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/CURPRule.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/RFCRule.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/RegexRule.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/TelefonoRule.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/CorreoRule.php';
 
 /**
  * Class ActionsModulecompliancepld
@@ -302,76 +308,37 @@ class ActionsModulecompliancepld extends CommonHookActions
 	}
 
 	/**
-	 * Valida campos PLD del formulario de contacto (socpeople)
+	 * Valida campos PLD del formulario de contacto (socpeople).
 	 *
-	 * Campos validados: CURP, RFC, teléfono, correo electrónico
+	 * Campos: CURP, RFC, teléfono, correo electrónico.
+	 * Usa PLDFormValidator (Composite) con reglas Strategy individuales.
 	 *
-	 * @return int Número de errores encontrados
+	 * @return int Número de errores encontrados (0 = válido)
 	 */
 	private function validarFormularioContacto(): int
 	{
-		global $langs;
-		$validator = new PLDValidator();
-		$error = 0;
-
-		$curp = GETPOST('options_pld_curp', 'alpha');
-		if ($curp !== '' && !$validator->validarCURP($curp)) {
-			setEventMessages($langs->trans('PLDErrorCURPInvalida'), null, 'errors');
-			$error++;
-		}
-
-		$rfc = GETPOST('options_pld_rfc', 'alpha');
-		if ($rfc !== '' && !$validator->validarRFC($rfc)) {
-			setEventMessages($langs->trans('PLDErrorRFCInvalido'), null, 'errors');
-			$error++;
-		}
-
-		$telefono = GETPOST('options_pld_numero_telefono', 'alpha');
-		if ($telefono !== '' && !$validator->validarTelefono($telefono)) {
-			setEventMessages($langs->trans('PLDErrorTelefonoInvalido'), null, 'errors');
-			$error++;
-		}
-
-		$correo = GETPOST('options_pld_correo_electronico', 'alpha');
-		if ($correo !== '' && !$validator->validarCorreo($correo)) {
-			setEventMessages($langs->trans('PLDErrorCorreoInvalido'), null, 'errors');
-			$error++;
-		}
-
-		return $error;
+		return (new PLDFormValidator())
+			->addField('options_pld_curp',               new CURPRule())
+			->addField('options_pld_rfc',                new RFCRule())
+			->addField('options_pld_numero_telefono',    new TelefonoRule())
+			->addField('options_pld_correo_electronico', new CorreoRule())
+			->validatePost();
 	}
 
 	/**
-	 * Valida campos PLD del formulario de empresa (thirdparty/societe)
+	 * Valida campos PLD del formulario de empresa (thirdparty/societe).
 	 *
-	 * Campos validados: CURP, RFC, código postal
+	 * Campos: CURP, RFC, código postal.
+	 * Usa PLDFormValidator (Composite) con reglas Strategy individuales.
 	 *
-	 * @return int Número de errores encontrados
+	 * @return int Número de errores encontrados (0 = válido)
 	 */
 	private function validarFormularioEmpresa(): int
 	{
-		global $langs;
-		$validator = new PLDValidator();
-		$error = 0;
-
-		$curp = GETPOST('options_pld_curp', 'alpha');
-		if ($curp !== '' && !$validator->validarCURP($curp)) {
-			setEventMessages($langs->trans('PLDErrorCURPInvalida'), null, 'errors');
-			$error++;
-		}
-
-		$rfc = GETPOST('options_pld_rfc_validado', 'alpha');
-		if ($rfc !== '' && !$validator->validarRFC($rfc)) {
-			setEventMessages($langs->trans('PLDErrorRFCInvalido'), null, 'errors');
-			$error++;
-		}
-
-		$cp = GETPOST('options_pld_codigo_postal', 'alpha');
-		if ($cp !== '' && !$validator->validarCodigoPostal($cp)) {
-			setEventMessages($langs->trans('PLDErrorCPInvalido'), null, 'errors');
-			$error++;
-		}
-
-		return $error;
+		return (new PLDFormValidator())
+			->addField('options_pld_curp',          new CURPRule())
+			->addField('options_pld_rfc_validado',  new RFCRule())
+			->addField('options_pld_codigo_postal', new RegexRule(PLDValidator::REGEX_CP, 'PLDErrorCPInvalido'))
+			->validatePost();
 	}
 }
