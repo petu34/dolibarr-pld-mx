@@ -26,12 +26,14 @@ CREATE TABLE IF NOT EXISTS llx_pld_documento (
   fecha_verificacion DATE,
   fk_user_verificador INT,
   
-  -- Retención regulatoria (5 años Art. 18 LFPIORPI)
-  fecha_retencion_hasta DATE,                                     -- Auto-calculado: fecha_emision + 5 años
-  
+  -- Retención regulatoria (10 años Art. 20 LFPIORPI + Transitorio 7 DOF 2026)
+  fecha_retencion_hasta DATE,
+
   -- Auditoría
   datec DATETIME NOT NULL,
   tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  fk_user_creat INT
-  
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  fk_user_creat INT,
+  fk_user_modif INT,
+  import_key VARCHAR(14) DEFAULT NULL
+
+) ENGINE=InnoDB;

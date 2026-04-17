@@ -43,21 +43,21 @@ class PLDXMLGenerator
      * Generar XML mensual.
      *
      * @param string   $mes_reportado   Formato YYYYMM
-     * @param int[]    $ids_operaciones  Si se pasa, solo incluye esas operaciones.
-     *                                   Si está vacío, busca todas las pendientes del mes.
+     * @param int[]    $ids_operaciones  IDs específicas a incluir.
+     * @param bool     $en_ceros         true = generar XML sin operaciones (aviso en ceros).
+     *                                   Cuando false y $ids_operaciones vacío, busca todas las pendientes del mes.
      * @return string|false  XML string o false si error
      */
-    public function generarXMLMensual(string $mes_reportado, array $ids_operaciones = [])
+    public function generarXMLMensual(string $mes_reportado, array $ids_operaciones = [], bool $en_ceros = false)
     {
-        dol_syslog(__METHOD__." mes=$mes_reportado ids=".implode(',', $ids_operaciones), LOG_INFO);
+        dol_syslog(__METHOD__." mes=$mes_reportado ids=".implode(',', $ids_operaciones)." en_ceros=".($en_ceros ? '1' : '0'), LOG_INFO);
 
-        $operaciones = empty($ids_operaciones)
-            ? $this->repo->fetchOperacionesPorMes($mes_reportado)
-            : $this->repo->fetchOperacionesPorIds($ids_operaciones);
-
-        if (empty($operaciones)) {
-            $this->error = "No hay operaciones pendientes de aviso para el mes $mes_reportado";
-            return false;
+        if ($en_ceros) {
+            $operaciones = [];
+        } elseif (!empty($ids_operaciones)) {
+            $operaciones = $this->repo->fetchOperacionesPorIds($ids_operaciones);
+        } else {
+            $operaciones = $this->repo->fetchOperacionesPorMes($mes_reportado);
         }
 
         $dom = new DOMDocument('1.0', 'UTF-8');
@@ -80,19 +80,24 @@ class PLDXMLGenerator
         $informe->appendChild($dom->createElement('mes_reportado', $mes_reportado));
         $informe->appendChild($this->crearSujetoObligado($dom));
 
-        foreach ($operaciones as $operacion) {
-            try {
-                $aviso = $this->crearAviso($dom, $operacion);
-                if ($aviso) {
-                    $informe->appendChild($aviso);
+        // Aviso en ceros: si no hay operaciones, se genera XML válido sin nodos <aviso>
+        if (!empty($operaciones)) {
+            foreach ($operaciones as $operacion) {
+                try {
+                    $aviso = $this->crearAviso($dom, $operacion);
+                    if ($aviso) {
+                        $informe->appendChild($aviso);
+                    }
+                } catch (Exception $e) {
+                    $this->errors[] = "Operación ID {$operacion->id}: ".$e->getMessage();
                 }
-            } catch (Exception $e) {
-                $this->errors[] = "Operación ID {$operacion->id}: ".$e->getMessage();
             }
-        }
 
-        if (!empty($this->errors)) {
-            return false;
+            if (!empty($this->errors)) {
+                return false;
+            }
+        } else {
+            dol_syslog(__METHOD__." Aviso en ceros para mes $mes_reportado — sin operaciones vulnerables", LOG_INFO);
         }
 
         return $dom->saveXML();
@@ -137,7 +142,7 @@ class PLDXMLGenerator
     {
         $alerta = $dom->createElement('alerta');
         // 01=operación inusual, 02=sin información suficiente
-        $tipo = $operacion->genera_alerta ? '01' : '01';
+        $tipo = $operacion->genera_alerta ? '01' : '02';
         $alerta->appendChild($dom->createElement('tipo_alerta', $tipo));
         return $alerta;
     }
@@ -420,7 +425,7 @@ class PLDXMLGenerator
             dol_mkdir($dir);
         }
 
-        $filename = 'PLD_VEH_'.$mes_reportado.'_'.dol_print_date(dol_now(), '%Y%m%d%H%M%S').'.xml';
+        $filename = 'PLD_VEH_'.$mes_reportado.'_'.date('YmdHis', dol_now()).'.xml';
         $filepath = $dir.'/'.$filename;
 
         $bytes = file_put_contents($filepath, $xml_content);

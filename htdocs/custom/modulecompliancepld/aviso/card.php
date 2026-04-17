@@ -140,14 +140,11 @@ if ($action == 'generar_xml' && $user->hasRight('modulecompliancepld', 'generate
 
 	if ($ok) {
 		setEventMessages($langs->trans('XMLGeneradoCorrectamente'), null, 'mesgs');
-		foreach ($avisoSvc->errors as $w) { // advertencias de firma
+		foreach ($avisoSvc->errors as $w) {
 			setEventMessages($w, null, 'warnings');
 		}
 	} else {
-		$msg = $avisoSvc->error === 'PLDAvisoSinOperaciones'
-			? $langs->trans('PLDAvisoSinOperaciones')
-			: $avisoSvc->error;
-		setEventMessages($msg, $avisoSvc->errors, 'errors');
+		setEventMessages($avisoSvc->error, $avisoSvc->errors, 'errors');
 	}
 	header("Location: ".dol_escape_htmltag($_SERVER["PHP_SELF"])."?id=".$id);
 	exit;
@@ -370,29 +367,9 @@ if (!empty($ops_vinculadas)) {
 
 // Selector para agregar operaciones (solo en estados editables)
 if ($user->hasRight('modulecompliancepld', 'write') && !in_array($aviso->estado, ['presentado', 'cancelado'])) {
-	// Buscar operaciones disponibles del mismo mes que no estén en otro aviso
 	$ids_ya = array_map(fn($o) => (int)$o->rowid, $ops_vinculadas);
-	$sql_disp = "SELECT o.rowid, o.folio_interno, o.monto_mxn, o.fecha_operacion";
-	$sql_disp .= " FROM ".MAIN_DB_PREFIX."pld_operacion o";
-	$sql_disp .= " WHERE o.mes_reportado = '".$db->escape($aviso->mes_reportado)."'";
-	$sql_disp .= " AND o.requiere_aviso = 1";
-	$sql_disp .= " AND o.aviso_presentado = 0";
-	$sql_disp .= " AND o.estado != 'cancelada'";
-	if (!empty($ids_ya)) {
-		$sql_disp .= " AND o.rowid NOT IN (".implode(',', $ids_ya).")";
-	}
-	// Excluir las que ya tienen aviso distinto
-	$sql_disp .= " AND (o.fk_pld_aviso IS NULL OR o.fk_pld_aviso = ".(int)$aviso->id.")";
-	$sql_disp .= " ORDER BY o.fecha_operacion ASC";
-
-	$res_disp = $db->query($sql_disp);
-	$disponibles = [];
-	if ($res_disp) {
-		while ($row = $db->fetch_object($res_disp)) {
-			$disponibles[] = $row;
-		}
-		$db->free($res_disp);
-	}
+	$avisoSvc = new PLDAvisoService($db);
+	$disponibles = $avisoSvc->getOperacionesDisponibles($aviso->id, $aviso->mes_reportado, $ids_ya);
 
 	if (!empty($disponibles)) {
 		print '<br>';
@@ -409,8 +386,8 @@ if ($user->hasRight('modulecompliancepld', 'write') && !in_array($aviso->estado,
 		print '</form>';
 	}
 
-	// Botón Generar XML (solo si hay operaciones vinculadas)
-	if (!empty($ops_vinculadas)) {
+	// Botón Generar XML (requiere permiso 'generate')
+	if ($user->hasRight('modulecompliancepld', 'generate')) {
 		print '<br>';
 		print '<form method="POST" action="'.dol_escape_htmltag($_SERVER["PHP_SELF"]).'?id='.$aviso->id.'">';
 		print '<input type="hidden" name="token" value="'.newToken().'">';
@@ -419,7 +396,8 @@ if ($user->hasRight('modulecompliancepld', 'write') && !in_array($aviso->estado,
 		if (!empty($efirma_cert) && file_exists($efirma_cert)) {
 			print '<label><input type="checkbox" name="firmar_xml" value="1" checked> '.$langs->trans('PLDFirmarConEfirma').'</label> ';
 		}
-		print '<input type="submit" class="butAction" value="'.$langs->trans('PLDGenerarXML').'">';
+		$xml_label = empty($ops_vinculadas) ? $langs->trans('PLDGenerarXMLEnCeros') : $langs->trans('PLDGenerarXML');
+		print '<input type="submit" class="butAction" value="'.$xml_label.'">';
 		print '</form>';
 	}
 }
