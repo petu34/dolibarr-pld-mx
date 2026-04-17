@@ -445,7 +445,7 @@ class PLDReporteService
         $sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion as o";
         $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = o.fk_societe";
         $sql .= " WHERE o.entity IN (".getEntity('modulecompliancepld').") AND o.mes_reportado = '".$this->db->escape($periodo)."'";
-        $sql .= " GROUP BY s.rowid, s.nom ORDER BY total_monto DESC";
+        $sql .= " GROUP BY s.rowid, s.nom ORDER BY SUM(o.monto_mxn) DESC";
         return $this->fetchAll($sql);
     }
 
@@ -474,7 +474,7 @@ class PLDReporteService
         $sql .= " SUM(CASE WHEN estado = 'resuelta' THEN 1 ELSE 0 END) as resueltas";
         $sql .= " FROM ".MAIN_DB_PREFIX."pld_alerta";
         $sql .= " WHERE entity IN (".getEntity('modulecompliancepld').")";
-        $sql .= " GROUP BY tipo_alerta, nivel_riesgo ORDER BY nivel_riesgo, total DESC";
+        $sql .= " GROUP BY tipo_alerta, nivel_riesgo ORDER BY nivel_riesgo, COUNT(rowid) DESC";
         return $this->fetchAll($sql);
     }
 

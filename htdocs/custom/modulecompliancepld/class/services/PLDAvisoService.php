@@ -46,6 +46,7 @@ class PLDAvisoService
         $sql .= " AND o.requiere_aviso = 1";
         $sql .= " AND o.aviso_presentado = 0";
         $sql .= " AND o.estado != 'cancelada'";
+        $sql .= " AND o.entity IN (".getEntity('modulecompliancepld').")";
         if (!empty($idsExcluir)) {
             $sql .= " AND o.rowid NOT IN (".implode(',', array_map('intval', $idsExcluir)).")";
         }
@@ -82,6 +83,7 @@ class PLDAvisoService
     {
         $aviso->fetchOperaciones();
         $ids_ops = array_map(fn($o) => (int)$o->rowid, $aviso->operaciones ?? []);
+        $en_ceros = empty($ids_ops);
 
         $repo   = new PLDOperacionRepository($this->db);
         $config = [
@@ -89,8 +91,7 @@ class PLDAvisoService
             'clave_actividad' => getDolGlobalString('MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE') ?: 'VIII',
         ];
         $generator = new PLDXMLGenerator($repo, $config);
-        // Aviso en ceros: pass empty array to generate valid XML without <aviso> nodes
-        $xml = $generator->generarXMLMensual($aviso->mes_reportado, $ids_ops);
+        $xml = $generator->generarXMLMensual($aviso->mes_reportado, $ids_ops, $en_ceros);
 
         if ($xml === false) {
             $this->error  = $generator->error;

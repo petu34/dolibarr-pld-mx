@@ -54,7 +54,7 @@ CREATE INDEX IF NOT EXISTS idx_pld_pep_verif_fecha   ON llx_pld_pep_verificacion
 CREATE INDEX IF NOT EXISTS idx_pld_pep_verif_entity  ON llx_pld_pep_verificacion (entity);
 
 -- ============================================================
--- 3-6. import_key en tablas existentes (para seed de pruebas)
+-- 3-6. import_key en tablas existentes (campo estándar Dolibarr)
 -- ============================================================
 
 ALTER TABLE llx_pld_aviso

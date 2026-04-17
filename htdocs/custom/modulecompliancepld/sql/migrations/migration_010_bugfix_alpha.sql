@@ -26,28 +26,15 @@ ALTER TABLE llx_pld_aviso_operacion ADD COLUMN IF NOT EXISTS import_key VARCHAR(
 -- ----------------------------------------------------------------------------
 
 UPDATE llx_pld_alerta SET estado = 'abierta' WHERE estado = 'nueva';
-ALTER TABLE llx_pld_alerta ALTER COLUMN estado SET DEFAULT 'abierta';
 
 -- ----------------------------------------------------------------------------
--- DT-01: Eliminar FK físicas (Dolibarr usa solo FK lógicas en PHP)
+-- DT-01: FK físicas eliminadas del DDL base y .key.sql
+-- No se ejecuta DROP FOREIGN KEY en migración porque:
+--   1. DROP FOREIGN KEY IF EXISTS requiere MySQL 8.0.31+ y no existe en PostgreSQL
+--   2. DoliDB no traduce DROP FOREIGN KEY → DROP CONSTRAINT
+--   3. Las FK nunca fueron creadas exitosamente en PostgreSQL vía DoliDB
+-- Los .key.sql ya no contienen FOREIGN KEY; instalaciones nuevas quedan limpias.
 -- ----------------------------------------------------------------------------
-
-ALTER TABLE llx_pld_operacion DROP FOREIGN KEY IF EXISTS fk_pld_operacion_societe;
-ALTER TABLE llx_pld_operacion DROP FOREIGN KEY IF EXISTS fk_pld_operacion_facture;
-ALTER TABLE llx_pld_operacion DROP FOREIGN KEY IF EXISTS fk_pld_operacion_product;
-
-ALTER TABLE llx_pld_aviso_operacion DROP FOREIGN KEY IF EXISTS fk_pld_aviso_operacion_aviso;
-ALTER TABLE llx_pld_aviso_operacion DROP FOREIGN KEY IF EXISTS fk_pld_aviso_operacion_operacion;
-
-ALTER TABLE llx_pld_alerta DROP FOREIGN KEY IF EXISTS fk_pld_alerta_operacion;
-ALTER TABLE llx_pld_alerta DROP FOREIGN KEY IF EXISTS fk_pld_alerta_societe;
-
-ALTER TABLE llx_pld_beneficiario DROP FOREIGN KEY IF EXISTS fk_pld_beneficiario_societe;
-ALTER TABLE llx_pld_beneficiario DROP FOREIGN KEY IF EXISTS fk_pld_beneficiario_socpeople;
-
-ALTER TABLE llx_pld_documento DROP FOREIGN KEY IF EXISTS fk_pld_documento_ecm_files;
-ALTER TABLE llx_pld_documento DROP FOREIGN KEY IF EXISTS fk_pld_documento_societe;
-ALTER TABLE llx_pld_documento DROP FOREIGN KEY IF EXISTS fk_pld_documento_socpeople;
 
 -- ============================================================================
 -- FIN DE MIGRACIÓN 010
