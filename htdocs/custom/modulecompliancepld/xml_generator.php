@@ -52,6 +52,9 @@ $msgs_ok       = array();
 $msgs_err      = array();
 
 if ($action == 'generar' && $mes_input) {
+	if (!checkToken()) {
+		accessforbidden('Invalid token');
+	}
 	$mes_reportado = preg_replace('/[^0-9]/', '', $mes_input);
 	if (strlen($mes_reportado) != 6) {
 		$msgs_err[] = "Formato de mes incorrecto. Use YYYYMM (ej: 202602).";

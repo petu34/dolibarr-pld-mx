@@ -43,17 +43,22 @@ class PLDXMLGenerator
      * Generar XML mensual.
      *
      * @param string   $mes_reportado   Formato YYYYMM
-     * @param int[]    $ids_operaciones  Si se pasa, solo incluye esas operaciones.
-     *                                   Si está vacío, busca todas las pendientes del mes.
+     * @param int[]    $ids_operaciones  IDs específicas a incluir.
+     * @param bool     $en_ceros         true = generar XML sin operaciones (aviso en ceros).
+     *                                   Cuando false y $ids_operaciones vacío, busca todas las pendientes del mes.
      * @return string|false  XML string o false si error
      */
-    public function generarXMLMensual(string $mes_reportado, array $ids_operaciones = [])
+    public function generarXMLMensual(string $mes_reportado, array $ids_operaciones = [], bool $en_ceros = false)
     {
-        dol_syslog(__METHOD__." mes=$mes_reportado ids=".implode(',', $ids_operaciones), LOG_INFO);
+        dol_syslog(__METHOD__." mes=$mes_reportado ids=".implode(',', $ids_operaciones)." en_ceros=".($en_ceros ? '1' : '0'), LOG_INFO);
 
-        $operaciones = empty($ids_operaciones)
-            ? $this->repo->fetchOperacionesPorMes($mes_reportado)
-            : $this->repo->fetchOperacionesPorIds($ids_operaciones);
+        if ($en_ceros) {
+            $operaciones = [];
+        } elseif (!empty($ids_operaciones)) {
+            $operaciones = $this->repo->fetchOperacionesPorIds($ids_operaciones);
+        } else {
+            $operaciones = $this->repo->fetchOperacionesPorMes($mes_reportado);
+        }
 
         $dom = new DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = true;
@@ -420,7 +425,7 @@ class PLDXMLGenerator
             dol_mkdir($dir);
         }
 
-        $filename = 'PLD_VEH_'.$mes_reportado.'_'.dol_print_date(dol_now(), '%Y%m%d%H%M%S').'.xml';
+        $filename = 'PLD_VEH_'.$mes_reportado.'_'.date('YmdHis', dol_now()).'.xml';
         $filepath = $dir.'/'.$filename;
 
         $bytes = file_put_contents($filepath, $xml_content);

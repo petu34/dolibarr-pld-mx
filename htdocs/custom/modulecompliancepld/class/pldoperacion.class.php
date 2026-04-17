@@ -41,7 +41,6 @@ class PLDOperacion extends CommonObject
     public $tasa_impuesto;
     /** Fecha inicio custodia 10 años (Art. 20 + Trans. 7º DOF). NULL = usa fecha_operacion con tope 2025-07-17 */
     public $fecha_inicio_custodia;
-    /** Clave de importación masiva. SEED_PLD_TEST = dato de prueba eliminable */
     public $import_key;
 
     public $supera_umbral;
