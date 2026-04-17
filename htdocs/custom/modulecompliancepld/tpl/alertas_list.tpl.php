@@ -42,9 +42,11 @@ $niveles = array(
 print '<td>'.$form->selectarray('filtro_nivel', $niveles, $filtro_nivel).'</td>';
 
 $estados = array(
-    ''         => '-- '.$langs->trans('FiltroTodos').' --',
-    'abierta'  => $langs->trans('EstadoAbierta'),
-    'resuelta' => $langs->trans('EstadoResuelta'),
+    ''            => '-- '.$langs->trans('FiltroTodos').' --',
+    'abierta'     => $langs->trans('EstadoAbierta'),
+    'en_revision' => $langs->trans('EstadoEnRevision'),
+    'resuelta'    => $langs->trans('EstadoResuelta'),
+    'archivada'   => $langs->trans('EstadoArchivada'),
 );
 print '<td>'.$form->selectarray('filtro_estado', $estados, $filtro_estado).'</td>';
 print '<td><input type="text" name="filtro_tipo" class="flat minwidth100" placeholder="'.$langs->trans('ColTipoAlerta').'" value="'.dol_escape_htmltag($filtro_tipo).'"></td>';
@@ -69,8 +71,8 @@ print '</tr>';
 
 $nivel_colors  = array('alto' => 'badge-status6', 'medio' => 'badge-status5', 'bajo' => 'badge-status1');
 $nivel_labels  = array('alto' => $langs->trans('NivelRiesgoAlto'), 'medio' => $langs->trans('NivelRiesgoMedio'), 'bajo' => $langs->trans('NivelRiesgoBajo'));
-$estado_colors = array('abierta' => 'badge-status1', 'resuelta' => 'badge-status4');
-$estado_labels = array('abierta' => $langs->trans('EstadoAbierta'), 'resuelta' => $langs->trans('EstadoResuelta'));
+$estado_colors = array('abierta' => 'badge-status1', 'en_revision' => 'badge-status5', 'resuelta' => 'badge-status4', 'archivada' => 'badge-status9');
+$estado_labels = array('abierta' => $langs->trans('EstadoAbierta'), 'en_revision' => $langs->trans('EstadoEnRevision'), 'resuelta' => $langs->trans('EstadoResuelta'), 'archivada' => $langs->trans('EstadoArchivada'));
 
 $num = count($rows);
 if ($num === 0) {

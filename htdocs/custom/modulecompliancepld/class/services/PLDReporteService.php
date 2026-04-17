@@ -388,6 +388,96 @@ class PLDReporteService
         return $c;
     }
 
+    // ── Reportes (antes inline en reportes.php) ─────────────────────────────
+
+    /**
+     * Resumen mensual: contadores de operaciones + desglose de avisos por estado.
+     *
+     * @param string $periodo  YYYYMM
+     * @return stdClass{total_ops, total_monto, ops_umbral, ops_aviso, avisos_por_estado}
+     */
+    public function getResumenMensual(string $periodo): stdClass
+    {
+        $result = new stdClass();
+        $result->total_ops = 0;
+        $result->total_monto = 0;
+        $result->ops_umbral = 0;
+        $result->ops_aviso = 0;
+        $result->avisos_por_estado = [];
+
+        $sql  = "SELECT COUNT(rowid) as total_ops, COALESCE(SUM(monto_mxn), 0) as total_monto,";
+        $sql .= " SUM(CASE WHEN supera_umbral = 1 THEN 1 ELSE 0 END) as ops_umbral,";
+        $sql .= " SUM(CASE WHEN requiere_aviso = 1 THEN 1 ELSE 0 END) as ops_aviso";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion";
+        $sql .= " WHERE entity IN (".getEntity('modulecompliancepld').") AND mes_reportado = '".$this->db->escape($periodo)."'";
+        $res  = $this->db->query($sql);
+        if ($res && $obj = $this->db->fetch_object($res)) {
+            $result->total_ops   = (int) $obj->total_ops;
+            $result->total_monto = (float) $obj->total_monto;
+            $result->ops_umbral  = (int) $obj->ops_umbral;
+            $result->ops_aviso   = (int) $obj->ops_aviso;
+            $this->db->free($res);
+        }
+
+        $sql2  = "SELECT COUNT(rowid) as total, estado FROM ".MAIN_DB_PREFIX."pld_aviso";
+        $sql2 .= " WHERE entity IN (".getEntity('modulecompliancepld').") AND mes_reportado = '".$this->db->escape($periodo)."'";
+        $sql2 .= " GROUP BY estado";
+        $res2  = $this->db->query($sql2);
+        if ($res2) {
+            while ($obj2 = $this->db->fetch_object($res2)) {
+                $result->avisos_por_estado[] = $obj2;
+            }
+            $this->db->free($res2);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Operaciones agrupadas por cliente para un período.
+     *
+     * @param string $periodo  YYYYMM
+     * @return stdClass[]
+     */
+    public function getOperacionesPorCliente(string $periodo): array
+    {
+        $sql  = "SELECT s.rowid, s.nom, COUNT(o.rowid) as total_ops, SUM(o.monto_mxn) as total_monto";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion as o";
+        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = o.fk_societe";
+        $sql .= " WHERE o.entity IN (".getEntity('modulecompliancepld').") AND o.mes_reportado = '".$this->db->escape($periodo)."'";
+        $sql .= " GROUP BY s.rowid, s.nom ORDER BY total_monto DESC";
+        return $this->fetchAll($sql);
+    }
+
+    /**
+     * Estado de avisos agrupado por mes y estado.
+     *
+     * @return stdClass[]
+     */
+    public function getEstadoAvisos(): array
+    {
+        $sql  = "SELECT mes_reportado, estado, COUNT(rowid) as total FROM ".MAIN_DB_PREFIX."pld_aviso";
+        $sql .= " WHERE entity IN (".getEntity('modulecompliancepld').")";
+        $sql .= " GROUP BY mes_reportado, estado ORDER BY mes_reportado DESC, estado";
+        return $this->fetchAll($sql);
+    }
+
+    /**
+     * Alertas agrupadas por tipo y nivel de riesgo.
+     *
+     * @return stdClass[]
+     */
+    public function getAlertasPorTipo(): array
+    {
+        $sql  = "SELECT tipo_alerta, nivel_riesgo, COUNT(rowid) as total,";
+        $sql .= " SUM(CASE WHEN estado = 'abierta' THEN 1 ELSE 0 END) as abiertas,";
+        $sql .= " SUM(CASE WHEN estado = 'resuelta' THEN 1 ELSE 0 END) as resueltas";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_alerta";
+        $sql .= " WHERE entity IN (".getEntity('modulecompliancepld').")";
+        $sql .= " GROUP BY tipo_alerta, nivel_riesgo ORDER BY nivel_riesgo, total DESC";
+        return $this->fetchAll($sql);
+    }
+
     // ── Helpers privados ──────────────────────────────────────────────────────
 
     private function countQuery(string $sql): int

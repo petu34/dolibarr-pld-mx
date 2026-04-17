@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS llx_pld_alerta (
   decision VARCHAR(50),                                          -- aprobar|rechazar|escalar|aviso_24hrs
   
   -- Estado
-  estado VARCHAR(50) DEFAULT 'nueva',                            -- nueva|en_revision|resuelta|archivada
+  estado VARCHAR(50) DEFAULT 'abierta',                          -- abierta|en_revision|resuelta|archivada
   fecha_resolucion DATE,
   
   -- Auditoría
@@ -36,4 +36,4 @@ CREATE TABLE IF NOT EXISTS llx_pld_alerta (
   fk_user_creat INT,
   fk_user_modif INT
   
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB;

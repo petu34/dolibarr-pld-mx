@@ -45,7 +45,7 @@ class PLDAlerta extends CommonObject
     {
         $this->db = $db;
         $this->entity = 1;
-        $this->estado = 'nueva';
+        $this->estado = 'abierta';
         $this->requiere_analisis = 1;
         $this->involucra_pep = 0;
     }

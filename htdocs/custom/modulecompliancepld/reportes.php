@@ -22,6 +22,7 @@ if (!$res && file_exists("../../main.inc.php")) { $res = @include "../../main.in
 if (!$res) { die("Include of main fails"); }
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
+require_once __DIR__.'/class/services/PLDReporteService.php';
 
 $langs->loadLangs(array("modulecompliancepld@modulecompliancepld"));
 
@@ -71,35 +72,26 @@ $mes_str       = str_pad($mes, 2, '0', STR_PAD_LEFT);
 $periodo       = $anio.$mes_str;
 $periodo_label = $meses[$mes].' '.$anio;
 
+$reporteSvc = new PLDReporteService($db);
+
 if ($reporte == 'resumen_mensual') {
 	print '<h3>'.$langs->trans('ReporteResumenMensual').' &mdash; '.$periodo_label.'</h3>';
 
-	$sql  = "SELECT COUNT(rowid) as total_ops, SUM(monto_mxn) as total_monto,";
-	$sql .= " SUM(CASE WHEN supera_umbral = 1 THEN 1 ELSE 0 END) as ops_umbral,";
-	$sql .= " SUM(CASE WHEN requiere_aviso = 1 THEN 1 ELSE 0 END) as ops_aviso";
-	$sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion";
-	$sql .= " WHERE entity IN (".getEntity('modulecompliancepld').") AND mes_reportado = '".$db->escape($periodo)."'";
-	$res  = $db->query($sql);
+	$resumen = $reporteSvc->getResumenMensual($periodo);
 
-	if ($res && $obj = $db->fetch_object($res)) {
-		print '<table class="noborder centpercent">';
-		print '<tr class="liste_titre"><th>'.$langs->trans("Indicador").'</th><th>'.$langs->trans("Value").'</th></tr>';
-		print '<tr class="oddeven"><td>'.$langs->trans('TotalOperaciones').'</td><td class="right"><b>'.((int) $obj->total_ops).'</b></td></tr>';
-		print '<tr class="oddeven"><td>'.$langs->trans('TotalMonto').' (MXN)</td><td class="right"><b>'.price($obj->total_monto).'</b></td></tr>';
-		print '<tr class="oddeven"><td>Operaciones que superan umbral</td><td class="right"><b>'.((int) $obj->ops_umbral).'</b></td></tr>';
-		print '<tr class="oddeven"><td>Operaciones que requieren aviso</td><td class="right"><b>'.((int) $obj->ops_aviso).'</b></td></tr>';
-		print '</table><br>';
-	}
+	print '<table class="noborder centpercent">';
+	print '<tr class="liste_titre"><th>'.$langs->trans("Indicador").'</th><th>'.$langs->trans("Value").'</th></tr>';
+	print '<tr class="oddeven"><td>'.$langs->trans('TotalOperaciones').'</td><td class="right"><b>'.$resumen->total_ops.'</b></td></tr>';
+	print '<tr class="oddeven"><td>'.$langs->trans('TotalMonto').' (MXN)</td><td class="right"><b>'.price($resumen->total_monto).'</b></td></tr>';
+	print '<tr class="oddeven"><td>Operaciones que superan umbral</td><td class="right"><b>'.$resumen->ops_umbral.'</b></td></tr>';
+	print '<tr class="oddeven"><td>Operaciones que requieren aviso</td><td class="right"><b>'.$resumen->ops_aviso.'</b></td></tr>';
+	print '</table><br>';
 
-	$sql2  = "SELECT COUNT(rowid) as total, estado FROM ".MAIN_DB_PREFIX."pld_aviso";
-	$sql2 .= " WHERE entity IN (".getEntity('modulecompliancepld').") AND mes_reportado = '".$db->escape($periodo)."'";
-	$sql2 .= " GROUP BY estado";
-	$res2  = $db->query($sql2);
-	if ($res2 && $db->num_rows($res2) > 0) {
+	if (!empty($resumen->avisos_por_estado)) {
 		print '<h4>'.$langs->trans('AvisosPresen').' / '.$langs->trans('AvisosPend').'</h4>';
 		print '<table class="noborder centpercent">';
 		print '<tr class="liste_titre"><th>'.$langs->trans('ColEstado').'</th><th>'.$langs->trans('TotalOperaciones').'</th></tr>';
-		while ($obj2 = $db->fetch_object($res2)) {
+		foreach ($resumen->avisos_por_estado as $obj2) {
 			print '<tr class="oddeven"><td>'.dol_escape_htmltag($obj2->estado).'</td><td class="right">'.$obj2->total.'</td></tr>';
 		}
 		print '</table>';
@@ -108,12 +100,7 @@ if ($reporte == 'resumen_mensual') {
 } elseif ($reporte == 'ops_por_cliente') {
 	print '<h3>'.$langs->trans('ReporteOperacionesPorCliente').' &mdash; '.$periodo_label.'</h3>';
 
-	$sql  = "SELECT s.rowid, s.nom, COUNT(o.rowid) as total_ops, SUM(o.monto_mxn) as total_monto";
-	$sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion as o";
-	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = o.fk_societe";
-	$sql .= " WHERE o.entity IN (".getEntity('modulecompliancepld').") AND o.mes_reportado = '".$db->escape($periodo)."'";
-	$sql .= " GROUP BY s.rowid, s.nom ORDER BY total_monto DESC";
-	$res  = $db->query($sql);
+	$rows = $reporteSvc->getOperacionesPorCliente($periodo);
 
 	print '<table class="tagtable liste">';
 	print '<tr class="liste_titre">';
@@ -123,8 +110,8 @@ if ($reporte == 'resumen_mensual') {
 	print '<th class="center">Supera $500K</th>';
 	print '</tr>';
 
-	if ($res && $db->num_rows($res) > 0) {
-		while ($obj = $db->fetch_object($res)) {
+	if (!empty($rows)) {
+		foreach ($rows as $obj) {
 			$supera500k = ((float) $obj->total_monto >= 500000);
 			$trclass    = $supera500k ? 'trwarning' : 'oddeven';
 			print '<tr class="'.$trclass.'">';
@@ -142,15 +129,12 @@ if ($reporte == 'resumen_mensual') {
 } elseif ($reporte == 'estado_avisos') {
 	print '<h3>'.$langs->trans('ReporteEstadoAvisos').'</h3>';
 
-	$sql  = "SELECT mes_reportado, estado, COUNT(rowid) as total FROM ".MAIN_DB_PREFIX."pld_aviso";
-	$sql .= " WHERE entity IN (".getEntity('modulecompliancepld').")";
-	$sql .= " GROUP BY mes_reportado, estado ORDER BY mes_reportado DESC, estado";
-	$res  = $db->query($sql);
+	$rows = $reporteSvc->getEstadoAvisos();
 
 	print '<table class="tagtable liste">';
 	print '<tr class="liste_titre"><th>'.$langs->trans('ColMesReportado').'</th><th>'.$langs->trans('ColEstado').'</th><th class="right">'.$langs->trans('TotalOperaciones').'</th></tr>';
-	if ($res && $db->num_rows($res) > 0) {
-		while ($obj = $db->fetch_object($res)) {
+	if (!empty($rows)) {
+		foreach ($rows as $obj) {
 			print '<tr class="oddeven">';
 			print '<td>'.dol_escape_htmltag($obj->mes_reportado).'</td>';
 			print '<td>'.dol_escape_htmltag($obj->estado).'</td>';
@@ -165,19 +149,13 @@ if ($reporte == 'resumen_mensual') {
 } elseif ($reporte == 'alertas_por_tipo') {
 	print '<h3>'.$langs->trans('ReporteAlertasPorTipo').'</h3>';
 
-	$sql  = "SELECT tipo_alerta, nivel_riesgo, COUNT(rowid) as total,";
-	$sql .= " SUM(CASE WHEN estado = 'abierta' THEN 1 ELSE 0 END) as abiertas,";
-	$sql .= " SUM(CASE WHEN estado = 'resuelta' THEN 1 ELSE 0 END) as resueltas";
-	$sql .= " FROM ".MAIN_DB_PREFIX."pld_alerta";
-	$sql .= " WHERE entity IN (".getEntity('modulecompliancepld').")";
-	$sql .= " GROUP BY tipo_alerta, nivel_riesgo ORDER BY nivel_riesgo, total DESC";
-	$res  = $db->query($sql);
+	$rows = $reporteSvc->getAlertasPorTipo();
 
 	print '<table class="tagtable liste">';
 	print '<tr class="liste_titre"><th>'.$langs->trans('ColTipoAlerta').'</th><th>'.$langs->trans('ColNivelRiesgo').'</th><th class="right">Total</th><th class="right">Abiertas</th><th class="right">Resueltas</th></tr>';
-	if ($res && $db->num_rows($res) > 0) {
+	if (!empty($rows)) {
 		$nivel_colors = array('alto' => 'badge-status6', 'medio' => 'badge-status5', 'bajo' => 'badge-status1');
-		while ($obj = $db->fetch_object($res)) {
+		foreach ($rows as $obj) {
 			$nc = $nivel_colors[$obj->nivel_riesgo] ?? 'badge-status0';
 			print '<tr class="oddeven">';
 			print '<td>'.dol_escape_htmltag($obj->tipo_alerta).'</td>';

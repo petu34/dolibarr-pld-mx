@@ -752,7 +752,9 @@ EstadoPendiente = Pendiente
 EstadoCompletado = Completado
 EstadoCancelado = Cancelado
 EstadoAbierta = Abierta
+EstadoEnRevision = En revisión
 EstadoResuelta = Resuelta
+EstadoArchivada = Archivada
 EstadoPresentado = Presentado
 
 # Dashboard
@@ -883,6 +885,7 @@ OperacionVinculada = Operación vinculada al aviso correctamente
 OperacionDesvinculada = Operación desvinculada del aviso
 XMLGeneradoCorrectamente = XML generado y guardado correctamente
 PLDFirmarConEfirma = Firmar con e.firma al generar
+PLDGenerarXMLEnCeros = Generar XML en Ceros (sin operaciones)
 
 # Documentos / Beneficiarios (para seed counters)
 PLDDocumentos = Documentos PLD

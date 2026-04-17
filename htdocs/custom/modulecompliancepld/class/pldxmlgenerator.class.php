@@ -55,11 +55,6 @@ class PLDXMLGenerator
             ? $this->repo->fetchOperacionesPorMes($mes_reportado)
             : $this->repo->fetchOperacionesPorIds($ids_operaciones);
 
-        if (empty($operaciones)) {
-            $this->error = "No hay operaciones pendientes de aviso para el mes $mes_reportado";
-            return false;
-        }
-
         $dom = new DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = true;
         $dom->preserveWhiteSpace = false;
@@ -80,19 +75,24 @@ class PLDXMLGenerator
         $informe->appendChild($dom->createElement('mes_reportado', $mes_reportado));
         $informe->appendChild($this->crearSujetoObligado($dom));
 
-        foreach ($operaciones as $operacion) {
-            try {
-                $aviso = $this->crearAviso($dom, $operacion);
-                if ($aviso) {
-                    $informe->appendChild($aviso);
+        // Aviso en ceros: si no hay operaciones, se genera XML válido sin nodos <aviso>
+        if (!empty($operaciones)) {
+            foreach ($operaciones as $operacion) {
+                try {
+                    $aviso = $this->crearAviso($dom, $operacion);
+                    if ($aviso) {
+                        $informe->appendChild($aviso);
+                    }
+                } catch (Exception $e) {
+                    $this->errors[] = "Operación ID {$operacion->id}: ".$e->getMessage();
                 }
-            } catch (Exception $e) {
-                $this->errors[] = "Operación ID {$operacion->id}: ".$e->getMessage();
             }
-        }
 
-        if (!empty($this->errors)) {
-            return false;
+            if (!empty($this->errors)) {
+                return false;
+            }
+        } else {
+            dol_syslog(__METHOD__." Aviso en ceros para mes $mes_reportado — sin operaciones vulnerables", LOG_INFO);
         }
 
         return $dom->saveXML();
@@ -137,7 +137,7 @@ class PLDXMLGenerator
     {
         $alerta = $dom->createElement('alerta');
         // 01=operación inusual, 02=sin información suficiente
-        $tipo = $operacion->genera_alerta ? '01' : '01';
+        $tipo = $operacion->genera_alerta ? '01' : '02';
         $alerta->appendChild($dom->createElement('tipo_alerta', $tipo));
         return $alerta;
     }
