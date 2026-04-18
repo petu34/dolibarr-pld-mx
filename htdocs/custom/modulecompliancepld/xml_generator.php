@@ -52,9 +52,6 @@ $msgs_ok       = array();
 $msgs_err      = array();
 
 if ($action == 'generar' && $mes_input) {
-	if (!checkToken()) {
-		accessforbidden('Invalid token');
-	}
 	$mes_reportado = preg_replace('/[^0-9]/', '', $mes_input);
 	if (strlen($mes_reportado) != 6) {
 		$msgs_err[] = "Formato de mes incorrecto. Use YYYYMM (ej: 202602).";
@@ -161,9 +158,6 @@ if ($action == 'generar' && $mes_input) {
 }
 
 if ($action == 'descargar' && GETPOST('filepath', 'nohtml')) {
-	if (!checkToken()) {
-		accessforbidden('Invalid token');
-	}
 	// Descarga segura del XML generado
 	$filepath = GETPOST('filepath', 'nohtml');
 	// Validar que el path esté dentro del directorio permitido
