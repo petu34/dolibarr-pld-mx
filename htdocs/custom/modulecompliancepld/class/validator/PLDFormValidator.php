@@ -72,7 +72,7 @@ class PLDFormValidator
 
         $errors = 0;
         foreach ($this->fields as $postField => $rule) {
-            $value = (string) GETPOST($postField, 'alpha');
+            $value = (string) GETPOST($postField, 'alphanohtml');
             if ($value === '') {
                 continue;
             }

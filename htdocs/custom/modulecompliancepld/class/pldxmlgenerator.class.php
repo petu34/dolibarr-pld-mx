@@ -89,7 +89,7 @@ class PLDXMLGenerator
                         $informe->appendChild($aviso);
                     }
                 } catch (Exception $e) {
-                    $this->errors[] = "Operación ID {$operacion->id}: ".$e->getMessage();
+                    $this->errors[] = "Operación ID {$operacion->id}: ".$e->getMessage().' ('.$e->getFile().':'.$e->getLine().')';
                 }
             }
 
@@ -422,7 +422,11 @@ class PLDXMLGenerator
 
         $dir = $conf->modulecompliancepld->dir_output ?? DOL_DATA_ROOT.'/modulecompliancepld/xml';
         if (!is_dir($dir)) {
-            dol_mkdir($dir);
+            if (dol_mkdir($dir) < 0) {
+                $this->error = "No se pudo crear el directorio $dir";
+                dol_syslog(__METHOD__.' '.$this->error, LOG_ERR);
+                return false;
+            }
         }
 
         $filename = 'PLD_VEH_'.$mes_reportado.'_'.date('YmdHis', dol_now()).'.xml';
@@ -431,6 +435,7 @@ class PLDXMLGenerator
         $bytes = file_put_contents($filepath, $xml_content);
         if ($bytes === false) {
             $this->error = "No se pudo escribir el archivo $filepath";
+            dol_syslog(__METHOD__.' '.$this->error, LOG_ERR);
             return false;
         }
 

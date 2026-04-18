@@ -53,7 +53,7 @@ class PLDValidator
 	 * VIN: exactamente 17 caracteres alfanuméricos.
 	 * Fuente: veh.xsd referencia_17_type
 	 */
-	const REGEX_VIN = '/^[A-Z\d\-_]{17}$/';
+	const REGEX_VIN = '/^[A-HJ-NPR-Z\d]{17}$/';
 
 	/**
 	 * Código postal: exactamente 5 dígitos.
