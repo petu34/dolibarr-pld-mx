@@ -484,6 +484,7 @@ class PLDReporteService
     {
         $res = $this->db->query($sql);
         if (!$res) {
+            dol_syslog(__METHOD__.' BD error: '.$this->db->lasterror(), LOG_ERR);
             return 0;
         }
         $obj = $this->db->fetch_object($res);
@@ -495,6 +496,7 @@ class PLDReporteService
     {
         $res = $this->db->query($sql);
         if (!$res) {
+            dol_syslog(__METHOD__.' BD error: '.$this->db->lasterror(), LOG_ERR);
             return [];
         }
         $rows = [];

@@ -21,6 +21,8 @@ if (!defined('DOL_VERSION')) {
 
 class PLDOperacionRepository
 {
+    public string $error = '';
+
     public function __construct(private $db) {}
 
     /**
@@ -36,7 +38,7 @@ class PLDOperacionRepository
      *
      * @param int      $fkSociete  ID del tercero (cliente)
      * @param int|null $excludeId  ID de operación a excluir (la actual al editar)
-     * @return float Suma de montos brutos en MXN
+     * @return float Suma de montos brutos en MXN; -1.0 si error de BD
      */
     public function getAcumuladoSeisMeses(int $fkSociete, ?int $excludeId = null): float
     {
@@ -53,7 +55,9 @@ class PLDOperacionRepository
 
         $resql = $this->db->query($sql);
         if (!$resql) {
-            return 0.0;
+            $this->error = $this->db->lasterror();
+            dol_syslog(__METHOD__.' BD error: '.$this->error, LOG_ERR);
+            return -1.0;
         }
 
         $obj = $this->db->fetch_object($resql);
@@ -65,36 +69,40 @@ class PLDOperacionRepository
     /**
      * Devuelve el último número secuencial de folio para un mes/año dados.
      *
-     * Parsea el último segmento numérico de folios con formato PLD-YYYY-MM-NNNN.
-     * Usado por PLDOperacion::generarFolioInterno() para calcular el siguiente
-     * número correlativo sin race conditions visibles en uso normal.
+     * Trae todos los folios del mes a PHP y parsea el consecutivo con explode,
+     * evitando SUBSTRING_INDEX y CAST AS UNSIGNED que no son portables a PostgreSQL.
      *
      * @param string $year  Año en 4 dígitos (ej: '2026')
      * @param string $month Mes con cero inicial (ej: '04')
-     * @return int Último consecutivo encontrado; 0 si no hay registros en el mes
+     * @return int Último consecutivo encontrado; 0 si no hay registros; -1 si error de BD
      */
     public function getUltimoFolioConsecutivo(string $year, string $month): int
     {
-        $mes   = $this->db->escape($year.$month);
-        $ifsql = $this->db->ifsql(
-            "folio_interno LIKE 'PLD-{$year}-{$month}-%'",
-            "SUBSTRING_INDEX(folio_interno, '-', -1)",
-            "0"
-        );
+        $prefix = $this->db->escape('PLD-'.$year.'-'.$month.'-%');
 
-        $sql  = "SELECT MAX(CAST(".$ifsql." AS UNSIGNED)) as ultimo";
-        $sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion";
-        $sql .= " WHERE mes_reportado = '".$mes."'";
+        $sql  = "SELECT folio_interno FROM ".MAIN_DB_PREFIX."pld_operacion";
+        $sql .= " WHERE folio_interno LIKE '".$prefix."'";
 
         $resql = $this->db->query($sql);
         if (!$resql) {
-            return 0;
+            $this->error = $this->db->lasterror();
+            dol_syslog(__METHOD__.' BD error: '.$this->error, LOG_ERR);
+            return -1;
         }
 
-        $obj = $this->db->fetch_object($resql);
+        $maximo = 0;
+        while ($obj = $this->db->fetch_object($resql)) {
+            $parts = explode('-', $obj->folio_interno);
+            if (count($parts) === 4) {
+                $consecutivo = (int)$parts[3];
+                if ($consecutivo > $maximo) {
+                    $maximo = $consecutivo;
+                }
+            }
+        }
         $this->db->free($resql);
 
-        return (int)($obj->ultimo ?? 0);
+        return $maximo;
     }
 
     /**
@@ -102,9 +110,9 @@ class PLDOperacionRepository
      * ordenados por porcentaje de participación descendente.
      *
      * @param int $fkSociete ID del tercero
-     * @return int[] Array de rowids de llx_pld_beneficiario
+     * @return int[]|null Array de rowids; null si error de BD
      */
-    public function fetchBeneficiarioIds(int $fkSociete): array
+    public function fetchBeneficiarioIds(int $fkSociete): ?array
     {
         $sql  = "SELECT rowid FROM ".MAIN_DB_PREFIX."pld_beneficiario";
         $sql .= " WHERE fk_societe = ".(int)$fkSociete;
@@ -113,7 +121,9 @@ class PLDOperacionRepository
 
         $resql = $this->db->query($sql);
         if (!$resql) {
-            return [];
+            $this->error = $this->db->lasterror();
+            dol_syslog(__METHOD__.' BD error: '.$this->error, LOG_ERR);
+            return null;
         }
 
         $ids = [];
@@ -153,6 +163,8 @@ class PLDOperacionRepository
 
         $resql = $this->db->query($sql);
         if (!$resql) {
+            $this->error = $this->db->lasterror();
+            dol_syslog(__METHOD__.' BD error: '.$this->error, LOG_ERR);
             return [];
         }
 
@@ -245,6 +257,8 @@ class PLDOperacionRepository
 
         $resql = $this->db->query($sql);
         if (!$resql) {
+            $this->error = $this->db->lasterror();
+            dol_syslog(__METHOD__.' BD error: '.$this->error, LOG_ERR);
             return [];
         }
 
@@ -252,12 +266,23 @@ class PLDOperacionRepository
         while ($obj = $this->db->fetch_object($resql)) {
             $operacion = new PLDOperacion($this->db);
             if ($operacion->fetch((int)$obj->rowid) <= 0) {
+                dol_syslog(__METHOD__.' No se pudo cargar operacion rowid='.$obj->rowid.': '.implode(', ', $operacion->errors), LOG_WARNING);
                 continue;
             }
-            $operacion->fetchCliente();
-            $operacion->fetchVehiculo();
-            $operacion->fetchBeneficiarios();
-            $operacion->fetchFormasPago();
+
+            if ($operacion->fetchCliente() <= 0) {
+                dol_syslog(__METHOD__.' fetchCliente falló para operacion '.$obj->rowid.': '.implode(', ', $operacion->errors), LOG_WARNING);
+            }
+            if ($operacion->fetchVehiculo() <= 0) {
+                dol_syslog(__METHOD__.' fetchVehiculo falló para operacion '.$obj->rowid.': '.implode(', ', $operacion->errors), LOG_WARNING);
+            }
+            if ($operacion->fetchBeneficiarios() <= 0) {
+                dol_syslog(__METHOD__.' fetchBeneficiarios falló para operacion '.$obj->rowid.': '.implode(', ', $operacion->errors), LOG_WARNING);
+            }
+            if ($operacion->fetchFormasPago() <= 0) {
+                dol_syslog(__METHOD__.' fetchFormasPago falló para operacion '.$obj->rowid.': '.implode(', ', $operacion->errors), LOG_WARNING);
+            }
+
             $operaciones[] = $operacion;
         }
         $this->db->free($resql);

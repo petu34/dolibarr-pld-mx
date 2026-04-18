@@ -385,6 +385,19 @@ class PLDOperacion extends CommonObject
                 (int)$this->fk_societe,
                 $this->id > 0 ? (int)$this->id : null
             );
+            // Error de BD: forzar aviso conservador para no omitir silenciosamente
+            if ($acumulado_previo < 0) {
+                dol_syslog(__METHOD__.' Error al obtener acumulado — se fuerza requiere_aviso=1 por seguridad regulatoria', LOG_ERR);
+                $this->supera_umbral  = 1;
+                $this->requiere_aviso = 1;
+                return [
+                    'supera_umbral'   => true,
+                    'umbral_aplicado' => $umbral,
+                    'requiere_aviso'  => true,
+                    'diferencia'      => 0,
+                    'motivo'          => 'error_bd_acumulado',
+                ];
+            }
             $total_con_esta = $acumulado_previo + $monto_bruto;
             if (!$supera_individual && $total_con_esta >= $umbral) {
                 $supera_acumulado = true;
@@ -599,11 +612,18 @@ class PLDOperacion extends CommonObject
         $repo = new PLDOperacionRepository($this->db);
         $ids  = $repo->fetchBeneficiarioIds((int)$this->fk_societe);
 
+        if ($ids === null) {
+            $this->errors[] = 'fetchBeneficiarios: error BD al obtener IDs — '.$repo->error;
+            return -1;
+        }
+
         $this->beneficiarios = [];
         foreach ($ids as $id) {
             $ben = new PLDBeneficiario($this->db);
             if ($ben->fetch($id) > 0) {
                 $this->beneficiarios[] = $ben;
+            } else {
+                dol_syslog(__METHOD__.' No se pudo cargar beneficiario rowid='.$id.' para societe '.$this->fk_societe, LOG_WARNING);
             }
         }
 

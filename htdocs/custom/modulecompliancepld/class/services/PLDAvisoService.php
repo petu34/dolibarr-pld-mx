@@ -54,13 +54,16 @@ class PLDAvisoService
         $sql .= " ORDER BY o.fecha_operacion ASC";
 
         $res = $this->db->query($sql);
-        $rows = [];
-        if ($res) {
-            while ($obj = $this->db->fetch_object($res)) {
-                $rows[] = $obj;
-            }
-            $this->db->free($res);
+        if (!$res) {
+            $this->error = $this->db->lasterror();
+            dol_syslog(__METHOD__.' BD error: '.$this->error, LOG_ERR);
+            return [];
         }
+        $rows = [];
+        while ($obj = $this->db->fetch_object($res)) {
+            $rows[] = $obj;
+        }
+        $this->db->free($res);
         return $rows;
     }
 
@@ -104,9 +107,11 @@ class PLDAvisoService
             $firma  = $efirma->firmarXML($xml);
             if ($firma !== false) {
                 $xml = $efirma->incrustarSello($xml, $firma);
-            } elseif ($efirma->error) {
+            } else {
                 // La firma falló pero el XML sigue siendo válido; continúa con advertencia
-                $this->errors[] = $efirma->error;
+                $mensajeError = $efirma->error ?: 'firmarXML retornó false sin mensaje de error';
+                $this->errors[] = $mensajeError;
+                dol_syslog(__METHOD__.' Firma e.firma falló: '.$mensajeError, LOG_WARNING);
             }
         }
 
@@ -124,7 +129,12 @@ class PLDAvisoService
         if ($aviso->estado === 'borrador') {
             $aviso->estado = 'pendiente';
         }
-        $aviso->update($user);
+        $updateResult = $aviso->update($user);
+        if ($updateResult < 0) {
+            $this->error = 'XML generado en '.$ruta.' pero no se pudo actualizar el aviso en BD: '.implode(', ', $aviso->errors);
+            dol_syslog(__METHOD__.' '.$this->error, LOG_ERR);
+            return false;
+        }
 
         return true;
     }

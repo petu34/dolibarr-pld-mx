@@ -12,13 +12,17 @@
 -- BUG-01 + DT-03: Añadir columnas estándar a llx_pld_aviso_operacion
 -- El INSERT en pldaviso.class.php usa entity, datec, fk_user_creat
 -- que no existían en la tabla original.
+--
+-- Nota: ADD COLUMN IF NOT EXISTS no está soportado en MySQL < 8.0.31.
+-- Se usa ALTER sin condicional; DoliDB ignora el error si la columna ya existe
+-- (duplicate column) durante instalaciones que ya tienen la migración aplicada.
 -- ----------------------------------------------------------------------------
 
-ALTER TABLE llx_pld_aviso_operacion ADD COLUMN IF NOT EXISTS entity INT DEFAULT 1 NOT NULL;
-ALTER TABLE llx_pld_aviso_operacion ADD COLUMN IF NOT EXISTS datec DATETIME;
-ALTER TABLE llx_pld_aviso_operacion ADD COLUMN IF NOT EXISTS tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
-ALTER TABLE llx_pld_aviso_operacion ADD COLUMN IF NOT EXISTS fk_user_creat INT;
-ALTER TABLE llx_pld_aviso_operacion ADD COLUMN IF NOT EXISTS import_key VARCHAR(14) DEFAULT NULL;
+ALTER TABLE llx_pld_aviso_operacion ADD COLUMN entity INT DEFAULT 1 NOT NULL;
+ALTER TABLE llx_pld_aviso_operacion ADD COLUMN datec DATETIME;
+ALTER TABLE llx_pld_aviso_operacion ADD COLUMN tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE llx_pld_aviso_operacion ADD COLUMN fk_user_creat INT;
+ALTER TABLE llx_pld_aviso_operacion ADD COLUMN import_key VARCHAR(14) DEFAULT NULL;
 
 -- ----------------------------------------------------------------------------
 -- BUG-02: Unificar estado de alerta 'nueva' → 'abierta'
