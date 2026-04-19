@@ -59,9 +59,9 @@ print '</td>';
 $estados = array(
     ''           => '-- '.$langs->trans('FiltroTodos').' --',
     'borrador'   => $langs->trans('EstadoBorrador'),
-    'pendiente'  => $langs->trans('EstadoPendiente'),
-    'completado' => $langs->trans('EstadoCompletado'),
-    'cancelado'  => $langs->trans('EstadoCancelado'),
+    'pendiente_documentacion' => $langs->trans('EstadoPendiente'),
+    'completada' => $langs->trans('EstadoCompletado'),
+    'cancelada'  => $langs->trans('EstadoCancelado'),
 );
 print '<td>';
 print $form->selectarray('filtro_estado', $estados, $filtro_estado, 0, 0, 0, '', 0, 0, 0, '', 'minwidth100');
@@ -108,16 +108,16 @@ $tipo_labels = array(
     'consignacion'   => $langs->trans('TipoOpConsignacion'),
 );
 $estado_colors = array(
-    'borrador'   => 'badge-status0',
-    'pendiente'  => 'badge-status1',
-    'completado' => 'badge-status4',
-    'cancelado'  => 'badge-status9',
+    'borrador'                => 'badge-status0',
+    'pendiente_documentacion' => 'badge-status1',
+    'completada'              => 'badge-status4',
+    'cancelada'               => 'badge-status9',
 );
 $estado_labels = array(
-    'borrador'   => $langs->trans('EstadoBorrador'),
-    'pendiente'  => $langs->trans('EstadoPendiente'),
-    'completado' => $langs->trans('EstadoCompletado'),
-    'cancelado'  => $langs->trans('EstadoCancelado'),
+    'borrador'                => $langs->trans('EstadoBorrador'),
+    'pendiente_documentacion' => $langs->trans('EstadoPendiente'),
+    'completada'              => $langs->trans('EstadoCompletado'),
+    'cancelada'               => $langs->trans('EstadoCancelado'),
 );
 
 $num = count($rows);

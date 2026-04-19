@@ -20,6 +20,7 @@ if (!defined('DOL_VERSION')) {
 }
 
 require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldoperacion.class.php';
+require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 
 class PLDOperacionService
 {
@@ -77,5 +78,67 @@ class PLDOperacionService
         }
 
         return 1;
+    }
+
+    /**
+     * Marca una factura como operación vulnerable (validada o pagada).
+     *
+     * Cuando una factura se valida o se paga:
+     *   1. Busca si ya existe operación PLD vinculada
+     *   2. Si existe, actualiza su estado
+     *   3. Si NO existe, crea una nueva operación automáticamente
+     *
+     * @param Facture $facture Factura de Dolibarr
+     * @param object  $user    Usuario autenticado
+     * @return int ID operación (>0), 0 si no aplica (no es vehículo), -1 error
+     */
+    public function marcarFacturaComoVulnerable($facture, object $user): int
+    {
+        if (!$facture || $facture->type != 0) {
+            return 0;
+        }
+
+        $sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."pld_operacion WHERE fk_facture = ".(int)$facture->id;
+        $resql = $this->db->query($sql);
+
+        if (!$resql) {
+            $this->error = "Error: ".$this->db->lasterror();
+            return -1;
+        }
+
+        $existing = $this->db->fetch_object($resql);
+
+        if ($existing) {
+            $op = new PLDOperacion($this->db);
+            $op->fetch($existing->rowid);
+            $op->fk_user_modif = $user->id;
+            $result = $op->update($user);
+            if ($result <= 0) {
+                $this->error  = $op->error;
+                $this->errors = $op->errors;
+                return -1;
+            }
+            return $op->id;
+        }
+
+        $op = new PLDOperacion($this->db);
+        $op->fk_facture = $facture->id;
+        $op->fk_societe = $facture->socid;
+        $op->tipo_operacion = 'venta_vehiculo';
+        $op->tipo_actividad_vulnerable = 'VIII';
+        $op->fecha_operacion = $facture->date;
+        $op->monto_mxn = $facture->total_ttc;
+        $op->monto_sin_impuestos = $facture->total_ht;
+        $op->entity = $facture->entity;
+        $op->estado = 'pendiente_documentacion';
+
+        $tipo_vehiculo = 'nuevo';
+        $result = $this->crearOperacion($op, $tipo_vehiculo, $user);
+
+        if ($result <= 0) {
+            return -1;
+        }
+
+        return $result;
     }
 }
