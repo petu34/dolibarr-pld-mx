@@ -40,3 +40,23 @@ MyPageName = My page name
 #
 MyWidget = My widget
 MyWidgetDescription = My widget description
+
+#
+# PLD Module — keys used in UI
+#
+PLDGenerarXMLEnCeros = Generate Zero-Operation XML
+EstadoEnRevision = Under Review
+EstadoArchivada = Archived
+PLDAvisoSinOperaciones = No linked operations. Add operations from the period that require reporting.
+PLDGenerarXML = Generate XML
+PLDFirmarConEfirma = Sign with e.firma on generation
+XMLGeneradoCorrectamente = XML generated and saved successfully
+PLDOperacionesDelAviso = Operations linked to the notice
+PLDAgregarOperacion = Add operation to notice
+OperacionVinculada = Operation linked to notice successfully
+OperacionDesvinculada = Operation unlinked from notice
+PLDDocumentos = PLD Documents
+PLDBeneficiarios = Beneficial Owners
+PLDAlertas = PLD Alerts
+PLDAvisos = SAT Notices
+PLDOperaciones = Vulnerable Operations

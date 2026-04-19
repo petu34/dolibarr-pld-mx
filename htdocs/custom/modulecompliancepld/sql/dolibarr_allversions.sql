@@ -3,4 +3,4 @@
 --
 
 -- v1.1.0 — Agregar fk_propal a llx_pld_operacion
-ALTER TABLE llx_pld_operacion ADD COLUMN fk_propal INT DEFAULT NULL;
+ALTER TABLE llx_pld_operacion ADD COLUMN IF NOT EXISTS fk_propal INT DEFAULT NULL;

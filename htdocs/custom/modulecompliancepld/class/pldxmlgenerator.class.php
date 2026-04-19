@@ -6,8 +6,8 @@ if (!defined('DOL_VERSION')) {
 }
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
-require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldoperacion.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldcatalogos.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/repository/PLDOperacionRepository.php';
 
 /**
  * Motor de generación de XML de avisos PLD/LFPIORPI
@@ -16,42 +16,48 @@ require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldcatalogos.c
  */
 class PLDXMLGenerator
 {
-    private $db;
     public $error = '';
     public $errors = array();
 
     private $namespace = 'http://www.uif.shcp.gob.mx/recepcion/veh';
     private $xsd_location = 'https://sppld.sat.gob.mx/pld/documentos/links/xsd/veh.xsd';
 
-    private $rfc_sujeto = '';
-    private $clave_actividad = 'VIII';
+    private string $rfc_sujeto;
+    private string $clave_actividad;
 
-    public function __construct($db)
-    {
-        $this->db = $db;
-        $this->rfc_sujeto = getDolGlobalString('MAIN_INFO_SIREN');
-        $this->clave_actividad = getDolGlobalString('MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE') ?: 'VIII';
+    /**
+     * @param PLDOperacionRepository $repo   Repositorio de operaciones (inyectado)
+     * @param array                  $config Configuración del sujeto obligado:
+     *                                       'rfc_sujeto'      => RFC de la empresa
+     *                                       'clave_actividad' => Fracción Art.17 (ej: 'VIII')
+     */
+    public function __construct(
+        private PLDOperacionRepository $repo,
+        array $config = []
+    ) {
+        $this->rfc_sujeto     = $config['rfc_sujeto']      ?? getDolGlobalString('MAIN_INFO_SIREN');
+        $this->clave_actividad = $config['clave_actividad'] ?? (getDolGlobalString('MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE') ?: 'VIII');
     }
 
     /**
      * Generar XML mensual.
      *
      * @param string   $mes_reportado   Formato YYYYMM
-     * @param int[]    $ids_operaciones  Si se pasa, solo incluye esas operaciones.
-     *                                   Si está vacío, busca todas las pendientes del mes.
+     * @param int[]    $ids_operaciones  IDs específicas a incluir.
+     * @param bool     $en_ceros         true = generar XML sin operaciones (aviso en ceros).
+     *                                   Cuando false y $ids_operaciones vacío, busca todas las pendientes del mes.
      * @return string|false  XML string o false si error
      */
-    public function generarXMLMensual(string $mes_reportado, array $ids_operaciones = [])
+    public function generarXMLMensual(string $mes_reportado, array $ids_operaciones = [], bool $en_ceros = false)
     {
-        dol_syslog(__METHOD__." mes=$mes_reportado ids=".implode(',', $ids_operaciones), LOG_INFO);
+        dol_syslog(__METHOD__." mes=$mes_reportado ids=".implode(',', $ids_operaciones)." en_ceros=".($en_ceros ? '1' : '0'), LOG_INFO);
 
-        $operaciones = empty($ids_operaciones)
-            ? $this->getOperacionesMes($mes_reportado)
-            : $this->getOperacionesByIds($ids_operaciones);
-
-        if (empty($operaciones)) {
-            $this->error = "No hay operaciones pendientes de aviso para el mes $mes_reportado";
-            return false;
+        if ($en_ceros) {
+            $operaciones = [];
+        } elseif (!empty($ids_operaciones)) {
+            $operaciones = $this->repo->fetchOperacionesPorIds($ids_operaciones);
+        } else {
+            $operaciones = $this->repo->fetchOperacionesPorMes($mes_reportado);
         }
 
         $dom = new DOMDocument('1.0', 'UTF-8');
@@ -74,101 +80,27 @@ class PLDXMLGenerator
         $informe->appendChild($dom->createElement('mes_reportado', $mes_reportado));
         $informe->appendChild($this->crearSujetoObligado($dom));
 
-        foreach ($operaciones as $operacion) {
-            try {
-                $aviso = $this->crearAviso($dom, $operacion);
-                if ($aviso) {
-                    $informe->appendChild($aviso);
+        // Aviso en ceros: si no hay operaciones, se genera XML válido sin nodos <aviso>
+        if (!empty($operaciones)) {
+            foreach ($operaciones as $operacion) {
+                try {
+                    $aviso = $this->crearAviso($dom, $operacion);
+                    if ($aviso) {
+                        $informe->appendChild($aviso);
+                    }
+                } catch (Exception $e) {
+                    $this->errors[] = "Operación ID {$operacion->id}: ".$e->getMessage();
                 }
-            } catch (Exception $e) {
-                $this->errors[] = "Operación ID {$operacion->id}: ".$e->getMessage();
             }
-        }
 
-        if (!empty($this->errors)) {
-            return false;
+            if (!empty($this->errors)) {
+                return false;
+            }
+        } else {
+            dol_syslog(__METHOD__." Aviso en ceros para mes $mes_reportado — sin operaciones vulnerables", LOG_INFO);
         }
 
         return $dom->saveXML();
-    }
-
-    /**
-     * Obtener operaciones del mes pendientes de aviso
-     */
-    private function getOperacionesMes(string $mes_reportado): array
-    {
-        $sql = "SELECT o.rowid";
-        $sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion as o";
-        $sql .= " WHERE o.mes_reportado = '".$this->db->escape($mes_reportado)."'";
-        $sql .= " AND o.requiere_aviso = 1";
-        $sql .= " AND o.aviso_presentado = 0";
-        $sql .= " AND o.estado != 'cancelada'";
-        $sql .= " ORDER BY o.fecha_operacion ASC";
-
-        $resql = $this->db->query($sql);
-
-        $operaciones = array();
-        if (!$resql) {
-            $this->errors[] = "getOperacionesMes: ".$this->db->lasterror();
-            return $operaciones;
-        }
-
-        $num = $this->db->num_rows($resql);
-        for ($i = 0; $i < $num; $i++) {
-            $obj = $this->db->fetch_object($resql);
-            $operacion = new PLDOperacion($this->db);
-            if ($operacion->fetch($obj->rowid) <= 0) {
-                continue;
-            }
-            $operacion->fetchCliente();
-            $operacion->fetchVehiculo();
-            $operacion->fetchBeneficiarios();
-            $operacion->fetchFormasPago();
-            $operaciones[] = $operacion;
-        }
-        $this->db->free($resql);
-
-        return $operaciones;
-    }
-
-    /**
-     * Carga operaciones por array de IDs (para XML generado desde un aviso específico)
-     */
-    private function getOperacionesByIds(array $ids): array
-    {
-        $operaciones = array();
-        $ids_safe = array_map('intval', $ids);
-        if (empty($ids_safe)) {
-            return $operaciones;
-        }
-
-        $sql = "SELECT o.rowid FROM ".MAIN_DB_PREFIX."pld_operacion as o";
-        $sql .= " WHERE o.rowid IN (".implode(',', $ids_safe).")";
-        $sql .= " AND o.estado != 'cancelada'";
-        $sql .= " ORDER BY o.fecha_operacion ASC";
-
-        $resql = $this->db->query($sql);
-        if (!$resql) {
-            $this->errors[] = "getOperacionesByIds: ".$this->db->lasterror();
-            return $operaciones;
-        }
-
-        $num = $this->db->num_rows($resql);
-        for ($i = 0; $i < $num; $i++) {
-            $obj = $this->db->fetch_object($resql);
-            $operacion = new PLDOperacion($this->db);
-            if ($operacion->fetch($obj->rowid) <= 0) {
-                continue;
-            }
-            $operacion->fetchCliente();
-            $operacion->fetchVehiculo();
-            $operacion->fetchBeneficiarios();
-            $operacion->fetchFormasPago();
-            $operaciones[] = $operacion;
-        }
-        $this->db->free($resql);
-
-        return $operaciones;
     }
 
     // -----------------------------------------------------------------------
@@ -210,7 +142,7 @@ class PLDXMLGenerator
     {
         $alerta = $dom->createElement('alerta');
         // 01=operación inusual, 02=sin información suficiente
-        $tipo = $operacion->genera_alerta ? '01' : '01';
+        $tipo = $operacion->genera_alerta ? '01' : '02';
         $alerta->appendChild($dom->createElement('tipo_alerta', $tipo));
         return $alerta;
     }
@@ -493,7 +425,7 @@ class PLDXMLGenerator
             dol_mkdir($dir);
         }
 
-        $filename = 'PLD_VEH_'.$mes_reportado.'_'.dol_print_date(dol_now(), '%Y%m%d%H%M%S').'.xml';
+        $filename = 'PLD_VEH_'.$mes_reportado.'_'.date('YmdHis', dol_now()).'.xml';
         $filepath = $dir.'/'.$filename;
 
         $bytes = file_put_contents($filepath, $xml_content);

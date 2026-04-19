@@ -6,6 +6,10 @@ if (!defined('DOL_VERSION')) {
 }
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/repository/PLDOperacionRepository.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/vo/CURP.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/vo/RFC.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/vo/VIN.php';
 
 class PLDOperacion extends CommonObject
 {
@@ -37,7 +41,6 @@ class PLDOperacion extends CommonObject
     public $tasa_impuesto;
     /** Fecha inicio custodia 10 años (Art. 20 + Trans. 7º DOF). NULL = usa fecha_operacion con tope 2025-07-17 */
     public $fecha_inicio_custodia;
-    /** Clave de importación masiva. SEED_PLD_TEST = dato de prueba eliminable */
     public $import_key;
 
     public $supera_umbral;
@@ -377,25 +380,15 @@ class PLDOperacion extends CommonObject
         // Verificar acumulación 6 meses para el mismo cliente (Art. 7 Regl. LFPIORPI)
         $supera_acumulado = false;
         if ($this->fk_societe > 0) {
-            $fecha_inicio_6m = date('Y-m-d', strtotime('-6 months'));
-            $sql = "SELECT SUM(COALESCE(monto_sin_impuestos, monto_mxn)) as total_acum";
-            $sql .= " FROM ".MAIN_DB_PREFIX."pld_operacion";
-            $sql .= " WHERE fk_societe = ".(int)$this->fk_societe;
-            $sql .= " AND fecha_operacion >= '".$this->db->escape($fecha_inicio_6m)."'";
-            $sql .= " AND estado != 'cancelada'";
-            if ($this->id > 0) {
-                $sql .= " AND rowid != ".(int)$this->id; // excluir la operación actual
-            }
-            $resql = $this->db->query($sql);
-            if ($resql) {
-                $obj = $this->db->fetch_object($resql);
-                $acumulado_previo = (float)($obj->total_acum ?? 0);
-                $total_con_esta = $acumulado_previo + $monto_bruto;
-                if (!$supera_individual && $total_con_esta >= $umbral) {
-                    $supera_acumulado = true;
-                    $motivo = 'acumulacion_6_meses';
-                }
-                $this->db->free($resql);
+            $repo = new PLDOperacionRepository($this->db);
+            $acumulado_previo = $repo->getAcumuladoSeisMeses(
+                (int)$this->fk_societe,
+                $this->id > 0 ? (int)$this->id : null
+            );
+            $total_con_esta = $acumulado_previo + $monto_bruto;
+            if (!$supera_individual && $total_con_esta >= $umbral) {
+                $supera_acumulado = true;
+                $motivo = 'acumulacion_6_meses';
             }
         }
 
@@ -443,28 +436,13 @@ class PLDOperacion extends CommonObject
     
     public function generarFolioInterno(): string
     {
-        $prefix = 'PLD';
-        $year = date('Y');
+        $year  = date('Y');
         $month = date('m');
-        $mes = $this->db->escape($year.$month);
 
-        $this->db->begin();
+        $repo        = new PLDOperacionRepository($this->db);
+        $consecutivo = $repo->getUltimoFolioConsecutivo($year, $month) + 1;
 
-        $sql = "SELECT MAX(CAST(".$this->db->ifsql("folio_interno LIKE 'PLD-{$year}-{$month}-%'", "SUBSTRING_INDEX(folio_interno, '-', -1)", "0")." AS UNSIGNED)) as ultimo";
-        $sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
-        $sql .= " WHERE mes_reportado = '".$mes."'";
-
-        $resql = $this->db->query($sql);
-        if (!$resql) {
-            $this->db->rollback();
-            return '';
-        }
-        $obj = $this->db->fetch_object($resql);
-        $consecutivo = (int) ($obj->ultimo ?? 0) + 1;
-
-        $this->folio_interno = sprintf('%s-%s-%s-%04d', $prefix, $year, $month, $consecutivo);
-
-        $this->db->commit();
+        $this->folio_interno = sprintf('PLD-%s-%s-%04d', $year, $month, $consecutivo);
 
         return $this->folio_interno;
     }
@@ -517,9 +495,13 @@ class PLDOperacion extends CommonObject
             $this->cliente->denominacion_razon = '';
         }
 
-        // Identificación
-        $this->cliente->rfc = strtoupper($opts['options_pld_rfc_validado'] ?? ($societe->idprof2 ?? ''));
-        $this->cliente->curp = strtoupper($opts['options_pld_curp'] ?? '');
+        // Identificación — normalizada mediante Value Objects (garantizan formato SAT)
+        $rfc_raw  = $opts['options_pld_rfc_validado'] ?? ($societe->idprof2 ?? '');
+        $curp_raw = $opts['options_pld_curp'] ?? '';
+        $rfc_vo   = RFC::tryFrom((string)$rfc_raw);
+        $curp_vo  = CURP::tryFrom((string)$curp_raw);
+        $this->cliente->rfc  = $rfc_vo  ? (string)$rfc_vo  : strtoupper(trim((string)$rfc_raw));
+        $this->cliente->curp = $curp_vo ? (string)$curp_vo : strtoupper(trim((string)$curp_raw));
         $this->cliente->fecha_nacimiento = $opts['options_pld_fecha_nacimiento'] ?? '';
         $this->cliente->pais_nacimiento = $opts['options_pld_pais_nacimiento'] ?? 'MX';
         $this->cliente->nacionalidad = $opts['options_pld_nacionalidad'] ?? 'MX';
@@ -579,7 +561,10 @@ class PLDOperacion extends CommonObject
         $this->vehiculo->marca = $opts['options_pld_marca'] ?? '';
         $this->vehiculo->modelo = $opts['options_pld_modelo'] ?? '';
         $this->vehiculo->anio_modelo = $opts['options_pld_anio_modelo'] ?? date('Y');
-        $this->vehiculo->vin = strtoupper($opts['options_pld_vin'] ?? '');
+        // VIN normalizado mediante Value Object (garantiza 17 chars alfanuméricos SAT)
+        $vin_raw = $opts['options_pld_vin'] ?? '';
+        $vin_vo  = VIN::tryFrom((string)$vin_raw);
+        $this->vehiculo->vin          = $vin_vo ? (string)$vin_vo : strtoupper(trim((string)$vin_raw));
         $this->vehiculo->numero_serie = strtoupper($opts['options_pld_numero_serie'] ?? '');
         $this->vehiculo->placas = $opts['options_pld_placas'] ?? '';
         $this->vehiculo->origen = $opts['options_pld_origen'] ?? 'nacional';
@@ -611,28 +596,16 @@ class PLDOperacion extends CommonObject
 
         require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldbeneficiario.class.php';
 
-        $sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."pld_beneficiario";
-        $sql .= " WHERE fk_societe = ".(int)$this->fk_societe;
-        $sql .= " AND activo = 1";
-        $sql .= " ORDER BY porcentaje_participacion DESC";
+        $repo = new PLDOperacionRepository($this->db);
+        $ids  = $repo->fetchBeneficiarioIds((int)$this->fk_societe);
 
-        $resql = $this->db->query($sql);
-
-        $this->beneficiarios = array();
-
-        if (!$resql) {
-            $this->errors[] = "fetchBeneficiarios: ".$this->db->lasterror();
-            return -1;
-        }
-
-        $num = $this->db->num_rows($resql);
-        for ($i = 0; $i < $num; $i++) {
-            $obj = $this->db->fetch_object($resql);
+        $this->beneficiarios = [];
+        foreach ($ids as $id) {
             $ben = new PLDBeneficiario($this->db);
-            $ben->fetch($obj->rowid);
-            $this->beneficiarios[] = $ben;
+            if ($ben->fetch($id) > 0) {
+                $this->beneficiarios[] = $ben;
+            }
         }
-        $this->db->free($resql);
 
         return 1;
     }
@@ -647,70 +620,33 @@ class PLDOperacion extends CommonObject
      */
     public function fetchFormasPago(): int
     {
-        $this->formas_pago = array();
+        $this->formas_pago          = [];
         $this->forma_pago_principal = '';
-        $this->usa_transferencia = false;
-        $this->banco_destino = '';
-        $this->cuenta_destino = '';
-        $this->tipo_cambio = 1.0;
+        $this->usa_transferencia    = false;
+        $this->banco_destino        = '';
+        $this->cuenta_destino       = '';
+        $this->tipo_cambio          = 1.0;
 
         if (!$this->fk_facture) {
             return -1;
         }
 
-        $sql = "SELECT p.rowid, p.datep, p.amount,";
-        $sql .= " ef.pld_forma_pago, ef.pld_instrumento_monetario,";
-        $sql .= " ef.pld_moneda, ef.pld_monto_operacion,";
-        $sql .= " ef.pld_monto_efectivo, ef.pld_monto_transferencia,";
-        $sql .= " ef.pld_monto_cheque, ef.pld_monto_tarjeta,";
-        $sql .= " ef.pld_banco_destino, ef.pld_cuenta_destino,";
-        $sql .= " ef.pld_banco_cheque, ef.pld_numero_cheque,";
-        $sql .= " ef.pld_clabe_origen";
-        $sql .= " FROM ".MAIN_DB_PREFIX."paiement as p";
-        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."paiement_extrafields as ef ON ef.fk_object = p.rowid";
-        $sql .= " INNER JOIN ".MAIN_DB_PREFIX."paiement_facture as pf ON pf.fk_paiement = p.rowid";
-        $sql .= " WHERE pf.fk_facture = ".(int)$this->fk_facture;
-        $sql .= " ORDER BY p.datep ASC";
-
-        $resql = $this->db->query($sql);
-
-        if (!$resql) {
-            $this->errors[] = "fetchFormasPago: ".$this->db->lasterror();
-            return -1;
-        }
+        $repo  = new PLDOperacionRepository($this->db);
+        $pagos = $repo->fetchFormasPago((int)$this->fk_facture);
 
         $first = true;
-        $num = $this->db->num_rows($resql);
-        for ($i = 0; $i < $num; $i++) {
-            $obj = $this->db->fetch_object($resql);
-
-            $pago = new stdClass();
-            $pago->rowid = $obj->rowid;
-            $pago->datep = $obj->datep;
-            $pago->amount = $obj->amount;
-            $pago->pld_forma_pago = $obj->pld_forma_pago ?? '';
-            $pago->pld_instrumento_monetario = $obj->pld_instrumento_monetario ?? '01';
-            $pago->pld_moneda = $obj->pld_moneda ?? 'MXN';
-            $pago->pld_monto_efectivo = (float)($obj->pld_monto_efectivo ?? 0);
-            $pago->pld_monto_transferencia = (float)($obj->pld_monto_transferencia ?? 0);
-            $pago->pld_banco_destino = $obj->pld_banco_destino ?? '';
-            $pago->pld_cuenta_destino = $obj->pld_cuenta_destino ?? '';
-            $pago->pld_banco_cheque = $obj->pld_banco_cheque ?? '';
-            $pago->pld_numero_cheque = $obj->pld_numero_cheque ?? '';
-
+        foreach ($pagos as $pago) {
             if ($first) {
-                $this->forma_pago_principal = $obj->pld_forma_pago ?? '';
+                $this->forma_pago_principal = $pago->pld_forma_pago;
                 if ($this->forma_pago_principal == '04') {
                     $this->usa_transferencia = true;
-                    $this->banco_destino = $obj->pld_banco_destino ?? '';
-                    $this->cuenta_destino = $obj->pld_cuenta_destino ?? '';
+                    $this->banco_destino     = $pago->pld_banco_destino;
+                    $this->cuenta_destino    = $pago->pld_cuenta_destino;
                 }
                 $first = false;
             }
-
             $this->formas_pago[] = $pago;
         }
-        $this->db->free($resql);
 
         return 1;
     }

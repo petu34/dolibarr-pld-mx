@@ -752,7 +752,9 @@ EstadoPendiente = Pendiente
 EstadoCompletado = Completado
 EstadoCancelado = Cancelado
 EstadoAbierta = Abierta
+EstadoEnRevision = En revisión
 EstadoResuelta = Resuelta
+EstadoArchivada = Archivada
 EstadoPresentado = Presentado
 
 # Dashboard
@@ -787,6 +789,7 @@ UMAValor = Valor UMA Vigente (MXN)
 UMAAnio = Año del Valor UMA
 UmbralVehNuevo = Umbral Vehículo Nuevo (MXN)
 UmbralVehUsado = Umbral Vehículo Usado (MXN)
+UmbralAcumulado6M = Umbral Acumulado 6 Meses (MXN)
 DiasAlertaID = Días para alertar vencimiento de ID
 OficialCumplimiento = Oficial de Cumplimiento (ID usuario)
 PeriodoConservacion = Período de Conservación (años)
@@ -842,7 +845,7 @@ ErrorFolioFechaRequeridos = El folio SAT y la fecha de presentación son obligat
 NoXMLGenerado = Sin XML generado
 
 # ============================================================
-# PARTE 8.1: Alpha — DOF 27/03/2026 + Datos de prueba
+# PARTE 8.1: Alpha — DOF 27/03/2026
 # ============================================================
 
 # Campos monto separado (Art. 6 DOF 2026)
@@ -864,16 +867,6 @@ IVADefault = Tasa IVA por omisión
 PEPEndpoint = URL servicio consulta PEP (UIF)
 AvisosIntentadasActivo = Reportar operaciones intentadas (Art. 7 Bis)
 
-# Configuración admin — Sección Datos de prueba
-SeccionDatosPrueba = Datos de prueba (entorno no-producción)
-SeedNoData = No hay datos de prueba cargados. Puede cargarlos para explorar el módulo con datos realistas.
-SeedDataPresent = Hay datos de prueba cargados (marcados con import_key=SEED_PLD_TEST):
-SeedCargar = Cargar datos de prueba
-SeedEliminar = Eliminar todos los datos de prueba
-SeedCargado = Datos de prueba cargados correctamente
-SeedEliminado = Datos de prueba eliminados (%s registros)
-SeedConfirmDelete = ¿Confirmar eliminación de todos los datos de prueba? Esta acción no se puede deshacer.
-
 # Aviso — sección operaciones vinculadas (aviso/card.php)
 PLDOperacionesDelAviso = Operaciones vinculadas al aviso
 PLDAvisoSinOperaciones = No hay operaciones vinculadas. Agregue operaciones del período que requieran aviso.
@@ -882,8 +875,9 @@ OperacionVinculada = Operación vinculada al aviso correctamente
 OperacionDesvinculada = Operación desvinculada del aviso
 XMLGeneradoCorrectamente = XML generado y guardado correctamente
 PLDFirmarConEfirma = Firmar con e.firma al generar
+PLDGenerarXMLEnCeros = Generar XML en Ceros (sin operaciones)
 
-# Documentos / Beneficiarios (para seed counters)
+# Entidades PLD
 PLDDocumentos = Documentos PLD
 PLDBeneficiarios = Beneficiarios Controladores
 PLDAlertas = Alertas PLD

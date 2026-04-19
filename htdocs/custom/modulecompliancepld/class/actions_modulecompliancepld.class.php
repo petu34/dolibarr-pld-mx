@@ -32,6 +32,13 @@ declare(strict_types=1);
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonhookactions.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldvalidator.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/PLDFormValidator.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/CURPRule.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/RFCRule.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/RegexRule.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/TelefonoRule.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/CorreoRule.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/services/PLDOperacionService.php';
 
 /**
  * Class ActionsModulecompliancepld
@@ -302,76 +309,104 @@ class ActionsModulecompliancepld extends CommonHookActions
 	}
 
 	/**
-	 * Valida campos PLD del formulario de contacto (socpeople)
+	 * Valida campos PLD del formulario de contacto (socpeople).
 	 *
-	 * Campos validados: CURP, RFC, teléfono, correo electrónico
+	 * Campos: CURP, RFC, teléfono, correo electrónico.
+	 * Usa PLDFormValidator (Composite) con reglas Strategy individuales.
 	 *
-	 * @return int Número de errores encontrados
+	 * @return int Número de errores encontrados (0 = válido)
 	 */
 	private function validarFormularioContacto(): int
 	{
-		global $langs;
-		$validator = new PLDValidator();
-		$error = 0;
-
-		$curp = GETPOST('options_pld_curp', 'alpha');
-		if ($curp !== '' && !$validator->validarCURP($curp)) {
-			setEventMessages($langs->trans('PLDErrorCURPInvalida'), null, 'errors');
-			$error++;
-		}
-
-		$rfc = GETPOST('options_pld_rfc', 'alpha');
-		if ($rfc !== '' && !$validator->validarRFC($rfc)) {
-			setEventMessages($langs->trans('PLDErrorRFCInvalido'), null, 'errors');
-			$error++;
-		}
-
-		$telefono = GETPOST('options_pld_numero_telefono', 'alpha');
-		if ($telefono !== '' && !$validator->validarTelefono($telefono)) {
-			setEventMessages($langs->trans('PLDErrorTelefonoInvalido'), null, 'errors');
-			$error++;
-		}
-
-		$correo = GETPOST('options_pld_correo_electronico', 'alpha');
-		if ($correo !== '' && !$validator->validarCorreo($correo)) {
-			setEventMessages($langs->trans('PLDErrorCorreoInvalido'), null, 'errors');
-			$error++;
-		}
-
-		return $error;
+		return (new PLDFormValidator())
+			->addField('options_pld_curp',               new CURPRule())
+			->addField('options_pld_rfc',                new RFCRule())
+			->addField('options_pld_numero_telefono',    new TelefonoRule())
+			->addField('options_pld_correo_electronico', new CorreoRule())
+			->validatePost();
 	}
 
 	/**
-	 * Valida campos PLD del formulario de empresa (thirdparty/societe)
+	 * Valida campos PLD del formulario de empresa (thirdparty/societe).
 	 *
-	 * Campos validados: CURP, RFC, código postal
+	 * Campos: CURP, RFC, código postal.
+	 * Usa PLDFormValidator (Composite) con reglas Strategy individuales.
 	 *
-	 * @return int Número de errores encontrados
+	 * @return int Número de errores encontrados (0 = válido)
 	 */
 	private function validarFormularioEmpresa(): int
 	{
-		global $langs;
-		$validator = new PLDValidator();
-		$error = 0;
+		return (new PLDFormValidator())
+			->addField('options_pld_curp',          new CURPRule())
+			->addField('options_pld_rfc_validado',  new RFCRule())
+			->addField('options_pld_codigo_postal', new RegexRule(PLDValidator::REGEX_CP, 'PLDErrorCPInvalido'))
+			->validatePost();
+	}
 
-		$curp = GETPOST('options_pld_curp', 'alpha');
-		if ($curp !== '' && !$validator->validarCURP($curp)) {
-			setEventMessages($langs->trans('PLDErrorCURPInvalida'), null, 'errors');
-			$error++;
+	/**
+	 * Hook: Marca factura como operación vulnerable cuando se valida.
+	 *
+	 * Dispara automáticamente cuando una factura es validada.
+	 * Crea un registro en llx_pld_operacion para que el responsable
+	 * de compliance lo revise y descarte si no es realmente vulnerable.
+	 *
+	 * @param string        $action  Event action code
+	 * @param CommonObject  $object  Invoice object
+	 * @param User          $user    User object
+	 * @param Translate     $langs   Language object
+	 * @param Conf          $conf    Config object
+	 * @return int 0 siempre (no interrumpir eventos)
+	 */
+	public function billValidate($action, $object, User $user, Translate $langs, Conf $conf)
+	{
+		if (!isModEnabled('modulecompliancepld')) {
+			return 0;
 		}
 
-		$rfc = GETPOST('options_pld_rfc_validado', 'alpha');
-		if ($rfc !== '' && !$validator->validarRFC($rfc)) {
-			setEventMessages($langs->trans('PLDErrorRFCInvalido'), null, 'errors');
-			$error++;
+		if (!isset($object->id) || $object->type != 0) {
+			return 0;
 		}
 
-		$cp = GETPOST('options_pld_codigo_postal', 'alpha');
-		if ($cp !== '' && !$validator->validarCodigoPostal($cp)) {
-			setEventMessages($langs->trans('PLDErrorCPInvalido'), null, 'errors');
-			$error++;
+		$svc = new PLDOperacionService($this->db);
+		$result = $svc->marcarFacturaComoVulnerable($object, $user);
+
+		if ($result < 0) {
+			dol_syslog("PLD: Error marcando factura ".$object->id." como vulnerable: ".$svc->error, LOG_ERR);
 		}
 
-		return $error;
+		return 0;
+	}
+
+	/**
+	 * Hook: Marca factura como operación vulnerable cuando se paga.
+	 *
+	 * Dispara automáticamente cuando se registra un pago en una factura.
+	 * Similar a billValidate, crea/actualiza la operación PLD.
+	 *
+	 * @param string        $action  Event action code
+	 * @param CommonObject  $object  Payment object
+	 * @param User          $user    User object
+	 * @param Translate     $langs   Language object
+	 * @param Conf          $conf    Config object
+	 * @return int 0 siempre (no interrumpir eventos)
+	 */
+	public function billPay($action, $object, User $user, Translate $langs, Conf $conf)
+	{
+		if (!isModEnabled('modulecompliancepld')) {
+			return 0;
+		}
+
+		if (!isset($object->id) || $object->type != 0) {
+			return 0;
+		}
+
+		$svc = new PLDOperacionService($this->db);
+		$result = $svc->marcarFacturaComoVulnerable($object, $user);
+
+		if ($result < 0) {
+			dol_syslog("PLD: Error marcando factura pagada ".$object->id." como vulnerable: ".$svc->error, LOG_ERR);
+		}
+
+		return 0;
 	}
 }

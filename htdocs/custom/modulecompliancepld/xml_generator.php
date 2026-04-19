@@ -23,6 +23,7 @@ if (!$res) { die("Include of main fails"); }
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once __DIR__.'/class/pldxmlgenerator.class.php';
+require_once __DIR__.'/class/repository/PLDOperacionRepository.php';
 require_once __DIR__.'/class/pldefirmaintegration.class.php';
 require_once __DIR__.'/class/pldaviso.class.php';
 
@@ -51,11 +52,19 @@ $msgs_ok       = array();
 $msgs_err      = array();
 
 if ($action == 'generar' && $mes_input) {
+	if (!checkToken()) {
+		accessforbidden('Invalid token');
+	}
 	$mes_reportado = preg_replace('/[^0-9]/', '', $mes_input);
 	if (strlen($mes_reportado) != 6) {
 		$msgs_err[] = "Formato de mes incorrecto. Use YYYYMM (ej: 202602).";
 	} else {
-		$generator = new PLDXMLGenerator($db);
+		$repo      = new PLDOperacionRepository($db);
+		$config    = [
+			'rfc_sujeto'      => getDolGlobalString('MAIN_INFO_SIREN'),
+			'clave_actividad' => getDolGlobalString('MODULECOMPLIANCEPLD_ACTIVIDAD_VULNERABLE') ?: 'VIII',
+		];
+		$generator = new PLDXMLGenerator($repo, $config);
 		$xml_content = $generator->generarXMLMensual($mes_reportado);
 
 		if ($xml_content === false) {
@@ -85,7 +94,7 @@ if ($action == 'generar' && $mes_input) {
 				$msgs_ok[] = "XML generado: ".basename($filepath);
 
 				// Registrar o actualizar el aviso en llx_pld_aviso
-				$sql_stats = "SELECT COUNT(rowid) as num, SUM(monto_mxn) as total"
+				$sql_stats = "SELECT COUNT(rowid) as num, COALESCE(SUM(monto_mxn), 0) as total"
 					." FROM ".MAIN_DB_PREFIX."pld_operacion"
 					." WHERE mes_reportado = '".$db->escape($mes_reportado)."'"
 					." AND requiere_aviso = 1 AND aviso_presentado = 0 AND estado != 'cancelada'";

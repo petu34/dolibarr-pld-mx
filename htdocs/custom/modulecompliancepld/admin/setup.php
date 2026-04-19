@@ -45,6 +45,7 @@ if ($action == 'update') {
 		'MODULECOMPLIANCEPLD_UMA_ANIO'             => array('type' => 'int',    'default' => 2026),
 		'MODULECOMPLIANCEPLD_UMBRAL_VEH_NUEVO'     => array('type' => 'float',  'default' => 377778.20),
 		'MODULECOMPLIANCEPLD_UMBRAL_VEH_USADO'     => array('type' => 'float',  'default' => 117310.00),
+		'MODULECOMPLIANCEPLD_UMBRAL_ACUMULADO_6M'  => array('type' => 'float',  'default' => 500000.00),
 		'MODULECOMPLIANCEPLD_DIAS_ALERTA_ID'       => array('type' => 'int',    'default' => 30),
 		'MODULECOMPLIANCEPLD_OFICIAL_CUMPLIMIENTO' => array('type' => 'int',    'default' => 0),
 		'MODULECOMPLIANCEPLD_PERIODO_CONSERVACION' => array('type' => 'int',    'default' => 10),
@@ -87,98 +88,6 @@ if ($action == 'update') {
 	} else {
 		setEventMessages($langs->trans("ErrorSavingSetup"), null, 'errors');
 	}
-}
-
-// ── Acción: cargar datos de prueba ────────────────────────────────────────────
-if ($action == 'load_seed' && $user->admin) {
-	// Ejecutar seed como función include con $db y $user ya listos
-	// El seed usa import_key='SEED_PLD_TEST' en todos sus INSERT
-	$seed_file = __DIR__.'/../scripts/seed_datos_prueba.php';
-	if (file_exists($seed_file)) {
-		// El seed espera ser ejecutado en contexto CLI con $db y $user,
-		// lo incluimos desactivando la salida directa al buffer
-		ob_start();
-		try {
-			// Redefinir NOSESSION/NOLOGIN si no están definidos
-			if (!defined('NOSESSION')) define('NOSESSION', '1');
-			include $seed_file;
-		} catch (Exception $e) {
-			// continuar
-		}
-		$seed_output = ob_get_clean();
-		setEventMessages($langs->trans('SeedCargado'), null, 'mesgs');
-		setEventMessages('<pre style="font-size:0.85em;max-height:200px;overflow:auto">'.dol_escape_htmltag($seed_output).'</pre>', null, 'mesgs');
-	} else {
-		setEventMessages('Archivo seed no encontrado: '.$seed_file, null, 'errors');
-	}
-	header("Location: ".dol_escape_htmltag($_SERVER["PHP_SELF"]));
-	exit;
-}
-
-// ── Acción: eliminar datos de prueba ──────────────────────────────────────────
-if ($action == 'delete_seed' && $user->admin) {
-	$total_deleted = 0;
-
-	// 1. Recopilar IDs de facturas y propals vinculadas a operaciones seed
-	$factura_ids = array();
-	$propal_ids  = array();
-	$sql_fk = "SELECT fk_facture, fk_propal FROM ".MAIN_DB_PREFIX."pld_operacion"
-		." WHERE import_key = 'SEED_PLD_TEST'";
-	$res_fk = $db->query($sql_fk);
-	if ($res_fk) {
-		while ($row_fk = $db->fetch_object($res_fk)) {
-			if (!empty($row_fk->fk_facture) && $row_fk->fk_facture > 0) {
-				$factura_ids[] = (int)$row_fk->fk_facture;
-			}
-			if (!empty($row_fk->fk_propal) && $row_fk->fk_propal > 0) {
-				$propal_ids[] = (int)$row_fk->fk_propal;
-			}
-		}
-		$db->free($res_fk);
-	}
-
-	// 2. Eliminar pagos y sus ligaduras (vía facturas seed)
-	if (!empty($factura_ids)) {
-		$ids = implode(',', $factura_ids);
-		// Extrafields PLD del pago
-		$db->query("DELETE FROM ".MAIN_DB_PREFIX."paiement_extrafields"
-			." WHERE fk_object IN ("
-			."  SELECT fk_paiement FROM ".MAIN_DB_PREFIX."paiement_facture"
-			."  WHERE fk_facture IN ($ids)"
-			." )");
-		// Pagos
-		$db->query("DELETE FROM ".MAIN_DB_PREFIX."paiement"
-			." WHERE rowid IN ("
-			."  SELECT fk_paiement FROM ".MAIN_DB_PREFIX."paiement_facture"
-			."  WHERE fk_facture IN ($ids)"
-			." )");
-		// Ligaduras pago→factura
-		$db->query("DELETE FROM ".MAIN_DB_PREFIX."paiement_facture WHERE fk_facture IN ($ids)");
-		// Líneas de factura
-		$db->query("DELETE FROM ".MAIN_DB_PREFIX."facturedet WHERE fk_facture IN ($ids)");
-		// Facturas
-		$res_del = $db->query("DELETE FROM ".MAIN_DB_PREFIX."facture WHERE rowid IN ($ids)");
-		if ($res_del) $total_deleted += $db->affected_rows($db->db);
-	}
-
-	// 3. Eliminar líneas y cotizaciones seed
-	if (!empty($propal_ids)) {
-		$ids = implode(',', $propal_ids);
-		$db->query("DELETE FROM ".MAIN_DB_PREFIX."propaldet WHERE fk_propal IN ($ids)");
-		$res_del = $db->query("DELETE FROM ".MAIN_DB_PREFIX."propal WHERE rowid IN ($ids)");
-		if ($res_del) $total_deleted += $db->affected_rows($db->db);
-	}
-
-	// 4. Eliminar tablas PLD seed
-	$pld_tables = array('pld_aviso_operacion', 'pld_operacion', 'pld_aviso', 'pld_alerta', 'pld_beneficiario', 'pld_documento');
-	foreach ($pld_tables as $t) {
-		$res_del = $db->query("DELETE FROM ".MAIN_DB_PREFIX.$t." WHERE import_key = 'SEED_PLD_TEST'");
-		if ($res_del) $total_deleted += $db->affected_rows($db->db);
-	}
-
-	setEventMessages($langs->trans('SeedEliminado', $total_deleted), null, 'mesgs');
-	header("Location: ".dol_escape_htmltag($_SERVER["PHP_SELF"]));
-	exit;
 }
 
 /*
@@ -236,6 +145,13 @@ print '<tr class="oddeven">';
 print '<td><label for="MODULECOMPLIANCEPLD_UMBRAL_VEH_USADO">'.$langs->trans("UmbralVehUsado").'</label></td>';
 print '<td><input type="number" step="0.01" id="MODULECOMPLIANCEPLD_UMBRAL_VEH_USADO" name="MODULECOMPLIANCEPLD_UMBRAL_VEH_USADO" class="flat minwidth150" value="'.dol_escape_htmltag($umbral_usado).'"></td>';
 print '<td class="opacitymedium">1,000 UMAs x $117.31 = $117,310.00 MXN</td>';
+print '</tr>';
+
+$umbral_acum = getDolGlobalString('MODULECOMPLIANCEPLD_UMBRAL_ACUMULADO_6M', '500000.00');
+print '<tr class="oddeven">';
+print '<td><label for="MODULECOMPLIANCEPLD_UMBRAL_ACUMULADO_6M">'.$langs->trans("UmbralAcumulado6M").'</label></td>';
+print '<td><input type="number" step="0.01" id="MODULECOMPLIANCEPLD_UMBRAL_ACUMULADO_6M" name="MODULECOMPLIANCEPLD_UMBRAL_ACUMULADO_6M" class="flat minwidth150" value="'.dol_escape_htmltag($umbral_acum).'"></td>';
+print '<td class="opacitymedium">Monto acumulado en 6 meses que activa aviso por el mismo cliente (Art. 7 Regl. LFPIORPI). Default: $500,000.00 MXN</td>';
 print '</tr>';
 
 print '</table><br>';
@@ -373,61 +289,6 @@ print '<input type="submit" class="butAction" value="'.$langs->trans("Save").'">
 print '</div>';
 
 print '</form>';
-
-// ======= SECCIÓN DATOS DE PRUEBA (solo entornos no-producción) =======
-if (empty($conf->global->MAIN_PROD)) {
-    print '<br>';
-    print load_fiche_titre($langs->trans("SeccionDatosPrueba"), '', 'fa-flask');
-
-    // Contar registros seed en cada tabla relevante
-    $seed_counts = array();
-    $seed_tables = array('pld_operacion', 'pld_aviso', 'pld_alerta', 'pld_beneficiario', 'pld_documento');
-    $total_seed = 0;
-    foreach ($seed_tables as $t) {
-        $sql_c = "SELECT COUNT(*) as cnt FROM ".MAIN_DB_PREFIX.$t." WHERE import_key = 'SEED_PLD_TEST'";
-        $res_c = $db->query($sql_c);
-        $cnt = 0;
-        if ($res_c) {
-            $obj_c = $db->fetch_object($res_c);
-            $cnt = (int)($obj_c ? $obj_c->cnt : 0);
-            $db->free($res_c);
-        }
-        $seed_counts[$t] = $cnt;
-        $total_seed += $cnt;
-    }
-
-    print '<div class="info">';
-    if ($total_seed == 0) {
-        print '<p>'.$langs->trans("SeedNoData").'</p>';
-        print '<form method="POST" action="'.dol_escape_htmltag($_SERVER["PHP_SELF"]).'">';
-        print '<input type="hidden" name="token" value="'.newToken().'">';
-        print '<input type="hidden" name="action" value="load_seed">';
-        print '<button type="submit" class="butAction">'.$langs->trans("SeedCargar").'</button>';
-        print '</form>';
-    } else {
-        print '<p>'.$langs->trans("SeedDataPresent").'</p>';
-        print '<ul>';
-        $labels = array(
-            'pld_operacion'   => $langs->trans("PLDOperaciones"),
-            'pld_aviso'       => $langs->trans("PLDAvisos"),
-            'pld_alerta'      => $langs->trans("PLDAlertas"),
-            'pld_beneficiario'=> $langs->trans("PLDBeneficiarios"),
-            'pld_documento'   => $langs->trans("PLDDocumentos"),
-        );
-        foreach ($seed_counts as $t => $cnt) {
-            if ($cnt > 0) {
-                print '<li>'.dol_escape_htmltag($labels[$t] ?? $t).': <strong>'.$cnt.'</strong></li>';
-            }
-        }
-        print '</ul>';
-        print '<form method="POST" action="'.dol_escape_htmltag($_SERVER["PHP_SELF"]).'" onsubmit="return confirm(\''.$langs->trans("SeedConfirmDelete").'\');">';
-        print '<input type="hidden" name="token" value="'.newToken().'">';
-        print '<input type="hidden" name="action" value="delete_seed">';
-        print '<button type="submit" class="butActionDelete">'.$langs->trans("SeedEliminar").'</button>';
-        print '</form>';
-    }
-    print '</div>';
-}
 
 print dol_get_fiche_end();
 

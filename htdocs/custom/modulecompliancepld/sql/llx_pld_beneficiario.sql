@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS llx_pld_beneficiario (
   datec DATETIME NOT NULL,
   tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   fk_user_creat INT,
-  fk_user_modif INT
-  
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  fk_user_modif INT,
+  import_key VARCHAR(14) DEFAULT NULL
+
+) ENGINE=InnoDB;
