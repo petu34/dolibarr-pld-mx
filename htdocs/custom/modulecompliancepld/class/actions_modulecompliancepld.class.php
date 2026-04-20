@@ -38,7 +38,6 @@ require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/RFCR
 require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/RegexRule.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/TelefonoRule.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/validator/CorreoRule.php';
-require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/services/PLDOperacionService.php';
 
 /**
  * Class ActionsModulecompliancepld
@@ -341,72 +340,5 @@ class ActionsModulecompliancepld extends CommonHookActions
 			->addField('options_pld_rfc_validado',  new RFCRule())
 			->addField('options_pld_codigo_postal', new RegexRule(PLDValidator::REGEX_CP, 'PLDErrorCPInvalido'))
 			->validatePost();
-	}
-
-	/**
-	 * Hook: Marca factura como operación vulnerable cuando se valida.
-	 *
-	 * Dispara automáticamente cuando una factura es validada.
-	 * Crea un registro en llx_pld_operacion para que el responsable
-	 * de compliance lo revise y descarte si no es realmente vulnerable.
-	 *
-	 * @param string        $action  Event action code
-	 * @param CommonObject  $object  Invoice object
-	 * @param User          $user    User object
-	 * @param Translate     $langs   Language object
-	 * @param Conf          $conf    Config object
-	 * @return int 0 siempre (no interrumpir eventos)
-	 */
-	public function billValidate($action, $object, User $user, Translate $langs, Conf $conf)
-	{
-		if (!isModEnabled('modulecompliancepld')) {
-			return 0;
-		}
-
-		if (!isset($object->id) || $object->type != 0) {
-			return 0;
-		}
-
-		$svc = new PLDOperacionService($this->db);
-		$result = $svc->marcarFacturaComoVulnerable($object, $user);
-
-		if ($result < 0) {
-			dol_syslog("PLD: Error marcando factura ".$object->id." como vulnerable: ".$svc->error, LOG_ERR);
-		}
-
-		return 0;
-	}
-
-	/**
-	 * Hook: Marca factura como operación vulnerable cuando se paga.
-	 *
-	 * Dispara automáticamente cuando se registra un pago en una factura.
-	 * Similar a billValidate, crea/actualiza la operación PLD.
-	 *
-	 * @param string        $action  Event action code
-	 * @param CommonObject  $object  Payment object
-	 * @param User          $user    User object
-	 * @param Translate     $langs   Language object
-	 * @param Conf          $conf    Config object
-	 * @return int 0 siempre (no interrumpir eventos)
-	 */
-	public function billPay($action, $object, User $user, Translate $langs, Conf $conf)
-	{
-		if (!isModEnabled('modulecompliancepld')) {
-			return 0;
-		}
-
-		if (!isset($object->id) || $object->type != 0) {
-			return 0;
-		}
-
-		$svc = new PLDOperacionService($this->db);
-		$result = $svc->marcarFacturaComoVulnerable($object, $user);
-
-		if ($result < 0) {
-			dol_syslog("PLD: Error marcando factura pagada ".$object->id." como vulnerable: ".$svc->error, LOG_ERR);
-		}
-
-		return 0;
 	}
 }
