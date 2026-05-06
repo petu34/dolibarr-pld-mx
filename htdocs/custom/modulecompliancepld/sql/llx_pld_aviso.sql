@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS llx_pld_aviso (
   
   -- Operaciones incluidas
   numero_operaciones INT DEFAULT 0,
-  monto_total_operaciones DECIMAL(15,2) DEFAULT 0,
+  monto_total_operaciones double(24,8) DEFAULT 0,
   
   -- XML Generado
   archivo_xml_ruta VARCHAR(500),                                 -- Ruta al archivo XML en documents/

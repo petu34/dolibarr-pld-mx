@@ -47,6 +47,15 @@ final class CURP
         if (!preg_match(PLDValidator::REGEX_CURP, $clean)) {
             throw new \InvalidArgumentException("CURP inválido: '{$raw}'");
         }
+
+        $anio2d = (int) substr($clean, 4, 2);
+        $mes    = (int) substr($clean, 6, 2);
+        $dia    = (int) substr($clean, 8, 2);
+        $anio   = $anio2d <= 30 ? 2000 + $anio2d : 1900 + $anio2d;
+        if (!checkdate($mes, $dia, $anio)) {
+            throw new \InvalidArgumentException("CURP inválido (fecha imposible): '{$raw}'");
+        }
+
         return new self($clean);
     }
 

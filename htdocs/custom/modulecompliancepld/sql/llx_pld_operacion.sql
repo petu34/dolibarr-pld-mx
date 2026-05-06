@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS llx_pld_operacion (
   
   -- Montos
   moneda VARCHAR(3) DEFAULT 'MXN',
-  monto_mxn DECIMAL(15,2) NOT NULL,
+  monto_mxn double(24,8) NOT NULL,
   
   -- Umbrales (calculados en PHP, no triggers SQL)
   supera_umbral tinyint DEFAULT 0,
