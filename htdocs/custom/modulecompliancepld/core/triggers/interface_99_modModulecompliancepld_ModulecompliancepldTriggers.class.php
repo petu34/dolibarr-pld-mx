@@ -34,6 +34,7 @@ declare(strict_types=1);
  */
 
 require_once DOL_DOCUMENT_ROOT.'/core/triggers/dolibarrtriggers.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/services/PLDOperacionService.php';
 
 
 /**
@@ -82,6 +83,62 @@ class InterfaceModulecompliancepldTriggers extends DolibarrTriggers
 				"Trigger '".$this->name."' for action '$action' launched by ".__FILE__.". id=".$object->id
 			);
 			return call_user_func($callback, $action, $object, $user, $langs, $conf);
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Trigger: Marca factura como operación vulnerable cuando se valida.
+	 *
+	 * Dispara cuando BILL_VALIDATE — crea operación PLD para revisión.
+	 *
+	 * @param string        $action  Event code (BILL_VALIDATE)
+	 * @param Facture       $object  Invoice object
+	 * @param User          $user    User object
+	 * @param Translate     $langs   Language object
+	 * @param Conf          $conf    Config object
+	 * @return int 0 siempre (no interrumpir eventos)
+	 */
+	public function billValidate($action, $object, User $user, Translate $langs, Conf $conf)
+	{
+		if (!$object || $object->type != 0) {
+			return 0;
+		}
+
+		$svc = new PLDOperacionService($this->db);
+		$result = $svc->marcarFacturaComoVulnerable($object, $user);
+
+		if ($result < 0) {
+			dol_syslog("PLD: Error marcando factura validada ".$object->id." como vulnerable: ".$svc->error, LOG_ERR);
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Trigger: Marca factura como operación vulnerable cuando se paga.
+	 *
+	 * Dispara cuando BILL_PAY — crea/actualiza operación PLD para revisión.
+	 *
+	 * @param string        $action  Event code (BILL_PAY)
+	 * @param Facture       $object  Invoice object
+	 * @param User          $user    User object
+	 * @param Translate     $langs   Language object
+	 * @param Conf          $conf    Config object
+	 * @return int 0 siempre (no interrumpir eventos)
+	 */
+	public function billPay($action, $object, User $user, Translate $langs, Conf $conf)
+	{
+		if (!$object || $object->type != 0) {
+			return 0;
+		}
+
+		$svc = new PLDOperacionService($this->db);
+		$result = $svc->marcarFacturaComoVulnerable($object, $user);
+
+		if ($result < 0) {
+			dol_syslog("PLD: Error marcando factura pagada ".$object->id." como vulnerable: ".$svc->error, LOG_ERR);
 		}
 
 		return 0;
