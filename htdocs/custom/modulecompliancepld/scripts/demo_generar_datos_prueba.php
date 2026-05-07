@@ -183,7 +183,7 @@ function generarClientes(): void
         $soc->name_alias = $nombre['razonSocial'];
         $soc->nom = $nombre['razonSocial'];
         $soc->client = 1;
-        $soc->code_client = 'DEMO-' . ($i + 1);
+        // No asignar code_client — Dolibarr lo auto-genera según su máscara
         $soc->email = strtolower($nombre['nombre']) . '.' . strtolower($nombre['apellidoPaterno']) . '@demo-pld.mx';
         $soc->tva_intra = $rfc; // Usamos para RFC
         $soc->country_id = 154; // México
@@ -193,19 +193,39 @@ function generarClientes(): void
 
         // Si hay extrafields PLD definidos, poblarlos
         if (!empty($extrafields->attributes['societe']['label'])) {
+            $municipios = ['Álvaro Obregón','Benito Juárez','Coyoacán','Cuauhtémoc','Miguel Hidalgo'];
+            $estados = ['Ciudad de México','Nuevo León','Jalisco','Guanajuato','Estado de México'];
             foreach ($extrafields->attributes['societe']['label'] as $key => $label) {
-                if (strpos($key, 'pld_') === 0) {
-                    $soc->array_options['options_' . $key] = match ($key) {
-                        'pld_curp'       => $curp,
-                        'pld_rfc'        => $rfc,
-                        'pld_nacionalidad' => 'MEX',
-                        'pld_pais_residencia' => 'MEX',
-                        'pld_identificacion_tipo' => 'INE',
-                        'pld_identificacion_numero' => str_pad((string)rand(10000000, 99999999), 13, '0', STR_PAD_LEFT),
-                        'pld_tipo_persona' => 'FISICA',
-                        default => '',
-                    };
-                }
+                    if (strpos($key, 'pld_') === 0) {
+                        $soc->array_options['options_' . $key] = match ($key) {
+                            'pld_curp'                  => $curp,
+                            'pld_rfc'                   => $rfc,
+                            'pld_rfc_validado'          => $rfc,
+                            'pld_nacionalidad'          => 'MX',
+                            'pld_pais_nacimiento'       => 'MX',
+                            'pld_pais_residencia'       => 'MX',
+                            'pld_tipo_persona'          => 'FI',
+                            'pld_calle'                 => 'Calle Ficticia ' . ($i + 1),
+                            'pld_numero_exterior'       => (string)(100 + $i),
+                            'pld_numero_interior'       => '',
+                            'pld_colonia'               => 'Colonia Centro',
+                            'pld_codigo_postal'         => '0' . rand(1000, 9999),
+                            'pld_municipio'            => $municipios[$i % 5],
+                            'pld_estado'                => $estados[$i % 5],
+                            'pld_pais'                  => 'MX',
+                            'pld_es_domicilio_extranjero' => '0',
+                            'pld_actividad_economica'   => '465111',
+                            'pld_giro_mercantil'        => '',
+                            'pld_cliente_identificado'  => '1',
+                            'pld_fecha_identificacion'  => date('Y-m-d', strtotime('-30 days')),
+                            'pld_expediente_completo'   => '1',
+                            'pld_es_pep'                => '0',
+                            'pld_tiene_beneficiario'    => '0',
+                            'pld_nivel_riesgo'          => 'bajo',
+                            'pld_nivel_diligencia'      => 'simplificada',
+                            default                     => '',
+                        };
+                    }
             }
         }
 
@@ -286,10 +306,11 @@ function generarVehiculos(): void
 
 // ──────────────────── Generación de Facturas ────────────────────
 
-function obtenerClientePorRFC(string $rfc): ?Societe
+function obtenerClientePorIndex(int $index): ?Societe
 {
     global $db;
-    $sql = "SELECT rowid FROM " . MAIN_DB_PREFIX . "societe WHERE tva_intra = '" . $db->escape($rfc) . "' LIMIT 1";
+    $nombre = DEMO_PREFIX . ' ' . str_pad((string)($index + 1), 3, '0', STR_PAD_LEFT);
+    $sql = "SELECT rowid FROM " . MAIN_DB_PREFIX . "societe WHERE nom = '" . $db->escape($nombre) . "' LIMIT 1";
     $res = $db->query($sql);
     if ($obj = $db->fetch_object($res)) {
         $soc = new Societe($db);
@@ -323,20 +344,11 @@ function generarFacturas(): void
         $escenario = ESCENARIOS[$i];
 
         // Obtener cliente y vehículo correspondientes
-        $nombre = DemoDataGenerator::generarNombreCompleto($i);
-        $fn = DemoDataGenerator::generarFechaNacimiento(30 + $i);
-        $rfc = DemoDataGenerator::generarRFC(
-            $nombre['nombre'],
-            $nombre['apellidoPaterno'],
-            $nombre['apellidoMaterno'],
-            $fn
-        );
-
-        $cliente = obtenerClientePorRFC($rfc);
+        $cliente = obtenerClientePorIndex($i);
         $vehiculo = obtenerVehiculoPorIndex($i);
 
         if (!$cliente) {
-            logSkip("Factura #{$i}: cliente no encontrado (RFC={$rfc}), ejecute --clientes primero");
+            logSkip("Factura #{$i}: cliente DEMO " . str_pad((string)($i+1), 3, '0', STR_PAD_LEFT) . " no encontrado, ejecute --clientes primero");
             continue;
         }
         if (!$vehiculo) {
@@ -363,8 +375,9 @@ function generarFacturas(): void
         $facture->socid = (int)$cliente->id;
         $facture->type = 0; // Standard invoice
         $facture->entity = 1;
-        $facture->date = '';
+        $facture->date = dol_now();
         $facture->note_public = "Factura de prueba PLD - {$tipo} - {$monto} MXN";
+        $facture->import_key = 'DEMO_PLD_TEST';
 
         $id = $facture->create($admin);
         if ($id <= 0) {
@@ -417,9 +430,10 @@ function generarPagos(object $admin): void
 
     logInfo("Generando pagos para facturas DEMO...");
 
-    $sql = "SELECT f.rowid, f.total_ttc, f.ref, f.total_ttc
+    $sql = "SELECT f.rowid, f.total_ttc, f.ref
             FROM " . MAIN_DB_PREFIX . "facture f
-            WHERE f.ref LIKE 'DEMO%'
+            JOIN " . MAIN_DB_PREFIX . "societe s ON s.rowid = f.fk_soc
+            WHERE s.nom LIKE 'DEMO %'
               AND f.fk_statut = 1
               AND f.paye = 0
               AND f.rowid NOT IN (
@@ -463,13 +477,17 @@ function limpiarDatos(): void
     logInfo("Eliminando datos de prueba DEMO...");
 
     $tables = [
-        'paiement_facture' => "JOIN " . MAIN_DB_PREFIX . "paiement_facture pf JOIN " . MAIN_DB_PREFIX . "facture f ON f.rowid = pf.fk_facture WHERE f.ref LIKE 'DEMO%'",
+        'paiement_facture' => "JOIN " . MAIN_DB_PREFIX . "paiement_facture pf JOIN " . MAIN_DB_PREFIX . "facture f ON f.rowid = pf.fk_facture JOIN " . MAIN_DB_PREFIX . "societe s ON s.rowid = f.fk_soc WHERE s.nom LIKE 'DEMO %'",
         'paiement' => "WHERE ref LIKE 'DEMO-PAGO-%'",
-        'facturedet' => "JOIN " . MAIN_DB_PREFIX . "facture f ON f.rowid = fd.fk_facture WHERE f.ref LIKE 'DEMO%'",
-        'facture' => "WHERE ref LIKE 'DEMO%'",
+        'facturedet' => "JOIN " . MAIN_DB_PREFIX . "facture f ON f.rowid = fd.fk_facture JOIN " . MAIN_DB_PREFIX . "societe s ON s.rowid = f.fk_soc WHERE s.nom LIKE 'DEMO %'",
+        'facture' => "JOIN " . MAIN_DB_PREFIX . "societe s ON s.rowid = fk_soc WHERE s.nom LIKE 'DEMO %'",
         'product' => "WHERE ref LIKE 'DEMO-VEH-%'",
         'societe' => "WHERE nom LIKE 'DEMO %'",
     ];
+
+    // Primero eliminar pld_operacion (requiere JOIN con societe)
+    $db->query("DELETE o FROM " . MAIN_DB_PREFIX . "pld_operacion o JOIN " . MAIN_DB_PREFIX . "societe s ON s.rowid = o.fk_societe WHERE s.nom LIKE 'DEMO %'");
+    logInfo("Limpiando pld_operacion...");
 
     foreach ($tables as $table => $where) {
         $sql = "DELETE FROM " . MAIN_DB_PREFIX . $table . " " . $where;

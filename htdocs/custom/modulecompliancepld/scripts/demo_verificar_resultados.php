@@ -55,8 +55,7 @@ echo "\n";
 
 // ──────────────────── Consultar operaciones ────────────────────
 $sql = "SELECT o.rowid, o.fk_facture, o.fk_societe, o.fk_product,
-               o.monto_mxn, o.monto_sin_impuestos,
-               o.supera_umbral, o.requiere_aviso, o.estado,
+               o.monto_mxn, o.supera_umbral, o.requiere_aviso, o.estado,
                o.tipo_operacion, o.fecha_operacion,
                f.ref AS factura_ref, f.total_ttc,
                s.nom AS cliente_nombre,
@@ -65,8 +64,8 @@ $sql = "SELECT o.rowid, o.fk_facture, o.fk_societe, o.fk_product,
         LEFT JOIN " . MAIN_DB_PREFIX . "facture f ON f.rowid = o.fk_facture
         LEFT JOIN " . MAIN_DB_PREFIX . "societe s ON s.rowid = o.fk_societe
         LEFT JOIN " . MAIN_DB_PREFIX . "product p ON p.rowid = o.fk_product
-        WHERE f.ref LIKE 'DEMO%'
-        ORDER BY o.monto_sin_impuestos DESC";
+        WHERE s.nom LIKE 'DEMO %'
+        ORDER BY o.monto_mxn DESC";
 
 $res = $db->query($sql);
 if (!$res) {
@@ -84,7 +83,7 @@ $totalNoSuperan = 0;
 $discrepancias = 0;
 
 while ($obj = $db->fetch_object($res)) {
-    $montoSinIVA = (float)$obj->monto_sin_impuestos;
+    $montoSinIVA = (float)$obj->monto_mxn;
     $supera = (int)$obj->supera_umbral;
     $requiere = (int)$obj->requiere_aviso;
 
@@ -164,9 +163,8 @@ echo "\n";
 $tablas = [
     'Clientes PF'     => "SELECT COUNT(*) FROM " . MAIN_DB_PREFIX . "societe WHERE nom LIKE 'DEMO %'",
     'Vehículos'       => "SELECT COUNT(*) FROM " . MAIN_DB_PREFIX . "product WHERE ref LIKE 'DEMO-VEH-%'",
-    'Facturas'        => "SELECT COUNT(*) FROM " . MAIN_DB_PREFIX . "facture WHERE ref LIKE 'DEMO%' AND fk_statut = 1",
-    'Pagos'           => "SELECT COUNT(*) FROM " . MAIN_DB_PREFIX . "paiement WHERE ref LIKE 'DEMO-PAGO-%'",
-    'Ops PLD (total)' => "SELECT COUNT(*) FROM " . MAIN_DB_PREFIX . "pld_operacion o JOIN " . MAIN_DB_PREFIX . "facture f ON f.rowid = o.fk_facture WHERE f.ref LIKE 'DEMO%'",
+    'Facturas'        => "SELECT COUNT(*) FROM " . MAIN_DB_PREFIX . "facture f JOIN " . MAIN_DB_PREFIX . "societe s ON s.rowid = f.fk_soc WHERE s.nom LIKE 'DEMO %' AND f.fk_statut = 1",
+    'Ops PLD (total)' => "SELECT COUNT(*) FROM " . MAIN_DB_PREFIX . "pld_operacion o JOIN " . MAIN_DB_PREFIX . "societe s ON s.rowid = o.fk_societe WHERE s.nom LIKE 'DEMO %'",
 ];
 
 foreach ($tablas as $nombre => $query) {

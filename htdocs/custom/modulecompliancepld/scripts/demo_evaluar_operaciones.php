@@ -63,12 +63,10 @@ $admin = new User($db);
 $admin->fetch((int)$adminObj->rowid);
 
 // ──────────────────── Leer facturas DEMO ────────────────────
-$sql = "SELECT f.rowid AS facture_id, f.fk_soc AS societe_id, f.total_ttc, f.fk_statut,
-               fd.fk_product AS product_id, fd.total_ht
+$sql = "SELECT f.rowid AS facture_id, f.fk_soc AS societe_id, f.total_ttc, f.note_public
         FROM " . MAIN_DB_PREFIX . "facture f
-        JOIN " . MAIN_DB_PREFIX . "facturedet fd ON fd.fk_facture = f.rowid
-        WHERE f.ref LIKE 'DEMO%'
-          AND f.fk_statut = 1
+        JOIN " . MAIN_DB_PREFIX . "societe s ON s.rowid = f.fk_soc
+        WHERE s.nom LIKE 'DEMO %'
         ORDER BY f.rowid";
 
 $res = $db->query($sql);
@@ -83,14 +81,19 @@ $totalSuperan = 0;
 $totalNoSuperan = 0;
 $totalSaltadas = 0;
 
-$extrafields = new ExtraFields($db);
-
 while ($obj = $db->fetch_object($res)) {
     $factureId  = (int)$obj->facture_id;
     $societeId  = (int)$obj->societe_id;
-    $productId  = (int)$obj->product_id;
     $montoTTL   = (float)$obj->total_ttc;
-    $montoHT    = (float)$obj->total_ht;
+
+    // Extraer monto del note_public: "Factura de prueba PLD - {tipo} - {monto} MXN"
+    $montoExtraido = $montoTTL;
+    if ($montoTTL <= 0 && !empty($obj->note_public)) {
+        if (preg_match('/(\d+(?:\.\d+)?)\s*MXN/', $obj->note_public, $m)) {
+            $montoExtraido = (float)$m[1];
+        }
+    }
+    $montoTTL = ($montoExtraido > 0) ? $montoExtraido : $montoTTL;
 
     // Verificar si ya existe operación para esta factura
     $checkSql = "SELECT COUNT(*) AS cnt FROM " . MAIN_DB_PREFIX . "pld_operacion WHERE fk_facture = {$factureId}";
@@ -102,53 +105,48 @@ while ($obj = $db->fetch_object($res)) {
         continue;
     }
 
-    // Determinar tipo de vehículo (nuevo/usado) del extrafield
-    $tipoVehiculo = 'nuevo'; // Default
-    $extrafields->fetch_name_optionals_label('product');
-    if (!empty($extrafields->attributes['product']['label'])) {
-        $productObj = new Product($db);
-        $productObj->fetch($productId);
-        $productObj->fetch_optionals();
-        $tipoField = $productObj->array_options['options_pld_tipo_vehiculo'] ?? '';
-        if (strtolower($tipoField) === 'usado') {
-            $tipoVehiculo = 'usado';
-        }
-    }
+    // Determinar tipo de vehículo por monto (simplificado)
+    $tipoVehiculo = ($montoTTL >= $umbralNuevo) ? 'nuevo' : 'usado';
 
     // Calcular monto sin impuestos
-    $montoSinImpuestos = ($montoHT > 0) ? $montoHT : round($montoTTL / 1.16, 2);
+    $montoSinImpuestos = round($montoTTL / 1.16, 2);
 
-    // Evaluar umbral
+    // Evaluar umbral (comparar monto total contra umbral)
     $umbral = ($tipoVehiculo === 'nuevo') ? $umbralNuevo : $umbralUsado;
-    $superaUmbral = $montoSinImpuestos >= $umbral;
+    $superaUmbral = $montoTTL >= $umbral;
 
-    // Crear operación PLD
-    $op = new PLDOperacion($db);
-    $op->fk_facture = $factureId;
-    $op->fk_societe = $societeId;
-    $op->fk_product = $productId;
-    $op->tipo_actividad_vulnerable = '808'; // Vehículos
-    $op->fecha_operacion = date('Y-m-d');
-    $op->mes_reportado = date('Ym');
-    $op->moneda = 'MXN';
-    $op->monto_mxn = $montoTTL;
-    $op->monto_sin_impuestos = $montoSinImpuestos;
-    $op->tasa_impuesto = 0.16;
-    $op->supera_umbral = $superaUmbral ? 1 : 0;
-    $op->requiere_aviso = $superaUmbral ? 1 : 0;
-    $op->estado = $superaUmbral ? 'pendiente_documentacion' : 'borrador';
-    $op->cliente_identificado = 1;
-    $op->documentacion_completa = 0;
+    // Crear operación PLD con SQL directo (schema actual no tiene todas las columnas)
+    $now = dol_now();
+    $estado = $superaUmbral ? 'pendiente_documentacion' : 'borrador';
+    $sqlInsert = "INSERT INTO " . MAIN_DB_PREFIX . "pld_operacion (
+        entity, fk_facture, fk_societe,
+        tipo_operacion, tipo_actividad_vulnerable,
+        fecha_operacion, mes_reportado,
+        moneda, monto_mxn,
+        supera_umbral, cliente_identificado, documentacion_completa,
+        requiere_aviso, aviso_presentado,
+        estado, datec
+    ) VALUES (
+        " . $conf->entity . ",
+        {$factureId}, {$societeId},
+        'venta_vehiculo', '808',
+        '" . date('Y-m-d') . "', '" . date('Ym') . "',
+        'MXN', " . $montoTTL . ",
+        " . ($superaUmbral ? 1 : 0) . ", 1, 0,
+        " . ($superaUmbral ? 1 : 0) . ", 0,
+        '{$estado}', '{$db->idate($now)}'
+    )";
 
-    $opId = $op->create($admin);
-    if ($opId > 0) {
+    $resInsert = $db->query($sqlInsert);
+    if ($resInsert) {
         $totalCreadas++;
+        $opId = $db->last_insert_id(MAIN_DB_PREFIX . 'pld_operacion');
         if ($superaUmbral) {
             $totalSuperan++;
-            logOk("Op #{$opId}: Factura #{$factureId} | monto=\${$montoSinImpuestos} | SUPER umbral \${$umbral} ({$tipoVehiculo}) | requiere_aviso=1");
+            logOk("Op #{$opId}: Factura #{$factureId} | monto=\${$montoTTL} | SUPER umbral \${$umbral} ({$tipoVehiculo}) | requiere_aviso=1");
         } else {
             $totalNoSuperan++;
-            logInfo("Op #{$opId}: Factura #{$factureId} | monto=\${$montoSinImpuestos} | NO supera umbral \${$umbral} ({$tipoVehiculo}) | requiere_aviso=0");
+            logInfo("Op #{$opId}: Factura #{$factureId} | monto=\${$montoTTL} | NO supera umbral \${$umbral} ({$tipoVehiculo}) | requiere_aviso=0");
         }
     } else {
         logErr("Error creando operación para factura #{$factureId}: {$op->error}");
