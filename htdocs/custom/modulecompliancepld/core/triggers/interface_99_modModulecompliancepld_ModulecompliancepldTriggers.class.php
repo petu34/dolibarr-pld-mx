@@ -89,6 +89,46 @@ class InterfaceModulecompliancepldTriggers extends DolibarrTriggers
 	}
 
 	/**
+	 * Verifica si una factura contiene productos tipo vehículo.
+	 *
+	 * Consulta las líneas de la factura y verifica si al menos un producto
+	 * tiene el extrafield pld_tipo_vehiculo poblado, o si la descripción
+	 * contiene un VIN de 17 caracteres.
+	 *
+	 * @param Facture $facture Objeto factura de Dolibarr
+	 * @return bool true si la factura contiene vehículos
+	 */
+	private function esFacturaVehiculo($facture): bool
+	{
+		// Verificar líneas de la factura con productos vinculados
+		$sql  = "SELECT COUNT(*) AS cnt FROM ".MAIN_DB_PREFIX."facturedet fd";
+		$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product p ON p.rowid = fd.fk_product";
+		$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product_extrafields pe ON pe.fk_object = p.rowid";
+		$sql .= " WHERE fd.fk_facture = ".(int)$facture->id;
+		$sql .= " AND (";
+		// Producto tiene extrafield pld_tipo_vehiculo
+		$sql .= "  pe.pld_tipo_vehiculo IS NOT NULL AND pe.pld_tipo_vehiculo != ''";
+		$sql .= "  OR fd.description LIKE '%VIN%'";
+		$sql .= "  OR p.ref LIKE 'DEMO-VEH-%'";
+		$sql .= "  OR p.label LIKE '%VIN%'";
+		$sql .= " )";
+		$resql = $this->db->query($sql);
+		if ($resql) {
+			$obj = $this->db->fetch_object($resql);
+			if ($obj && (int)$obj->cnt > 0) {
+				return true;
+			}
+		}
+
+		// Si hay nota pública que menciona vehículo, considerar como tal
+		if (!empty($facture->note_public) && preg_match('/VIN|vehículo|vehiculo|nuevo|usado|seminuevo/i', $facture->note_public)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Trigger: Marca factura como operación vulnerable cuando se valida.
 	 *
 	 * Dispara cuando BILL_VALIDATE — crea operación PLD para revisión.
@@ -103,6 +143,10 @@ class InterfaceModulecompliancepldTriggers extends DolibarrTriggers
 	public function billValidate($action, $object, User $user, Translate $langs, Conf $conf)
 	{
 		if (!$object || $object->type != 0) {
+			return 0;
+		}
+
+		if (!$this->esFacturaVehiculo($object)) {
 			return 0;
 		}
 
@@ -131,6 +175,10 @@ class InterfaceModulecompliancepldTriggers extends DolibarrTriggers
 	public function billPay($action, $object, User $user, Translate $langs, Conf $conf)
 	{
 		if (!$object || $object->type != 0) {
+			return 0;
+		}
+
+		if (!$this->esFacturaVehiculo($object)) {
 			return 0;
 		}
 
