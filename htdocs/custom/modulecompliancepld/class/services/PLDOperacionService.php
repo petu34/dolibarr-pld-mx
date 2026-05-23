@@ -20,6 +20,7 @@ if (!defined('DOL_VERSION')) {
 }
 
 require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/pldoperacion.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/services/PLDMonitorService.php';
 require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 
 class PLDOperacionService
@@ -49,10 +50,13 @@ class PLDOperacionService
 
         $result = $op->create($user);
         if ($result <= 0) {
-            $this->error  = $op->error;
+            $this->error  = $op->error ?: 'Error desconocido al crear operacion PLD';
             $this->errors = $op->errors;
             return -1;
         }
+
+        $monitor = new PLDMonitorService($this->db);
+        $monitor->evaluarPerfilPostOperacion($op, $user);
 
         return $result;
     }
@@ -72,7 +76,7 @@ class PLDOperacionService
     {
         $result = $op->update($user);
         if ($result <= 0) {
-            $this->error  = $op->error;
+            $this->error  = $op->error ?: 'Error desconocido al actualizar operacion PLD';
             $this->errors = $op->errors;
             return -1;
         }
@@ -114,11 +118,11 @@ class PLDOperacionService
             $op->fk_user_modif = $user->id;
             $result = $op->update($user);
             if ($result <= 0) {
-                $this->error  = $op->error;
+                $this->error  = $op->error ?: 'Error desconocido al actualizar operacion PLD';
                 $this->errors = $op->errors;
                 return -1;
             }
-            return $op->id;
+            return (int) $op->id;
         }
 
         $op = new PLDOperacion($this->db);

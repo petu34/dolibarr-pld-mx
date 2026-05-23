@@ -93,7 +93,14 @@ class PLDOperacion extends CommonObject
         $this->fk_user_creat = $user->id;
         
         if (empty($this->mes_reportado) && !empty($this->fecha_operacion)) {
-            $this->mes_reportado = date('Ym', strtotime($this->fecha_operacion));
+            $ts = is_numeric($this->fecha_operacion) ? (int)$this->fecha_operacion : strtotime((string)$this->fecha_operacion);
+            $this->mes_reportado = date('Ym', $ts);
+        }
+
+        // Normalizar fecha_operacion: Dolibarr almacena fechas como timestamp Unix (int).
+        // Convertir a string YYYY-MM-DD para compatibilidad con todos los motores de BD.
+        if (!empty($this->fecha_operacion) && is_numeric($this->fecha_operacion)) {
+            $this->fecha_operacion = date('Y-m-d', (int)$this->fecha_operacion);
         }
         
         $sql = "INSERT INTO ".MAIN_DB_PREFIX.$this->table_element." (";
@@ -191,9 +198,9 @@ class PLDOperacion extends CommonObject
         if ($resql) {
             $obj = $this->db->fetch_object($resql);
             if ($obj) {
-                $this->id = $obj->rowid;
-                $this->rowid = $obj->rowid;
-                $this->entity = $obj->entity;
+                $this->id = (int) $obj->rowid;
+                $this->rowid = (int) $obj->rowid;
+                $this->entity = (int) $obj->entity;
                 $this->fk_facture = $obj->fk_facture;
                 $this->fk_propal  = $obj->fk_propal;
                 $this->fk_societe = $obj->fk_societe;
@@ -242,6 +249,12 @@ class PLDOperacion extends CommonObject
         $this->db->begin();
         
         $this->fk_user_modif = $user->id;
+
+        // Normalizar fecha_operacion: Dolibarr almacena fechas como timestamp Unix (int).
+        // Convertir a string YYYY-MM-DD para compatibilidad con todos los motores de BD.
+        if (!empty($this->fecha_operacion) && is_numeric($this->fecha_operacion)) {
+            $this->fecha_operacion = date('Y-m-d', (int)$this->fecha_operacion);
+        }
         
         $sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element." SET";
         $sql .= " fk_facture = ".($this->fk_facture > 0 ? (int)$this->fk_facture : 'NULL').",";

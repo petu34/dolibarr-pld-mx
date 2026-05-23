@@ -478,6 +478,142 @@ class PLDReporteService
         return $this->fetchAll($sql);
     }
 
+    // ── Monitoreo (Fracción X) ──────────────────────────────────────────────────
+
+    /**
+     * Contadores del dashboard de monitoreo: PEPs, alto riesgo, fuera de perfil.
+     *
+     * @return array{tiene_pep: int, alto_riesgo: int, fuera_perfil: int, monitoreos_hoy: int}
+     */
+    public function getContadoresMonitoreo(): array
+    {
+        $sql_pep = "SELECT COUNT(DISTINCT fk_societe) as total FROM ".MAIN_DB_PREFIX."pld_perfil_cliente"
+            ." WHERE entity = 1 AND es_pep = 1 AND nivel_riesgo_perfil IN ('alto', 'critico')";
+
+        $sql_riesgo = "SELECT COUNT(DISTINCT fk_societe) as total FROM ".MAIN_DB_PREFIX."pld_perfil_cliente"
+            ." WHERE entity = 1 AND nivel_riesgo_perfil IN ('alto', 'critico')";
+
+        $sql_fuera = "SELECT COUNT(rowid) as total FROM ".MAIN_DB_PREFIX."pld_monitoreo_log"
+            ." WHERE entity = 1 AND supera_umbral_perfil = 1"
+            ." AND tipo_evaluacion = 'perfil_transaccional'";
+
+        $sql_hoy = "SELECT COUNT(rowid) as total FROM ".MAIN_DB_PREFIX."pld_monitoreo_log"
+            ." WHERE entity = 1 AND datec >= '".$this->db->idate(dol_now())."'";
+
+        return [
+            'tiene_pep'       => $this->countQuery($sql_pep),
+            'alto_riesgo'     => $this->countQuery($sql_riesgo),
+            'fuera_perfil'    => $this->countQuery($sql_fuera),
+            'monitoreos_hoy'  => $this->countQuery($sql_hoy),
+        ];
+    }
+
+    /**
+     * Clientes PEP activos con perfil de riesgo.
+     *
+     * @param int $limit  Máximo de filas
+     * @return stdClass[]
+     */
+    public function getClientesPEP(int $limit = 20): array
+    {
+        $sql  = "SELECT pc.fk_societe, s.nom as empresa_nom,";
+        $sql .= " pc.nivel_riesgo_perfil, pc.nivel_diligencia,";
+        $sql .= " pc.num_operaciones_periodo, pc.monto_acumulado_periodo,";
+        $sql .= " pc.fecha_ultima_evaluacion, pc.factores_riesgo";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_perfil_cliente as pc";
+        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = pc.fk_societe";
+        $sql .= " WHERE pc.entity = 1 AND pc.es_pep = 1";
+        $sql .= " ORDER BY CASE pc.nivel_riesgo_perfil WHEN 'critico' THEN 1 WHEN 'alto' THEN 2 ELSE 3 END, pc.fecha_ultima_evaluacion DESC";
+        $sql .= $this->db->plimit($limit, 0);
+
+        return $this->fetchAll($sql);
+    }
+
+    /**
+     * Clientes clasificados como alto riesgo.
+     *
+     * @param int $limit  Máximo de filas
+     * @return stdClass[]
+     */
+    public function getClientesAltoRiesgo(int $limit = 20): array
+    {
+        $sql  = "SELECT pc.fk_societe, s.nom as empresa_nom,";
+        $sql .= " pc.nivel_riesgo_perfil, pc.frecuencia_mensual,";
+        $sql .= " pc.promedio_monto, pc.max_monto_historico,";
+        $sql .= " pc.monto_acumulado_periodo, pc.fecha_ultima_evaluacion";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_perfil_cliente as pc";
+        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = pc.fk_societe";
+        $sql .= " WHERE pc.entity = 1 AND pc.nivel_riesgo_perfil IN ('alto', 'critico')";
+        $sql .= " ORDER BY CASE pc.nivel_riesgo_perfil WHEN 'critico' THEN 1 ELSE 2 END, pc.monto_acumulado_periodo DESC";
+        $sql .= $this->db->plimit($limit, 0);
+
+        return $this->fetchAll($sql);
+    }
+
+    /**
+     * Operaciones detectadas fuera del perfil transaccional.
+     *
+     * @param int $limit  Máximo de filas
+     * @return stdClass[]
+     */
+    public function getOperacionesFueraPerfil(int $limit = 20): array
+    {
+        $sql  = "SELECT ml.rowid as log_id, ml.fk_societe, ml.fk_pld_operacion,";
+        $sql .= " ml.z_score, ml.variacion_porcentual, ml.detalle,";
+        $sql .= " ml.nivel_riesgo_detectado, ml.datec as fecha_deteccion,";
+        $sql .= " s.nom as empresa_nom, o.folio_interno, o.monto_mxn";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_monitoreo_log as ml";
+        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = ml.fk_societe";
+        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."pld_operacion as o ON o.rowid = ml.fk_pld_operacion";
+        $sql .= " WHERE ml.entity = 1 AND ml.supera_umbral_perfil = 1";
+        $sql .= " ORDER BY ml.datec DESC";
+        $sql .= $this->db->plimit($limit, 0);
+
+        return $this->fetchAll($sql);
+    }
+
+    /**
+     * Log de monitoreo reciente.
+     *
+     * @param int    $limit       Máximo de filas
+     * @param string $tipoFiltro  Tipo de evaluación (opcional)
+     * @return stdClass[]
+     */
+    public function getLogMonitoreo(int $limit = 50, string $tipoFiltro = ''): array
+    {
+        $sql  = "SELECT ml.rowid, ml.tipo_evaluacion, ml.fk_societe, ml.fk_pld_operacion,";
+        $sql .= " ml.resultado, ml.nivel_riesgo_detectado, ml.detalle,";
+        $sql .= " ml.z_score, ml.variacion_porcentual, ml.genero_alerta,";
+        $sql .= " ml.datec, s.nom as empresa_nom";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_monitoreo_log as ml";
+        $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = ml.fk_societe";
+        $sql .= " WHERE ml.entity = 1";
+        if (!empty($tipoFiltro)) {
+            $sql .= " AND ml.tipo_evaluacion = '".$this->db->escape($tipoFiltro)."'";
+        }
+        $sql .= " ORDER BY ml.datec DESC";
+        $sql .= $this->db->plimit($limit, 0);
+
+        return $this->fetchAll($sql);
+    }
+
+    /**
+     * Resumen de perfiles de clientes agrupados por nivel de riesgo.
+     *
+     * @return stdClass[]
+     */
+    public function getResumenPerfilesRiesgo(): array
+    {
+        $sql  = "SELECT nivel_riesgo_perfil, COUNT(rowid) as total,";
+        $sql .= " SUM(num_operaciones_periodo) as total_ops,";
+        $sql .= " SUM(monto_acumulado_periodo) as monto_total";
+        $sql .= " FROM ".MAIN_DB_PREFIX."pld_perfil_cliente";
+        $sql .= " WHERE entity = 1";
+        $sql .= " GROUP BY nivel_riesgo_perfil ORDER BY monto_total DESC";
+
+        return $this->fetchAll($sql);
+    }
+
     // ── Helpers privados ──────────────────────────────────────────────────────
 
     private function countQuery(string $sql): int

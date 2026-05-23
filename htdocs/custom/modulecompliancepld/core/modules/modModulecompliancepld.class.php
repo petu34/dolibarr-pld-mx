@@ -393,6 +393,21 @@ class modModulecompliancepld extends DolibarrModules
 		$this->menu[$r++] = array(
 			'fk_menu' => 'fk_mainmenu=modulecompliancepld',
 			'type' => 'left',
+			'titre' => 'PLDMonitoreoAutomatizado',
+			'mainmenu' => 'modulecompliancepld',
+			'leftmenu' => 'pld_monitoreo',
+			'url' => '/modulecompliancepld/monitoreo.php',
+			'langs' => $menuLang,
+			'position' => 1000 + $r,
+			'enabled' => $enabledCond,
+			'perms' => $readPerm,
+			'target' => '',
+			'user' => 2,
+		);
+
+		$this->menu[$r++] = array(
+			'fk_menu' => 'fk_mainmenu=modulecompliancepld',
+			'type' => 'left',
 			'titre' => 'PLDConfiguracion',
 			'mainmenu' => 'modulecompliancepld',
 			'leftmenu' => 'pld_configuracion',
