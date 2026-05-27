@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 require_once DOL_DOCUMENT_ROOT.'/core/triggers/dolibarrtriggers.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/services/PLDOperacionService.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/modulecompliancepld/class/services/PLDMonitorService.php';
 
 
 /**
@@ -188,6 +189,40 @@ class InterfaceModulecompliancepldTriggers extends DolibarrTriggers
 		if ($result < 0) {
 			dol_syslog("PLD: Error marcando factura pagada ".$object->id." como vulnerable: ".$svc->error, LOG_ERR);
 		}
+
+		return 0;
+	}
+
+	/**
+	 * Trigger: Evalúa perfil transaccional y riesgo cuando se crea una operación PLD.
+	 *
+	 * Dispara cuando PLD_OPERACION_CREATE — calcula perfil, detecta anomalías,
+	 * y genera alertas si la operación está fuera de perfil o involucra PEP.
+	 *
+	 * @param string        $action  Event code (PLD_OPERACION_CREATE)
+	 * @param PLDOperacion  $object  Operación PLD recién creada
+	 * @param User          $user    Usuario autenticado
+	 * @param Translate     $langs   Objeto de idioma
+	 * @param Conf          $conf    Configuración
+	 * @return int 0 siempre (no interrumpir eventos)
+	 */
+	public function pldOperacionCreate($action, $object, User $user, Translate $langs, Conf $conf)
+	{
+		if (!$object || !($object instanceof PLDOperacion)) {
+			return 0;
+		}
+
+		$monitor = new PLDMonitorService($this->db);
+		$eval = $monitor->evaluarPerfilPostOperacion($object, $user);
+
+		if ($eval['fuera_perfil']) {
+			dol_syslog(
+				"PLD-MONITOR: Operación ".$object->folio_interno." fuera de perfil para cliente ".$object->fk_societe,
+				LOG_WARNING
+			);
+		}
+
+		$monitor->seguimientoIntensificadoPEP((int)$object->fk_societe, $user);
 
 		return 0;
 	}

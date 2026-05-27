@@ -883,3 +883,57 @@ PLDBeneficiarios = Beneficiarios Controladores
 PLDAlertas = Alertas PLD
 PLDAvisos = Avisos SAT
 PLDOperaciones = Operaciones Vulnerables
+
+# Monitoreo automatizado (Fracción X)
+PLDMonitoreoDashboard = Panel de Monitoreo PLD
+PLDMonitoreoAutomatizado = Monitoreo automatizado PLD
+PLDMonitoreosHoy = Monitoreos hoy
+PLDClientesPEP = Clientes PEP
+PLDAltoRiesgo = Alto Riesgo
+PLDFueraPerfil = Fuera de Perfil
+PLDSemaforoRiesgo = Semáforo de Riesgo
+PLDNivelRiesgo = Nivel de Riesgo
+PLDClientes = Clientes
+PLDMontoTotal = Monto Total
+PLDNivelDiligencia = Diligencia
+PLDOperacionesPeriodo = Ops. Período
+PLDMontoAcumulado = Monto Acumulado
+PLDUltimaEvaluacion = Última Evaluación
+PLDFrecuenciaMensual = Frec. Mensual
+PLDPromedioMonto = Monto Promedio
+PLDMaxHistorico = Máx. Histórico
+PLDFolioInterno = Folio
+PLDMontoMXN = Monto (MXN)
+PLDZScore = Z-Score
+PLDVariacionPct = Variación %
+PLDFechaDeteccion = Fecha Detección
+PLDLogMonitoreo = Log de Monitoreo
+PLDHoy = hoy
+PLDFecha = Fecha
+PLDTipoEvaluacion = Tipo Evaluación
+PLDResultado = Resultado
+PLDDetalle = Detalle
+
+# Riesgo niveles
+PLDRiesgo_bajo = Bajo
+PLDRiesgo_medio = Medio
+PLDRiesgo_alto = Alto
+PLDRiesgo_critico = Crítico
+
+# Diligencia niveles
+PLDDiligencia_simplificada = Simplificada
+PLDDiligencia_normal = Normal
+PLDDiligencia_reforzada = Reforzada
+
+# Tipos de evaluación monitoreo
+PLDTipoEval_perfil_transaccional = Perfil Transaccional
+PLDTipoEval_batch_periodico = Monitoreo Periódico
+PLDTipoEval_pep = Verificación PEP
+PLDTipoEval_alto_riesgo = Alto Riesgo
+PLDTipoEval_acumulacion = Acumulación
+
+# Resultados de monitoreo
+PLDResultado_ok = OK
+PLDResultado_anomalia = Anomalía
+PLDResultado_alerta = Alerta
+PLDResultado_escalado = Escalado
