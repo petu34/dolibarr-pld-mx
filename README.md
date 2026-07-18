@@ -1,13 +1,9 @@
 # Dolibarr PLD México
 
-**Módulo de Prevención de Lavado de Dinero (PLD)** para Dolibarr ERP que implementa las regulaciones mexicanas LFPIORPI Art. 17, específicamente para transacciones de compraventa de vehículos. El módulo genera avisos XML firmados para el portal SPPLD del SAT e integra monitoreo de cumplimiento, alertas automáticas y capacidades de firma digital utilizando la e.firma (firma electrónica) de México.
-
-**Cumplimiento LFPIORPI Art. 17 Fracciones V, VIII, XI, XII, XIII y XV** — Actividades vulnerables de compra-venta de vehículos en México.
-
 ## Estado del proyecto
 
-**En desarrollo - Fase develop inicial**  
-Parcialmente funcional para Art. 17 Fracción VIII "Distribución y comercialización de todo tipo de vehículos"
+**En desarrollo - Fase develop experimental inicial**  
+No funcional aún.
 
 ---
 
